@@ -1,0 +1,10 @@
+// import 'dart:ffi';
+
+class AppConfig {
+  static const String appName = 'Let\'s Connect';
+  static const String companyName = 'Path Idea Multiskill';
+  // static const String apiBaseUrl = 'https://api.numberaaya.com/';
+  static const String apiBaseUrl =
+      'https://powderblue-jellyfish-554082.hostingersite.com/api';
+  static const double roundness = 5;
+}

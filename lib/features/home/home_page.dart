@@ -1,0 +1,222 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // ✅ Added for SystemNavigator
+import 'package:gridcard/features/discover/discover_page.dart';
+import 'package:gridcard/features/leads/leads_page.dart';
+import 'package:gridcard/features/profile/profile_page.dart';
+import 'package:gridcard/features/settings/settings_page.dart';
+import 'package:gridcard/features/home/feed_page.dart';
+import 'package:gridcard/core/services/auth_provider.dart'; // ✅ Your AuthProvider
+import 'package:gridcard/features/chat/connections_page.dart';
+import 'package:gridcard/core/services/lead_provider.dart';
+import 'package:provider/provider.dart';
+import 'package:gridcard/routes/route_names.dart';
+
+import 'dart:ui';
+
+class HomePage extends StatefulWidget {
+  const HomePage({super.key});
+
+  @override
+  State<HomePage> createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  DateTime? _lastBackPressed;
+
+  Future<void> _onPop(bool didPop, Object? result) async {
+    if (didPop) return;
+
+    final now = DateTime.now();
+    if (_lastBackPressed == null ||
+        now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
+      _lastBackPressed = now;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Press back again to exit")),
+      );
+      return;
+    }
+
+    // ✅ Fixed: Use SystemNavigator.pop() to actually exit the app
+    SystemNavigator.pop();
+  }
+
+  int _selectedIndex = 0;
+
+  // Screens for each tab
+  final List<Widget> _screens = [
+    const FeedPage(),
+    const LeadsPage(),
+    const DiscoverPage(),
+    const SettingsPage(),
+  ];
+
+  final List<String> _titles = [
+    'Home',
+    'My Leads',
+    'Discover',
+    'Settings',
+  ];
+
+  void _onItemTapped(int index) {
+    setState(() => _selectedIndex = index);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    // Redirect to login if not authenticated
+    if (!auth.isAuthenticated) {
+      Future.microtask(() {
+        if (mounted) {
+          // Clear the stack and go to login so back does not return to home
+          Navigator.pushNamedAndRemoveUntil(
+              context, RouteNames.phone, (route) => false);
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return PopScope<Object?>(
+      canPop: false, // disable default popping
+      onPopInvokedWithResult: _onPop,
+      child: Scaffold(
+        backgroundColor: colorScheme.surface,
+        extendBody: true,
+        appBar: AppBar(
+          backgroundColor: colorScheme.surface.withOpacity(0.8),
+          elevation: 0,
+          foregroundColor: colorScheme.primary,
+          title: Text(
+            _titles[_selectedIndex],
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon:
+                Icon(Icons.account_circle_outlined, color: colorScheme.primary),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const ProfilePage()),
+              );
+            },
+          ),
+          actions: [
+            if (_selectedIndex == 1) // My Leads
+              IconButton(
+                icon: Icon(CupertinoIcons.arrow_2_circlepath,
+                    color: colorScheme.primary),
+                onPressed: () => context.read<LeadProvider>().fetchLeads(),
+              ),
+            IconButton(
+              icon: Icon(CupertinoIcons.chat_bubble_text,
+                  color: colorScheme.primary),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                      builder: (context) => const ConnectionsPage()),
+                );
+              },
+            ),
+          ],
+        ),
+        body: Stack(
+          children: [
+            _screens[_selectedIndex],
+            _buildFloatingDock(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFloatingDock() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Positioned(
+      bottom: 24,
+      left: 24,
+      right: 24,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(30),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            height: 70,
+            decoration: BoxDecoration(
+              color: isDark
+                  ? colorScheme.surfaceContainerHighest.withOpacity(0.9)
+                  : const Color(0xFF21254A).withOpacity(0.9),
+              borderRadius: BorderRadius.circular(30),
+              border:
+                  Border.all(color: Colors.white.withOpacity(0.12), width: 0.5),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildDockItem(0, CupertinoIcons.home, 'Home'),
+                _buildDockItem(1, CupertinoIcons.news, 'Leads'),
+                _buildDockItem(2, CupertinoIcons.compass, 'Discover'),
+                _buildDockItem(3, CupertinoIcons.settings, 'Settings'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDockItem(int index, IconData icon, String label) {
+    final isSelected = _selectedIndex == index;
+    return InkWell(
+      onTap: () => _onItemTapped(index),
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: isSelected
+            ? BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              )
+            : null,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.white54,
+              size: 24,
+            ),
+            if (isSelected) ...[
+              const SizedBox(height: 2),
+              Container(
+                width: 4,
+                height: 4,
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
