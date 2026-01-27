@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:gridcard/core/services/leads_provider.dart';
 import 'package:gridcard/models/lead_model.dart';
 import './lead_details.dart';
+import './lead_scanner.dart';
 import 'dart:ui';
 
 class LeadsPage extends StatefulWidget {
@@ -664,6 +665,26 @@ class _LeadsPageState extends State<LeadsPage> {
                         TextButton(
                             onPressed: () => Navigator.pop(context),
                             child: const Text("Cancel")),
+                        const SizedBox(width: 12),
+                        // 🔵 Scan (ONLY MOBILE)
+                        if (!isDesktop) ...[
+                          const SizedBox(width: 8),
+                          OutlinedButton.icon(
+                            onPressed: () {
+                              // TODO: future scan logic
+                              showDialog(
+                                context: context,
+                                barrierDismissible: false,
+                                builder: (_) => const Dialog(
+                                  insetPadding: EdgeInsets.zero,
+                                  child: LeadsScannerPage(),
+                                ),
+                              );
+                            },
+                            icon: const Icon(CupertinoIcons.qrcode_viewfinder),
+                            label: const Text("Scan"),
+                          ),
+                        ],
                         const SizedBox(width: 12),
                         ElevatedButton(
                           onPressed: isSaving

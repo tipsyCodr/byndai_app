@@ -1,5 +1,3 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -380,8 +378,13 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                 child: Column(
                   children: [
                     const SizedBox(height: 30),
-                    Image.asset('assets/phone_hero.png', height: 180),
-                   
+                    // Image.asset('assets/phone_hero.png', height: 180),
+                    Image.asset(
+                      'assets/phone_hero.png',
+                      height: 260, // 👈 dynamic height
+                      fit: BoxFit.contain,
+                    ),
+
                     const SizedBox(height: 24),
                     _buildLoginForm(colors),
                     const SizedBox(height: 24),
