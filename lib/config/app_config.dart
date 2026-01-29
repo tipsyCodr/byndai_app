@@ -6,7 +6,9 @@ class AppConfig {
   // static const String apiBaseUrl = 'https://api.numberaaya.com/';
   static const String apiBaseUrl =
       'https://powderblue-jellyfish-554082.hostingersite.com/api';
+    // static const String apiBaseUrl2 =
+    //   'http://byndai_server-main.test/api';
     static const String apiBaseUrl2 =
-      'http://byndai_server-main.test/api';
+      'https://powderblue-jellyfish-554082.hostingersite.com/api';
   static const double roundness = 5;
 }
