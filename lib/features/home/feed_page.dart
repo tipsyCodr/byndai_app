@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:gridcard/core/services/social_provider.dart';
 import 'package:provider/provider.dart';
+import '../leads/lead_scanner_2.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -295,6 +296,30 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
             ),
           ),
         ),
+        // const SizedBox(width: 12),
+        // Expanded(
+        //   child: Container(
+        //     decoration: BoxDecoration(
+        //       borderRadius: BorderRadius.circular(16),
+        //       border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+        //     ),
+        //     child: FilledButton(
+        //       style: FilledButton.styleFrom(
+        //         backgroundColor: colorScheme.primary.withOpacity(0.05),
+        //         foregroundColor: colorScheme.primary,
+        //         padding: const EdgeInsets.symmetric(vertical: 20),
+        //         shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.circular(16)),
+        //         elevation: 0,
+        //       ),
+        //       onPressed: () {
+        //         Navigator.of(context).push(MaterialPageRoute(
+        //             builder: (context) => const CameraScreen()));
+        //       },
+        //       child: const Icon(CupertinoIcons.viewfinder, size: 24),
+        //     ),
+        //   ),
+        // ),
         const SizedBox(width: 12),
         Expanded(
           child: Container(
@@ -313,7 +338,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
               ),
               onPressed: () {
                 Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => const CameraScreen()));
+                    builder: (context) => const LeadScanner2()));
               },
               child: const Icon(CupertinoIcons.viewfinder, size: 24),
             ),
