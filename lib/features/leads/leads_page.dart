@@ -18,7 +18,8 @@ class _LeadsPageState extends State<LeadsPage> {
   final ScrollController _scrollCtrl = ScrollController();
   final TextEditingController _searchCtrl = TextEditingController();
   // static const String _baseUrl = "http://byndai_server-main.test";
-    static const String _baseUrl = "https://powderblue-jellyfish-554082.hostingersite.com/api";
+  static const String _baseUrl = "https://powderblue-jellyfish-554082.hostingersite.com";
+    // static const String _baseUrl = "https://powderblue-jellyfish-554082.hostingersite.com/api";
 
   @override
   void initState() {

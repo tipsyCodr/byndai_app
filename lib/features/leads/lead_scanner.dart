@@ -257,9 +257,9 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
   String _ocrText = '';
   Map<String, dynamic>? _formData;
 
-  final String apiUrl = "http://byndai_server-main.test/api/ocr-extract";
+  // final String apiUrl = "http://byndai_server-main.test/api/ocr-extract";
 
-  // final String apiUrl = "https://powderblue-jellyfish-554082.hostingersite.com/api/ocr-extract";
+  final String apiUrl = "https://powderblue-jellyfish-554082.hostingersite.com/api/ocr-extract";
 
   @override
   Widget build(BuildContext context) {

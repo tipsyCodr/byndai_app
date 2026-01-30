@@ -11,7 +11,7 @@ import 'package:gridcard/features/chat/connections_page.dart';
 import 'package:gridcard/core/services/lead_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/routes/route_names.dart';
-
+import '../qr_scan/profile_qr_code.dart';
 import 'dart:ui';
 
 class HomePage extends StatefulWidget {
@@ -109,12 +109,16 @@ class _HomePageState extends State<HomePage> {
             },
           ),
           actions: [
-            if (_selectedIndex == 1) // My Leads
-              IconButton(
-                icon: Icon(CupertinoIcons.arrow_2_circlepath,
-                    color: colorScheme.primary),
-                onPressed: () => context.read<LeadProvider>().fetchLeads(),
-              ),
+            IconButton(
+              icon: Icon(CupertinoIcons.qrcode, color: colorScheme.primary),
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => const ProfileQRCodePage(),
+                  ),
+                );
+              },
+            ),
             IconButton(
               icon: Icon(CupertinoIcons.chat_bubble_text,
                   color: colorScheme.primary),
@@ -136,7 +140,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
 
   Widget _buildFloatingDock() {
     final colorScheme = Theme.of(context).colorScheme;
