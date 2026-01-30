@@ -759,6 +759,8 @@ import 'package:flutter/services.dart'; // ✅ Add this import for Clipboard
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 
 class QRScannerPage extends StatefulWidget {
   final Function(Map<String, dynamic>)? onScanComplete;
@@ -831,57 +833,87 @@ class _QRScannerPageState extends State<QRScannerPage> {
   }
 
   // Function to open native contact app with pre-filled data
-  Future<void> _openNativeContactApp(Map<String, dynamic> data) async {
-    try {
-      String? name = data['fname'] ?? data['name'];
-      String? mobile = data['user_mobile'] ?? data['mobile'];
-      String? email = data['email'];
+  // Future<void> _openNativeContactApp(Map<String, dynamic> data) async {
+  //   try {
+  //     String? name = data['fname'] ?? data['name'];
+  //     String? mobile = data['user_mobile'] ?? data['mobile'];
+  //     String? email = data['email'];
 
-      if (name == null || mobile == null) {
-        _showErrorDialog('Incomplete contact data. Name and mobile number are required.');
-        return;
-      }
+  //     if (name == null || mobile == null) {
+  //       _showErrorDialog('Incomplete contact data. Name and mobile number are required.');
+  //       return;
+  //     }
 
-      // Create vCard format for native contact apps
-      String vCard = '''
-BEGIN:VCARD
-VERSION:3.0
-FN:$name
-TEL;TYPE=MOBILE:$mobile
-${email != null ? 'EMAIL:$email' : ''}
-END:VCARD
-      ''';
+  //     // Create vCard format for native contact apps
+  //     String vCard = '''
+  //     BEGIN:VCARD
+  //     VERSION:3.0
+  //     FN:$name
+  //     TEL;TYPE=MOBILE:$mobile
+  //     ${email != null ? 'EMAIL:$email' : ''}
+  //     END:VCARD
+  //     ''';
 
-      // Encode for URL
-      String encodedVCard = Uri.encodeComponent(vCard);
+  //     // Encode for URL
+  //     String encodedVCard = Uri.encodeComponent(vCard);
       
-      // Try to open native contact app
-      String url = '';
+  //     // Try to open native contact app
+  //     String url = '';
       
-      // For Android
-      url = 'content://com.android.contacts/contacts/as_vcard?$encodedVCard';
+  //     // For Android
+  //     url = 'content://com.android.contacts/contacts/as_vcard?$encodedVCard';
       
-      // Alternative for iOS
-      // url = 'tel://$mobile';
+  //     // Alternative for iOS
+  //     // url = 'tel://$mobile';
       
-      final Uri uri = Uri.parse(url);
+  //     final Uri uri = Uri.parse(url);
       
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri);
-      } else {
-        // Fallback: Create contact link
-        String contactUrl = 'tel:$mobile';
-        if (await canLaunchUrl(Uri.parse(contactUrl))) {
-          await launchUrl(Uri.parse(contactUrl));
-        } else {
-          _showErrorDialog('Could not open contact app. Please save manually.');
-        }
-      }
-    } catch (e) {
-      debugPrint('Error opening contact app: $e');
-      _showSimpleContactSaveDialog(data);
+  //     if (await canLaunchUrl(uri)) {
+  //       await launchUrl(uri);
+  //     } else {
+  //       // Fallback: Create contact link
+  //       String contactUrl = 'tel:$mobile';
+  //       if (await canLaunchUrl(Uri.parse(contactUrl))) {
+  //         await launchUrl(Uri.parse(contactUrl));
+  //       } else {
+  //         _showErrorDialog('Could not open contact app. Please save manually.');
+  //       }
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Error opening contact app: $e');
+  //     _showSimpleContactSaveDialog(data);
+  //   }
+  // }
+
+ Future<void> _openNativeContactApp(Map<String, dynamic> data) async {
+  try {
+    String? name = data['fname'] ?? data['name'];
+    String? mobile = data['user_mobile'] ?? data['mobile'];
+    String? email = data['email'];
+
+    if (name == null || mobile == null) {
+      _showErrorDialog('Name & Mobile required');
+      return;
     }
+
+    if (!await fc.FlutterContacts.requestPermission()) {
+      _showErrorDialog('Contact permission denied');
+      return;
+    }
+
+    final newContact = fc.Contact()
+      ..name.first = name
+      ..phones = [fc.Phone(mobile)]
+      ..emails = email != null ? [fc.Email(email)] : [];
+
+    await fc.FlutterContacts.openExternalInsert(newContact);
+  } catch (e) {
+    debugPrint('Contact open error: $e');
+    _showErrorDialog('Unable to open contact app');
   }
+}
+
+
 
   // Simple dialog to show contact info and copy options
   void _showSimpleContactSaveDialog(Map<String, dynamic> data) {
