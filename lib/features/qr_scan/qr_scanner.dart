@@ -6,7 +6,7 @@
 
 // class QRScannerPage extends StatefulWidget {
 //   final Function(Map<String, dynamic>)? onScanComplete;
-  
+
 //   const QRScannerPage({super.key, this.onScanComplete});
 
 //   @override
@@ -14,11 +14,8 @@
 // }
 
 // class _QRScannerPageState extends State<QRScannerPage> {
-//   MobileScannerController cameraController = MobileScannerController(
-//     torchEnabled: false,
-//   );
-  
-//   bool _isTorchOn = false;
+//   MobileScannerController cameraController = MobileScannerController();
+
 //   bool _isLoading = false;
 //   String? _lastScannedData;
 
@@ -28,22 +25,11 @@
 //     super.dispose();
 //   }
 
-//   Future<void> _toggleTorch() async {
-//     try {
-//       await cameraController.toggleTorch();
-//       setState(() {
-//         _isTorchOn = !_isTorchOn;
-//       });
-//     } catch (e) {
-//       debugPrint('Error toggling torch: $e');
-//     }
-//   }
-
 //   void _processScannedData(String data) {
 //     if (_lastScannedData == data) return;
-    
+
 //     _lastScannedData = data;
-    
+
 //     try {
 //       // Try to parse as JSON
 //       final jsonData = jsonDecode(data);
@@ -56,7 +42,7 @@
 
 //   Future<void> _pickAndScanImage() async {
 //     setState(() => _isLoading = true);
-    
+
 //     try {
 //       final ImagePicker picker = ImagePicker();
 //       final XFile? image = await picker.pickImage(
@@ -66,8 +52,9 @@
 
 //       if (image != null) {
 //         final File imageFile = File(image.path);
-//         final BarcodeCapture? capture = await cameraController.analyzeImage(imageFile.path);
-        
+//         final BarcodeCapture? capture =
+//             await cameraController.analyzeImage(imageFile.path);
+
 //         if (capture != null && capture.barcodes.isNotEmpty) {
 //           for (final barcode in capture.barcodes) {
 //             if (barcode.rawValue != null) {
@@ -87,6 +74,7 @@
 //     }
 //   }
 
+
 //   void _showScanResult(Map<String, dynamic> data) {
 //     showDialog(
 //       context: context,
@@ -98,15 +86,18 @@
 //             crossAxisAlignment: CrossAxisAlignment.start,
 //             mainAxisSize: MainAxisSize.min,
 //             children: [
-//               if (data['fname'] != null) 
-//                 _buildInfoRow('Name:', data['fname']),
-//               if (data['user_mobile'] != null) 
+//               // Check for different field names based on QR type
+//               if (data['fname'] != null) _buildInfoRow('Name:', data['fname']),
+//               if (data['name'] != null) _buildInfoRow('Name:', data['name']),
+//               if (data['user_mobile'] != null)
 //                 _buildInfoRow('Mobile:', data['user_mobile']),
-//               if (data['email'] != null) 
-//                 _buildInfoRow('Email:', data['email']),
-//               if (data['id'] != null) 
+//               if (data['mobile'] != null)
+//                 _buildInfoRow('Mobile:', data['mobile']),
+//               if (data['email'] != null) _buildInfoRow('Email:', data['email']),
+//               if (data['id'] != null)
 //                 _buildInfoRow('ID:', data['id'].toString()),
-              
+//               if (data['type'] != null) _buildInfoRow('Type:', data['type']),
+
 //               const SizedBox(height: 16),
 //               const Divider(),
 //               const SizedBox(height: 8),
@@ -199,13 +190,7 @@
 //           icon: const Icon(Icons.arrow_back),
 //           onPressed: () => Navigator.pop(context),
 //         ),
-//         actions: [
-//           IconButton(
-//             icon: Icon(_isTorchOn ? Icons.flash_on : Icons.flash_off),
-//             onPressed: _toggleTorch,
-//             tooltip: _isTorchOn ? 'Turn off torch' : 'Turn on torch',
-//           ),
-//         ],
+//         // Torch button removed from here
 //       ),
 //       body: Stack(
 //         children: [
@@ -322,10 +307,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:contacts_service/contacts_service.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class QRScannerPage extends StatefulWidget {
   final Function(Map<String, dynamic>)? onScanComplete;
-  
+
   const QRScannerPage({super.key, this.onScanComplete});
 
   @override
@@ -334,7 +321,7 @@ class QRScannerPage extends StatefulWidget {
 
 class _QRScannerPageState extends State<QRScannerPage> {
   MobileScannerController cameraController = MobileScannerController();
-  
+
   bool _isLoading = false;
   String? _lastScannedData;
 
@@ -346,9 +333,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
   void _processScannedData(String data) {
     if (_lastScannedData == data) return;
-    
+
     _lastScannedData = data;
-    
+
     try {
       // Try to parse as JSON
       final jsonData = jsonDecode(data);
@@ -361,7 +348,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
   Future<void> _pickAndScanImage() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
@@ -371,8 +358,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
       if (image != null) {
         final File imageFile = File(image.path);
-        final BarcodeCapture? capture = await cameraController.analyzeImage(imageFile.path);
-        
+        final BarcodeCapture? capture =
+            await cameraController.analyzeImage(imageFile.path);
+
         if (capture != null && capture.barcodes.isNotEmpty) {
           for (final barcode in capture.barcodes) {
             if (barcode.rawValue != null) {
@@ -392,7 +380,152 @@ class _QRScannerPageState extends State<QRScannerPage> {
     }
   }
 
+  // Function to save contact to phone
+  Future<bool> _saveContactToPhone(Map<String, dynamic> data) async {
+    try {
+      // Check and request contact permission
+      final contactStatus = await Permission.contacts.status;
+      
+      if (!contactStatus.isGranted) {
+        final result = await Permission.contacts.request();
+        if (!result.isGranted) {
+          _showErrorDialog('Contact permission denied. Please enable it in settings.');
+          return false;
+        }
+      }
+
+      // Extract contact details from scanned data
+      String? name = data['fname'] ?? data['name'];
+      String? mobile = data['user_mobile'] ?? data['mobile'];
+      String? email = data['email'];
+
+      if (name == null || mobile == null) {
+        _showErrorDialog('Incomplete contact data. Name and mobile number are required.');
+        return false;
+      }
+
+      // Create new contact
+      final Contact newContact = Contact(
+        givenName: name,
+        phones: [
+          Item(
+            label: 'mobile',
+            value: mobile,
+          )
+        ],
+        emails: email != null
+            ? [
+                Item(
+                  label: 'work',
+                  value: email,
+                )
+              ]
+            : [],
+      );
+
+      // Save contact to device
+      await ContactsService.addContact(newContact);
+
+      return true;
+    } catch (e) {
+      debugPrint('Error saving contact: $e');
+      _showErrorDialog('Failed to save contact: $e');
+      return false;
+    }
+  }
+
   void _showScanResult(Map<String, dynamic> data) {
+    // Check if this is a "contact" type QR code
+    final isContactType = data['type'] == 'gridcard_contact' || 
+                         (data['fname'] != null && data['user_mobile'] != null);
+    
+    if (isContactType) {
+      // Automatically show add to contact dialog for contact type QR codes
+      _showAddContactDialog(data);
+    } else {
+      // For other types, show regular scan result
+      _showRegularScanDialog(data);
+    }
+  }
+
+  void _showAddContactDialog(Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Add to Contacts'),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (data['fname'] != null || data['name'] != null)
+                _buildInfoRow('Name:', data['fname'] ?? data['name']),
+              if (data['user_mobile'] != null || data['mobile'] != null)
+                _buildInfoRow('Mobile:', data['user_mobile'] ?? data['mobile']),
+              if (data['email'] != null)
+                _buildInfoRow('Email:', data['email']),
+              if (data['id'] != null)
+                _buildInfoRow('ID:', data['id'].toString()),
+              
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              const Text(
+                'Do you want to save this contact to your phone?',
+                style: TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Show scan again option
+              _showRegularScanDialog(data);
+            },
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context); // Close dialog
+              setState(() => _isLoading = true);
+              
+              try {
+                final saved = await _saveContactToPhone(data);
+                
+                if (saved) {
+                  // Show success message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Contact saved successfully!'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                  
+                  // Call onScanComplete callback
+                  if (widget.onScanComplete != null) {
+                    widget.onScanComplete!(data);
+                  }
+                  
+                  // Close scanner page after successful save
+                  if (mounted) {
+                    Navigator.pop(context);
+                  }
+                }
+              } finally {
+                setState(() => _isLoading = false);
+              }
+            },
+            child: const Text('Save to Contacts'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRegularScanDialog(Map<String, dynamic> data) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -403,15 +536,18 @@ class _QRScannerPageState extends State<QRScannerPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (data['fname'] != null) 
-                _buildInfoRow('Name:', data['fname']),
-              if (data['user_mobile'] != null) 
+              // Check for different field names based on QR type
+              if (data['fname'] != null) _buildInfoRow('Name:', data['fname']),
+              if (data['name'] != null) _buildInfoRow('Name:', data['name']),
+              if (data['user_mobile'] != null)
                 _buildInfoRow('Mobile:', data['user_mobile']),
-              if (data['email'] != null) 
-                _buildInfoRow('Email:', data['email']),
-              if (data['id'] != null) 
+              if (data['mobile'] != null)
+                _buildInfoRow('Mobile:', data['mobile']),
+              if (data['email'] != null) _buildInfoRow('Email:', data['email']),
+              if (data['id'] != null)
                 _buildInfoRow('ID:', data['id'].toString()),
-              
+              if (data['type'] != null) _buildInfoRow('Type:', data['type']),
+
               const SizedBox(height: 16),
               const Divider(),
               const SizedBox(height: 8),
@@ -447,7 +583,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
               Navigator.pop(context);
               Navigator.pop(context);
             },
-            child: const Text('Save Contact'),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -504,7 +640,6 @@ class _QRScannerPageState extends State<QRScannerPage> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
-        // Torch button removed from here
       ),
       body: Stack(
         children: [
