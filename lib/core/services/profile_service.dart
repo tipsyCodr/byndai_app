@@ -96,6 +96,38 @@ class ProfileService {
     }
   }
 
+  static Future<Map<String, dynamic>?> fetchProfileCardData(String userId) async {
+    final url = Uri.parse('$_baseUrl/profile-card/$userId');
+
+    try {
+      final response = await http.get(url, headers: await _getHeaders());
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+
+        // Return the entire response or just the data part based on your need
+        // Option 1: Return entire response
+        // return responseData;
+
+        // Option 2: Return only data field (uncomment below if needed)
+        return {
+          'status': responseData['status'],
+          'message': responseData['message'],
+          'data': responseData['data']
+        };
+      } else if (response.statusCode == 404) {
+        debugPrint('⚠️ Profile not found for user ID: $userId');
+        return {'status': false, 'message': 'Profile not found', 'data': null};
+      } else {
+        debugPrint('❌ Error fetching profile card. Status code: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      debugPrint('🚨 Error fetching profile card: $e');
+      return null;
+    }
+  }
+
   /// GET /links
   static Future<Map<String, dynamic>?> fetchLinks() async {
     final url = Uri.parse('$_baseUrl/links');
