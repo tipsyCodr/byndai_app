@@ -8,6 +8,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import '../../core/services/profile_provider.dart';
+import 'package:provider/provider.dart';
 
 class QRScannerPage extends StatefulWidget {
   final Function(Map<String, dynamic>)? onScanComplete;
@@ -223,6 +224,76 @@ class _QRScannerPageState extends State<QRScannerPage> {
   //   }
   // }
 
+  void _showProfileCardDialog(Map<String, dynamic> data) {
+    final String name = data['fname'] ?? 'N/A';
+    final String email = data['email_one'] ?? data['user']?['email'] ?? 'N/A';
+    final String mobile =
+        data['mobile_one'] ?? data['user']?['user_mobile'] ?? 'N/A';
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: const Text(
+          'Profile Card',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _profileRow('Name', name),
+            _profileRow('Email', email),
+            _profileRow('Mobile', mobile),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+
+              debugPrint('📨 Send Request clicked');
+              debugPrint('➡️ User ID: ${data['user_id']}');
+
+              // 🔥 future me yahan API call lagegi
+              // ProfileService.sendConnectRequest(data['user_id']);
+            },
+            child: const Text('Send Request'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _profileRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 70,
+            child: Text(
+              '$label:',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(fontSize: 15),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showScanResult(Map<String, dynamic> data) async {
     final type = data['type'];
 
@@ -234,27 +305,47 @@ class _QRScannerPageState extends State<QRScannerPage> {
     }
 
     // 🔹 ONLINE QR → API CALL
+    // if (type == 'gridcard_connect' && data['id'] != null) {
+    //   final userId = data['id'].toString();
+
+    //   debugPrint('🔍 Online QR scanned');
+    //   debugPrint('➡️ User ID: $userId');
+
+    //   // 🔥 Provider call
+    //   final profileProvider =
+    //       ProfileProvider(); // simple instance (console only)
+
+    //   await profileProvider.fetchProfileData(userId);
+
+    //   debugPrint('✅ API RESPONSE ↓↓↓');
+    //   debugPrint(profileProvider.profileData.toString());
+
+    //   // Optional dialog
+    //   _showRegularScanDialog({
+    //     'id': userId,
+    //     'type': type,
+    //     'message': 'Profile fetched successfully. Check console.',
+    //   });
+
+    //   return;
+    // }
+
+    // 🔹 ONLINE QR → API CALL
     if (type == 'gridcard_connect' && data['id'] != null) {
       final userId = data['id'].toString();
 
-      debugPrint('🔍 Online QR scanned');
-      debugPrint('➡️ User ID: $userId');
-
-      // 🔥 Provider call
       final profileProvider =
-          ProfileProvider(); // simple instance (console only)
+          Provider.of<ProfileProvider>(context, listen: false);
 
       await profileProvider.fetchProfileData(userId);
 
-      debugPrint('✅ API RESPONSE ↓↓↓');
-      debugPrint(profileProvider.profileData.toString());
+      final profileData = profileProvider.profileData;
 
-      // Optional dialog
-      _showRegularScanDialog({
-        'id': userId,
-        'type': type,
-        'message': 'Profile fetched successfully. Check console.',
-      });
+      if (profileData != null) {
+        _showProfileCardDialog(profileData);
+      } else {
+        _showErrorDialog('Profile data not found');
+      }
 
       return;
     }
