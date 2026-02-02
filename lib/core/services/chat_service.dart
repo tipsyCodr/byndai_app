@@ -67,4 +67,34 @@ class ChatService {
       return false;
     }
   }
+
+  //amit code start
+
+  /// POST /connection-request
+  static Future<Map<String, dynamic>?> sendConnectionRequest(
+      int receiverId) async {
+    final url = Uri.parse('$_baseUrl/connection-request');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          'receiver_id': receiverId,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return data; // success response
+      }
+
+      // ❌ handled backend errors (409, 400 etc.)
+      return data;
+    } catch (e) {
+      debugPrint('🚨 Error sending connection request: $e');
+      return null;
+    }
+  }
 }

@@ -51,4 +51,29 @@ class ChatProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  //amit code start
+
+  Future<bool> sendConnectionRequest(int receiverId) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final response = await ChatService.sendConnectionRequest(receiverId);
+
+      if (response != null && response['status'] == true) {
+        debugPrint('✅ Connection request sent');
+        return true;
+      } else {
+        debugPrint('⚠️ Connection request failed: ${response?['message']}');
+        return false;
+      }
+    } catch (e) {
+      debugPrint('🚨 Error in ChatProvider.sendConnectionRequest: $e');
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
 }
