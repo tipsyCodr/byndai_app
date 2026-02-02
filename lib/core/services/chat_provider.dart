@@ -78,38 +78,69 @@ class ChatProvider extends ChangeNotifier {
   // }
 
   // Add this helper function in chat_provider.dart
-Future<bool> sendConnectionRequest(BuildContext context, int receiverId) async {
+// Future<bool> sendConnectionRequest(BuildContext context, int receiverId) async {
+//   _isLoading = true;
+//   notifyListeners();
+
+//   try {
+//     final response = await ChatService.sendConnectionRequest(receiverId);
+
+//     debugPrint('📱 Provider received: $response');
+
+//     if (response != null) {
+//       final status = response['status'];
+//       final message = response['message'] ?? 'Unknown response';
+      
+//       if (status == true || status == 'true' || status == 1) {
+//         debugPrint('✅ Connection request sent: $message');
+//         await fetchConnections();
+//         return true;
+//       } else {
+//         debugPrint('⚠️ Connection request failed: $message');
+        
+//         // Use provided context
+//         ScaffoldMessenger.of(context).showSnackBar(
+//           SnackBar(
+//             content: Text('Failed: $message'),
+//             backgroundColor: Colors.red,
+//           ),
+//         );
+//         return false;
+//       }
+//     }
+//     return false;
+//   } catch (e) {
+//     debugPrint('🚨 Exception: $e');
+//     return false;
+//   } finally {
+//     _isLoading = false;
+//     notifyListeners();
+//   }
+// }
+
+Future<bool> sendConnectionRequest(
+    BuildContext context, int receiverId) async {
   _isLoading = true;
   notifyListeners();
 
   try {
-    final response = await ChatService.sendConnectionRequest(receiverId);
+    final response =
+        await ChatService.sendConnectionRequest(receiverId);
 
-    debugPrint('📱 Provider received: $response');
+    debugPrint('📱 Provider Response: $response');
 
-    if (response != null) {
-      final status = response['status'];
-      final message = response['message'] ?? 'Unknown response';
-      
-      if (status == true || status == 'true' || status == 1) {
-        debugPrint('✅ Connection request sent: $message');
-        await fetchConnections();
-        return true;
-      } else {
-        debugPrint('⚠️ Connection request failed: $message');
-        
-        // Use provided context
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed: $message'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return false;
-      }
+    if (response['status'] == true) {
+      await fetchConnections();
+      return true;
     }
+
+    // ❌ API error → popup dikhao
+    // _showApiErrorDialog(context, response);
     return false;
   } catch (e) {
+    // _showApiErrorDialog(context, {
+    //   'exception': e.toString(),
+    // });
     debugPrint('🚨 Exception: $e');
     return false;
   } finally {
@@ -117,6 +148,9 @@ Future<bool> sendConnectionRequest(BuildContext context, int receiverId) async {
     notifyListeners();
   }
 }
+
+
+
 
   
 }
