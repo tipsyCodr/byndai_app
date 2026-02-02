@@ -221,6 +221,23 @@ class AuthProvider extends ChangeNotifier {
         false;
   }
 
+  /// Check username availability (used during registration)
+  Future<bool> checkUsernameAvailability(String userName) async {
+    return await _handleLoading(() async {
+          final isAvailable =
+              await AuthService.checkUsernameAvailability(userName);
+
+          if (isAvailable == true) {
+            return true; // ✅ username free
+          }
+
+          // ❌ username already exists
+          Fluttertoast.showToast(msg: "Username already exists");
+          return false;
+        }) ??
+        false;
+  }
+
   Future<bool> checkPin(String mobile) async {
     return await _handleLoading(() => AuthService.checkPin(mobile)) ?? false;
   }
@@ -244,12 +261,11 @@ class AuthProvider extends ChangeNotifier {
   // }
 
   Future<void> logout() async {
-  _user = null;
-  _isAuthenticated = false;
-  await _storageService.clearSession();
-  notifyListeners();
-}
-
+    _user = null;
+    _isAuthenticated = false;
+    await _storageService.clearSession();
+    notifyListeners();
+  }
 
   Future<void> loadUserFromStorage() async {
     debugPrint("Auth: loadUserFromStorage called");

@@ -1,6 +1,3 @@
-
-
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -26,7 +23,8 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
   // Function to generate QR data for CONNECT tab - सिर्फ ID के लिए
   String _generateConnectQrData(Map<String, dynamic> userData) {
     final data = {
-      'id': userData['id']?.toString() ?? '',
+      // 'id': userData['id']?.toString() ?? '',
+      'user_name': userData['user_name']?.toString() ?? '',
       'type': 'gridcard_connect',
       'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
     };
@@ -131,10 +129,15 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
     final userData = {
       'id': user.id,
       'user_mobile': user.userMobile,
+      'user_name': user.userName,
       'email': user.email,
       'fname': user.masterUser?.fname,
       'master_user': user.masterUser?.toJson(),
     };
+
+    debugPrint('========== USER DATA ==========');
+    debugPrint(jsonEncode(userData));
+    debugPrint('================================');
 
     final qrData = _getQrData(userData);
     final userName = user.masterUser?.fname ?? 'User';
@@ -569,8 +572,6 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
       ),
     );
   }
-
-
 
 // New method to show contact save dialog
   void _showContactSaveDialog(BuildContext context, Map<String, dynamic> data) {

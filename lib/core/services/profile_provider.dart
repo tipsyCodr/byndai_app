@@ -157,4 +157,33 @@ class ProfileProvider extends ChangeNotifier {
     notifyListeners();
     return false;
   }
+
+  /// Fetch user profile by username (public profile)
+  Future<bool> fetchUserProfileByUsername(String userName) async {
+    _isLoading = true;
+    notifyListeners();
+  
+    try {
+      final response =
+          await ProfileService.fetchUserProfileByUsername(userName);
+  
+      if (response != null && response['status'] == true) {
+        _profileData = response['data'];
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _profileData = null;
+        debugPrint('⚠️ Profile not found for username: $userName');
+      }
+    } catch (e) {
+      debugPrint('🚨 Provider error (fetchUserProfileByUsername): $e');
+      _profileData = null;
+    }
+  
+    _isLoading = false;
+    notifyListeners();
+    return false;
+  }
+
 }

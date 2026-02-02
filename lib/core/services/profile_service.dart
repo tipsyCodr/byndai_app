@@ -128,6 +128,46 @@ class ProfileService {
     }
   }
 
+  /// GET /user-profile/{user_name}
+static Future<Map<String, dynamic>?> fetchUserProfileByUsername(
+    String userName) async {
+  final encodedUserName = Uri.encodeComponent(userName);
+  final url = Uri.parse('$_baseUrl/user-profile/$encodedUserName');
+
+  try {
+    final response = await http.get(
+      url,
+      headers: await _getHeaders(),
+    );
+
+    if (response.statusCode == 200) {
+      final responseData = jsonDecode(response.body);
+
+      return {
+        'status': responseData['status'],
+        'message': responseData['message'],
+        'data': responseData['data'],
+      };
+    }
+
+    if (response.statusCode == 404) {
+      return {
+        'status': false,
+        'message': 'Profile not found',
+        'data': null,
+      };
+    }
+
+    debugPrint(
+        '❌ fetchUserProfileByUsername failed: ${response.statusCode}');
+    return null;
+  } catch (e) {
+    debugPrint('🚨 Error fetching user profile by username: $e');
+    return null;
+  }
+}
+
+
   /// GET /links
   static Future<Map<String, dynamic>?> fetchLinks() async {
     final url = Uri.parse('$_baseUrl/links');

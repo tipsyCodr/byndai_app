@@ -305,46 +305,60 @@ class _QRScannerPageState extends State<QRScannerPage> {
     }
 
     // 🔹 ONLINE QR → API CALL
+
     // if (type == 'gridcard_connect' && data['id'] != null) {
     //   final userId = data['id'].toString();
 
-    //   debugPrint('🔍 Online QR scanned');
-    //   debugPrint('➡️ User ID: $userId');
-
-    //   // 🔥 Provider call
     //   final profileProvider =
-    //       ProfileProvider(); // simple instance (console only)
+    //       Provider.of<ProfileProvider>(context, listen: false);
 
     //   await profileProvider.fetchProfileData(userId);
 
-    //   debugPrint('✅ API RESPONSE ↓↓↓');
-    //   debugPrint(profileProvider.profileData.toString());
+    //   final profileData = profileProvider.profileData;
 
-    //   // Optional dialog
-    //   _showRegularScanDialog({
-    //     'id': userId,
-    //     'type': type,
-    //     'message': 'Profile fetched successfully. Check console.',
-    //   });
+    //   if (profileData != null) {
+    //     _showProfileCardDialog(profileData);
+    //   } else {
+    //     _showErrorDialog('Profile data not found');
+    //   }
 
     //   return;
     // }
 
-    // 🔹 ONLINE QR → API CALL
-    if (type == 'gridcard_connect' && data['id'] != null) {
-      final userId = data['id'].toString();
+    //  if (type == 'gridcard_connect' && data['user_name'] != null) {
+    //   final user_name = data['user_name'].toString();
+
+    //   final profileProvider =
+    //       Provider.of<ProfileProvider>(context, listen: false);
+
+    //   await profileProvider.fetchUserProfileByUsername(user_name);
+
+    //   final profileData = profileProvider.profileData;
+
+    //   if (profileData != null) {
+    //     _showProfileCardDialog(profileData);
+    //   } else {
+    //     _showErrorDialog('Profile data not found');
+    //   }
+
+    //   return;
+    // }
+
+    if (type == 'gridcard_connect' && data['user_name'] != null) {
+      final userName = data['user_name'].toString();
 
       final profileProvider =
           Provider.of<ProfileProvider>(context, listen: false);
 
-      await profileProvider.fetchProfileData(userId);
+      final success =
+          await profileProvider.fetchUserProfileByUsername(userName);
 
-      final profileData = profileProvider.profileData;
+      if (!mounted) return;
 
-      if (profileData != null) {
-        _showProfileCardDialog(profileData);
+      if (success && profileProvider.profileData != null) {
+        _showProfileCardDialog(profileProvider.profileData!);
       } else {
-        _showErrorDialog('Profile data not found');
+        _showErrorDialog('Profile not found');
       }
 
       return;

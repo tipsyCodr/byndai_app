@@ -22,7 +22,10 @@ class AuthService {
 
       final response = await http.post(
         url,
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: jsonEncode(body),
       );
 
@@ -87,7 +90,8 @@ class AuthService {
   }
 
   static Future<bool> setPin(String mobile, String pin) async {
-    final response = await _post('login/pin/set', {'phone_no': mobile, 'pin': pin});
+    final response =
+        await _post('login/pin/set', {'phone_no': mobile, 'pin': pin});
     return response != null;
   }
 
@@ -119,5 +123,22 @@ class AuthService {
     return (json != null && json['user'] != null)
         ? UserModel.fromJson(json['user'])
         : null;
+  }
+
+  /// Check if username already exists or not
+  static Future<bool?> checkUsernameAvailability(String userName) async {
+    final response = await _post(
+      'check-username',
+      {'user_name': userName},
+    );
+
+    // response != null ka matlab:
+    // statusCode 200 + status=true (username available)
+    if (response != null && response['status'] == true) {
+      return true; // ✅ available
+    }
+
+    // agar null aaya to ya to 422 error hai ya exception
+    return false; // ❌ already exists
   }
 }
