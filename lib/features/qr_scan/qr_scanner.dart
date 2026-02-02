@@ -210,18 +210,51 @@ class _QRScannerPageState extends State<QRScannerPage> {
     );
   }
 
-  // void _showScanResult(Map<String, dynamic> data) {
-  //   // Check if this is a "contact" type QR code
-  //   final isContactType = data['type'] == 'gridcard_contact' ||
-  //                        (data['fname'] != null && data['user_mobile'] != null);
+  // void _showProfileCardDialog(Map<String, dynamic> data) {
+  //   final String name = data['fname'] ?? 'N/A';
+  //   final String email = data['email_one'] ?? data['user']?['email'] ?? 'N/A';
+  //   final String mobile =
+  //       data['mobile_one'] ?? data['user']?['user_mobile'] ?? 'N/A';
 
-  //   if (isContactType) {
-  //     // Show contact save options
-  //     _showContactSaveOptions(data);
-  //   } else {
-  //     // For other types, show regular scan result
-  //     _showRegularScanDialog(data);
-  //   }
+  //   showDialog(
+  //     context: context,
+  //     barrierDismissible: false,
+  //     builder: (context) => AlertDialog(
+  //       shape: RoundedRectangleBorder(
+  //         borderRadius: BorderRadius.circular(16),
+  //       ),
+  //       title: const Text(
+  //         'Profile Card',
+  //         style: TextStyle(fontWeight: FontWeight.bold),
+  //       ),
+  //       content: Column(
+  //         mainAxisSize: MainAxisSize.min,
+  //         children: [
+  //           _profileRow('Name', name),
+  //           _profileRow('Email', email),
+  //           _profileRow('Mobile', mobile),
+  //         ],
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: const Text('Cancel'),
+  //         ),
+  //         ElevatedButton(
+  //           onPressed: () {
+  //             Navigator.pop(context);
+
+  //             debugPrint('📨 Send Request clicked');
+  //             debugPrint('➡️ User ID: ${data['user_id']}');
+
+  //             // 🔥 future me yahan API call lagegi
+  //             // ProfileService.sendConnectRequest(data['user_id']);
+  //           },
+  //           child: const Text('Send Request'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
   // }
 
   void _showProfileCardDialog(Map<String, dynamic> data) {
@@ -233,41 +266,115 @@ class _QRScannerPageState extends State<QRScannerPage> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
+      builder: (context) => Dialog(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
         ),
-        title: const Text(
-          'Profile Card',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _profileRow('Name', name),
-            _profileRow('Email', email),
-            _profileRow('Mobile', mobile),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.85, // 🔥 width increased
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              /// 🔹 Avatar
+              CircleAvatar(
+                radius: 45,
+                backgroundColor: Colors.blue.shade100,
+                child: const Icon(
+                  Icons.person,
+                  size: 50,
+                  color: Colors.blue,
+                ),
+              ),
 
-              debugPrint('📨 Send Request clicked');
-              debugPrint('➡️ User ID: ${data['user_id']}');
+              const SizedBox(height: 12),
 
-              // 🔥 future me yahan API call lagegi
-              // ProfileService.sendConnectRequest(data['user_id']);
-            },
-            child: const Text('Send Request'),
+              /// 🔹 Name
+              Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 4),
+
+              /// 🔹 Email
+              Text(
+                email,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+
+              /// 🔹 Mobile Row
+              _profileInfoRow(Icons.phone, mobile),
+
+              const SizedBox(height: 24),
+
+              /// 🔹 Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+
+                        debugPrint('📨 Send Request clicked');
+                        debugPrint('➡️ User ID: ${data['user_id']}');
+
+                        // 🔥 future me yahan API call lagegi
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: const Text('Send Request'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _profileInfoRow(IconData icon, String value) {
+    return Row(
+      children: [
+        Icon(icon, color: Colors.blue),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+      ],
     );
   }
 
