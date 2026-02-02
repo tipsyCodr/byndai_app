@@ -8,7 +8,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import '../../core/services/profile_provider.dart';
+import '../../core/services/auth_provider.dart';
 import 'package:provider/provider.dart';
+import 'qr_scan_view_profile.dart';
 
 class QRScannerPage extends StatefulWidget {
   final Function(Map<String, dynamic>)? onScanComplete;
@@ -210,53 +212,6 @@ class _QRScannerPageState extends State<QRScannerPage> {
     );
   }
 
-  // void _showProfileCardDialog(Map<String, dynamic> data) {
-  //   final String name = data['fname'] ?? 'N/A';
-  //   final String email = data['email_one'] ?? data['user']?['email'] ?? 'N/A';
-  //   final String mobile =
-  //       data['mobile_one'] ?? data['user']?['user_mobile'] ?? 'N/A';
-
-  //   showDialog(
-  //     context: context,
-  //     barrierDismissible: false,
-  //     builder: (context) => AlertDialog(
-  //       shape: RoundedRectangleBorder(
-  //         borderRadius: BorderRadius.circular(16),
-  //       ),
-  //       title: const Text(
-  //         'Profile Card',
-  //         style: TextStyle(fontWeight: FontWeight.bold),
-  //       ),
-  //       content: Column(
-  //         mainAxisSize: MainAxisSize.min,
-  //         children: [
-  //           _profileRow('Name', name),
-  //           _profileRow('Email', email),
-  //           _profileRow('Mobile', mobile),
-  //         ],
-  //       ),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(context),
-  //           child: const Text('Cancel'),
-  //         ),
-  //         ElevatedButton(
-  //           onPressed: () {
-  //             Navigator.pop(context);
-
-  //             debugPrint('📨 Send Request clicked');
-  //             debugPrint('➡️ User ID: ${data['user_id']}');
-
-  //             // 🔥 future me yahan API call lagegi
-  //             // ProfileService.sendConnectRequest(data['user_id']);
-  //           },
-  //           child: const Text('Send Request'),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   void _showProfileCardDialog(Map<String, dynamic> data) {
     final String name = data['fname'] ?? 'N/A';
     final String email = data['email_one'] ?? data['user']?['email'] ?? 'N/A';
@@ -413,44 +368,6 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
     // 🔹 ONLINE QR → API CALL
 
-    // if (type == 'gridcard_connect' && data['id'] != null) {
-    //   final userId = data['id'].toString();
-
-    //   final profileProvider =
-    //       Provider.of<ProfileProvider>(context, listen: false);
-
-    //   await profileProvider.fetchProfileData(userId);
-
-    //   final profileData = profileProvider.profileData;
-
-    //   if (profileData != null) {
-    //     _showProfileCardDialog(profileData);
-    //   } else {
-    //     _showErrorDialog('Profile data not found');
-    //   }
-
-    //   return;
-    // }
-
-    //  if (type == 'gridcard_connect' && data['user_name'] != null) {
-    //   final user_name = data['user_name'].toString();
-
-    //   final profileProvider =
-    //       Provider.of<ProfileProvider>(context, listen: false);
-
-    //   await profileProvider.fetchUserProfileByUsername(user_name);
-
-    //   final profileData = profileProvider.profileData;
-
-    //   if (profileData != null) {
-    //     _showProfileCardDialog(profileData);
-    //   } else {
-    //     _showErrorDialog('Profile data not found');
-    //   }
-
-    //   return;
-    // }
-
     if (type == 'gridcard_connect' && data['user_name'] != null) {
       final userName = data['user_name'].toString();
 
@@ -462,10 +379,49 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
       if (!mounted) return;
 
-      if (success && profileProvider.profileData != null) {
-        _showProfileCardDialog(profileProvider.profileData!);
-      } else {
-        _showErrorDialog('Profile not found');
+      // if (success && profileProvider.profileData != null) {
+      //   _showProfileCardDialog(profileProvider.profileData!);
+      // } else {
+      //   _showErrorDialog('Profile not found');
+      // }
+
+      if (type == 'gridcard_connect' && data['user_name'] != null) {
+        final userName = data['user_name'].toString();
+
+        final profileProvider =
+            Provider.of<ProfileProvider>(context, listen: false);
+
+        final success =
+            await profileProvider.fetchUserProfileByUsername(userName);
+
+        if (!mounted) return;
+
+        if (success && profileProvider.profileData != null) {
+          final profileData = profileProvider.profileData!;
+
+          final authUser =
+              Provider.of<AuthProvider>(context, listen: false).user;
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => QRScanViewProfile(
+                receiverId: profileData['user_id']?.toString() ?? '',
+                name: profileData['fname'] ?? 'N/A',
+                email: profileData['email'] ?? 'N/A',
+                mobile: profileData['user_mobile'] ?? 'N/A',
+
+                // 🔹 Sender (logged-in user)
+                senderId: authUser?.id?.toString() ?? '',
+                senderName: authUser?.masterUser?.fname ?? '',
+              ),
+            ),
+          );
+        } else {
+          _showErrorDialog('Profile not found');
+        }
+
+        return;
       }
 
       return;
