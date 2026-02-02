@@ -54,26 +54,69 @@ class ChatProvider extends ChangeNotifier {
 
   //amit code start
 
-  Future<bool> sendConnectionRequest(int receiverId) async {
-    _isLoading = true;
-    notifyListeners();
+  // Future<bool> sendConnectionRequest(int receiverId) async {
+  //   _isLoading = true;
+  //   notifyListeners();
 
-    try {
-      final response = await ChatService.sendConnectionRequest(receiverId);
+  //   try {
+  //     final response = await ChatService.sendConnectionRequest(receiverId);
 
-      if (response != null && response['status'] == true) {
-        debugPrint('✅ Connection request sent');
+  //     if (response != null && response['status'] == true) {
+  //       debugPrint('✅ Connection request sent');
+  //       return true;
+  //     } else {
+  //       debugPrint('⚠️ Connection request failed: ${response?['message']}');
+  //       return false;
+  //     }
+  //   } catch (e) {
+  //     debugPrint('🚨 Error in ChatProvider.sendConnectionRequest: $e');
+  //     return false;
+  //   } finally {
+  //     _isLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
+
+  // Add this helper function in chat_provider.dart
+Future<bool> sendConnectionRequest(BuildContext context, int receiverId) async {
+  _isLoading = true;
+  notifyListeners();
+
+  try {
+    final response = await ChatService.sendConnectionRequest(receiverId);
+
+    debugPrint('📱 Provider received: $response');
+
+    if (response != null) {
+      final status = response['status'];
+      final message = response['message'] ?? 'Unknown response';
+      
+      if (status == true || status == 'true' || status == 1) {
+        debugPrint('✅ Connection request sent: $message');
+        await fetchConnections();
         return true;
       } else {
-        debugPrint('⚠️ Connection request failed: ${response?['message']}');
+        debugPrint('⚠️ Connection request failed: $message');
+        
+        // Use provided context
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed: $message'),
+            backgroundColor: Colors.red,
+          ),
+        );
         return false;
       }
-    } catch (e) {
-      debugPrint('🚨 Error in ChatProvider.sendConnectionRequest: $e');
-      return false;
-    } finally {
-      _isLoading = false;
-      notifyListeners();
     }
+    return false;
+  } catch (e) {
+    debugPrint('🚨 Exception: $e');
+    return false;
+  } finally {
+    _isLoading = false;
+    notifyListeners();
   }
+}
+
+  
 }

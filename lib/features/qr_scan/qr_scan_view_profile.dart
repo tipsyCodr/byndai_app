@@ -432,6 +432,77 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
             const Spacer(),
 
             /// 🔹 SEND REQUEST BUTTON (Provider Controlled)
+            // Consumer<ChatProvider>(
+            //   builder: (context, chatProvider, _) {
+            //     return SizedBox(
+            //       width: double.infinity,
+            //       height: 52,
+            //       child: ElevatedButton(
+            //         onPressed: chatProvider.isLoading
+            //             ? null
+            //             : () async {
+            //                 final success =
+            //                     await chatProvider.sendConnectionRequest(
+            //                   int.parse(widget.receiverId),
+            //                 );
+
+            //                 if (!mounted) return;
+
+            //                 if (success) {
+            //                   // 🔥 Scanner + Profile View remove
+            //                   // Navigator.popUntil(
+            //                   //   context,
+            //                   //   (route) =>
+            //                   //       route.settings.name == '/profile_qr',
+            //                   // );
+
+            //                   Navigator.popUntil(
+            //                     context,
+            //                     (route) =>
+            //                         route.settings.name ==
+            //                         RouteNames.profile_qr,
+            //                   );
+
+            //                   ScaffoldMessenger.of(context).showSnackBar(
+            //                     const SnackBar(
+            //                       content: Text('✅ Connection request sent'),
+            //                       backgroundColor: Colors.green,
+            //                     ),
+            //                   );
+            //                 } else {
+            //                   ScaffoldMessenger.of(context).showSnackBar(
+            //                     const SnackBar(
+            //                       content: Text('❌ Connection request failed'),
+            //                       backgroundColor: Colors.red,
+            //                     ),
+            //                   );
+            //                 }
+            //               },
+            //         style: ElevatedButton.styleFrom(
+            //           backgroundColor: Colors.blue,
+            //           shape: RoundedRectangleBorder(
+            //             borderRadius: BorderRadius.circular(16),
+            //           ),
+            //         ),
+            //         child: chatProvider.isLoading
+            //             ? const SizedBox(
+            //                 width: 22,
+            //                 height: 22,
+            //                 child: CircularProgressIndicator(
+            //                   strokeWidth: 2,
+            //                   color: Colors.white,
+            //                 ),
+            //               )
+            //             : const Text(
+            //                 'Send Request',
+            //                 style: TextStyle(fontSize: 16),
+            //               ),
+            //       ),
+            //     );
+            //   },
+            // ),
+
+            /// 🔹 SEND REQUEST BUTTON (Provider Controlled)
             Consumer<ChatProvider>(
               builder: (context, chatProvider, _) {
                 return SizedBox(
@@ -441,21 +512,16 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
                     onPressed: chatProvider.isLoading
                         ? null
                         : () async {
+                            // ✅ Context pass karo provider ko
                             final success =
                                 await chatProvider.sendConnectionRequest(
+                              context, // 👈 Add context here
                               int.parse(widget.receiverId),
                             );
 
                             if (!mounted) return;
 
                             if (success) {
-                              // 🔥 Scanner + Profile View remove
-                              // Navigator.popUntil(
-                              //   context,
-                              //   (route) =>
-                              //       route.settings.name == '/profile_qr',
-                              // );
-
                               Navigator.popUntil(
                                 context,
                                 (route) =>
@@ -469,14 +535,8 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
                                   backgroundColor: Colors.green,
                                 ),
                               );
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('❌ Connection request failed'),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
                             }
+                            // ❌ Error already shown by provider
                           },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
