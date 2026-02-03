@@ -412,7 +412,7 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
     );
   }
 
-  // ================= UI PART =================
+  // ================= UI PART =======================
 
   Widget _profileCard() {
     return Container(
