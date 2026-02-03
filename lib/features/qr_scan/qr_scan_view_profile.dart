@@ -233,6 +233,8 @@
 //   }
 // }
 
+
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
@@ -270,7 +272,7 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
 
   bool _isLoading = false;
 
-  // 🔹 Headers
+  // ================= HEADERS =================
   static Future<Map<String, String>> _getHeaders() async {
     final token = await _storage.read(key: 'token');
     return {
@@ -280,26 +282,51 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
     };
   }
 
-  // 🔹 Direct API Call
-  Future<bool> _sendConnectionRequest(int userId) async {
+  // ================= API CALL =================
+  /// null = success
+  /// String = error message
+  Future<String?> _sendConnectionRequest(int receiverId) async {
     final url = Uri.parse('$_baseUrl/connection-create');
+
     try {
       final response = await http.post(
         url,
         headers: await _getHeaders(),
-        body: jsonEncode({'request_to': userId}),
+        body: jsonEncode({
+          'receiver_id': receiverId,
+        }),
       );
 
       debugPrint('📡 Status Code: ${response.statusCode}');
-      debugPrint('📩 Response: ${response.body}');
+      debugPrint('📩 Response Body: ${response.body}');
 
-      return response.statusCode == 200 || response.statusCode == 201;
+      final data = jsonDecode(response.body);
+
+      // ✅ SUCCESS
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return null;
+      }
+
+      // ❌ VALIDATION ERROR (422)
+      if (response.statusCode == 422) {
+        if (data['errors'] != null) {
+          if (data['errors']['receiver_id'] != null) {
+            return data['errors']['receiver_id'][0];
+          }
+        }
+        return data['message'] ?? 'Validation error';
+      }
+
+      // ❌ OTHER SERVER ERRORS
+      return data['message'] ?? 'Something went wrong';
+
     } catch (e) {
-      debugPrint('🚨 Error creating connection: $e');
-      return false;
+      debugPrint('🚨 API Exception: $e');
+      return 'Server error, please try again';
     }
   }
 
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -322,7 +349,7 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
               _profileCard(),
               const SizedBox(height: 30),
 
-              // 🔹 SEND CONNECTION REQUEST BUTTON
+              // ================= SEND BUTTON =================
               SizedBox(
                 width: double.infinity,
                 height: 52,
@@ -331,21 +358,24 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
                       ? null
                       : () async {
                           try {
-                            final receiverId = int.parse(widget.receiverId);
+                            final receiverId =
+                                int.parse(widget.receiverId);
 
                             setState(() => _isLoading = true);
 
-                            final success =
+                            final errorMessage =
                                 await _sendConnectionRequest(receiverId);
 
                             setState(() => _isLoading = false);
 
                             if (!mounted) return;
 
-                            if (success) {
+                            // ✅ SUCCESS
+                            if (errorMessage == null) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('✅ Connection request sent'),
+                                  content:
+                                      Text('✅ Connection request sent'),
                                   backgroundColor: Colors.green,
                                 ),
                               );
@@ -356,10 +386,12 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
                                     route.settings.name ==
                                     RouteNames.profile_qr,
                               );
-                            } else {
+                            }
+                            // ❌ ERROR FROM API
+                            else {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('❌ Failed to send request'),
+                                SnackBar(
+                                  content: Text(errorMessage),
                                   backgroundColor: Colors.red,
                                 ),
                               );
@@ -368,7 +400,8 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
                             setState(() => _isLoading = false);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Invalid Receiver ID: $e'),
+                                content:
+                                    Text('Invalid Receiver ID: $e'),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -412,8 +445,7 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
     );
   }
 
-  // ================= UI PART =======================
-
+  // ================= PROFILE CARD =================
   Widget _profileCard() {
     return Container(
       width: double.infinity,
