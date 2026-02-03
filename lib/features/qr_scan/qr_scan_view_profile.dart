@@ -1,12 +1,10 @@
-// import 'dart:io';
-// import 'dart:convert';
-// import 'package:flutter/services.dart';
-// import '../../core/services/auth_provider.dart';
+// import 'package:flutter/material.dart';
 // import 'package:provider/provider.dart';
 // import '../../core/services/chat_provider.dart';
-// import 'package:flutter/material.dart';
+// import '../../routes/route_names.dart';
+// import '../../routes/app_routes.dart';
 
-// class QRScanViewProfile extends StatelessWidget {
+// class QRScanViewProfile extends StatefulWidget {
 //   final String receiverId;
 //   final String name;
 //   final String email;
@@ -26,6 +24,11 @@
 //   });
 
 //   @override
+//   State<QRScanViewProfile> createState() => _QRScanViewProfileState();
+// }
+
+// class _QRScanViewProfileState extends State<QRScanViewProfile> {
+//   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
 //       backgroundColor: const Color(0xffF5F7FA),
@@ -38,242 +41,212 @@
 //           onPressed: () => Navigator.pop(context),
 //         ),
 //       ),
-//       body: Center(
-//         child: Padding(
-//           padding: const EdgeInsets.all(16),
-//           child: Column(
-//             children: [
-//               /// 🔹 Profile Card
-//               Container(
-//                 width: double.infinity,
-//                 padding: const EdgeInsets.symmetric(vertical: 24),
-//                 decoration: BoxDecoration(
-//                   color: Colors.white,
-//                   borderRadius: BorderRadius.circular(20),
-//                   boxShadow: [
-//                     BoxShadow(
-//                       color: Colors.black.withOpacity(0.05),
-//                       blurRadius: 12,
-//                       offset: const Offset(0, 6),
-//                     ),
-//                   ],
-//                 ),
-//                 child: Column(
-//                   children: [
-//                     /// 🔹 Profile Image + Logo
-//                     Stack(
-//                       alignment: Alignment.bottomRight,
-//                       children: [
-//                         Container(
-//                           padding: const EdgeInsets.all(16),
-//                           decoration: BoxDecoration(
-//                             borderRadius: BorderRadius.circular(20),
-//                             color: Colors.grey.shade100,
-//                           ),
-//                           child: CircleAvatar(
-//                             radius: 50,
-//                             backgroundColor: Colors.grey.shade300,
-//                             child: const Icon(
-//                               Icons.person,
-//                               size: 60,
-//                               color: Colors.black54,
-//                             ),
-//                           ),
-//                         ),
-
-//                         /// Connected Logo
-//                         Positioned(
-//                           right: 4,
-//                           bottom: 4,
-//                           child: CircleAvatar(
-//                             radius: 16,
-//                             backgroundColor: Colors.blue,
-//                             child: const Icon(
-//                               Icons.rocket_launch,
-//                               size: 16,
-//                               color: Colors.white,
-//                             ),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-
-//                     const SizedBox(height: 16),
-
-//                     /// 🔹 Name
-//                     Text(
-//                       name,
-//                       style: const TextStyle(
-//                         fontSize: 22,
-//                         fontWeight: FontWeight.bold,
-//                       ),
-//                     ),
-
-//                     const SizedBox(height: 6),
-
-//                     /// 🔹 Mobile
-//                     Row(
-//                       mainAxisAlignment: MainAxisAlignment.center,
-//                       children: [
-//                         const Icon(Icons.call, size: 16, color: Colors.blue),
-//                         const SizedBox(width: 6),
-//                         Text(mobile),
-//                       ],
-//                     ),
-
-//                     const SizedBox(height: 4),
-
-//                     /// 🔹 Email
-//                     Row(
-//                       mainAxisAlignment: MainAxisAlignment.center,
-//                       children: [
-//                         const Icon(Icons.email, size: 16, color: Colors.blue),
-//                         const SizedBox(width: 6),
-//                         Text(email),
-//                       ],
-//                     ),
-
-//                     const SizedBox(height: 20),
-
-//                     /// 🔹 Connections Box
-//                     Container(
-//                       width: 120,
-//                       padding: const EdgeInsets.symmetric(vertical: 12),
-//                       decoration: BoxDecoration(
-//                         color: Colors.blue.shade50,
-//                         borderRadius: BorderRadius.circular(14),
-//                       ),
-//                       child: Column(
-//                         children: const [
-//                           Text(
-//                             '23',
-//                             style: TextStyle(
-//                               fontSize: 22,
-//                               fontWeight: FontWeight.bold,
-//                               color: Colors.blue,
-//                             ),
-//                           ),
-//                           SizedBox(height: 4),
-//                           Text(
-//                             'Connections',
-//                             style: TextStyle(fontSize: 12),
-//                           ),
-//                         ],
-//                       ),
-//                     ),
-//                   ],
-//                 ),
+//       body: Padding(
+//         padding: const EdgeInsets.all(16),
+//         child: Column(
+//           children: [
+//             /// 🔹 PROFILE CARD
+//             Container(
+//               width: double.infinity,
+//               padding: const EdgeInsets.symmetric(vertical: 24),
+//               decoration: BoxDecoration(
+//                 color: Colors.white,
+//                 borderRadius: BorderRadius.circular(20),
+//                 boxShadow: [
+//                   BoxShadow(
+//                     color: Colors.black.withOpacity(0.05),
+//                     blurRadius: 12,
+//                     offset: const Offset(0, 6),
+//                   ),
+//                 ],
 //               ),
-
-//               const Spacer(),
-
-//               /// 🔹 Send Request Button
-//               SizedBox(
-//                 width: double.infinity,
-//                 height: 52,
-//                 child: ElevatedButton(
-//                   onPressed: () {
-//                     showDialog(
-//                       context: context,
-//                       builder: (context) => AlertDialog(
-//                         shape: RoundedRectangleBorder(
-//                           borderRadius: BorderRadius.circular(16),
+//               child: Column(
+//                 children: [
+//                   /// 🔹 Avatar + Logo
+//                   Stack(
+//                     alignment: Alignment.bottomRight,
+//                     children: [
+//                       Container(
+//                         padding: const EdgeInsets.all(16),
+//                         decoration: BoxDecoration(
+//                           borderRadius: BorderRadius.circular(20),
+//                           color: Colors.grey.shade100,
 //                         ),
-//                         title: const Text('Receiver Data'),
-//                         content: Column(
-//                           mainAxisSize: MainAxisSize.min,
-//                           crossAxisAlignment: CrossAxisAlignment.start,
-//                           children: [
-//                             Text('ID: $receiverId'),
-//                             Text('Name: $name'),
-//                             Text('Mobile: $mobile'),
-//                             Text('Email: $email'),
-//                             const SizedBox(height: 16),
-//                             const Divider(),
-//                             const Text(
-//                               'Sender Data',
-//                               style: TextStyle(fontWeight: FontWeight.bold),
-//                             ),
-//                             const SizedBox(height: 8),
-//                             Text('Sender ID: $senderId'),
-//                             Text('Sender Name: $senderName'),
-//                           ],
-//                         ),
-//                         actions: [
-//                           TextButton(
-//                             onPressed: () => Navigator.pop(context),
-//                             child: const Text('Cancel'),
+//                         child: CircleAvatar(
+//                           radius: 50,
+//                           backgroundColor: Colors.grey.shade300,
+//                           child: const Icon(
+//                             Icons.person,
+//                             size: 60,
+//                             color: Colors.black54,
 //                           ),
-//                           // ElevatedButton(
-//                           //   onPressed: () {
-//                           //     Navigator.pop(context);
-//                           //     debugPrint('✅ Send Request API call here');
-//                           //   },
-//                           //   child: const Text('Confirm'),
-//                           // ),
+//                         ),
+//                       ),
+//                       Positioned(
+//                         right: 4,
+//                         bottom: 4,
+//                         child: CircleAvatar(
+//                           radius: 16,
+//                           backgroundColor: Colors.blue,
+//                           child: const Icon(
+//                             Icons.rocket_launch,
+//                             size: 16,
+//                             color: Colors.white,
+//                           ),
+//                         ),
+//                       ),
+//                     ],
+//                   ),
 
-//                           ElevatedButton(
-//                             onPressed: () async {
-//                               Navigator.pop(context);
+//                   const SizedBox(height: 16),
 
-//                               final chatProvider = context.read<ChatProvider>();
+//                   /// 🔹 NAME
+//                   Text(
+//                     widget.name,
+//                     style: const TextStyle(
+//                       fontSize: 22,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
 
-//                               final success =
-//                                   await chatProvider.sendConnectionRequest(
-//                                 int.parse(
-//                                     receiverId), // 🔥 yahin se JSON {receiver_id: 9} jaega
+//                   const SizedBox(height: 6),
+
+//                   /// 🔹 MOBILE
+//                   Row(
+//                     mainAxisAlignment: MainAxisAlignment.center,
+//                     children: [
+//                       const Icon(Icons.call, size: 16, color: Colors.blue),
+//                       const SizedBox(width: 6),
+//                       Text(widget.mobile),
+//                     ],
+//                   ),
+
+//                   const SizedBox(height: 4),
+
+//                   /// 🔹 EMAIL
+//                   Row(
+//                     mainAxisAlignment: MainAxisAlignment.center,
+//                     children: [
+//                       const Icon(Icons.email, size: 16, color: Colors.blue),
+//                       const SizedBox(width: 6),
+//                       Text(widget.email),
+//                     ],
+//                   ),
+
+//                   const SizedBox(height: 20),
+
+//                   /// 🔹 CONNECTIONS (Dummy)
+//                   Container(
+//                     width: 120,
+//                     padding: const EdgeInsets.symmetric(vertical: 12),
+//                     decoration: BoxDecoration(
+//                       color: Colors.blue.shade50,
+//                       borderRadius: BorderRadius.circular(14),
+//                     ),
+//                     child: const Column(
+//                       children: [
+//                         Text(
+//                           '23',
+//                           style: TextStyle(
+//                             fontSize: 22,
+//                             fontWeight: FontWeight.bold,
+//                             color: Colors.blue,
+//                           ),
+//                         ),
+//                         SizedBox(height: 4),
+//                         Text(
+//                           'Connections',
+//                           style: TextStyle(fontSize: 12),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+
+//             const Spacer(),
+
+//             /// 🔹 SEND REQUEST BUTTON (Provider Controlled)
+//             Consumer<ChatProvider>(
+//               builder: (context, chatProvider, _) {
+//                 return SizedBox(
+//                   width: double.infinity,
+//                   height: 52,
+//                   child: ElevatedButton(
+//                     onPressed: chatProvider.isLoading
+//                         ? null
+//                         : () async {
+//                             // ✅ Context pass karo provider ko
+//                             final success =
+//                                 await chatProvider.sendConnectionRequest(
+//                               context, // 👈 Add context here
+//                               int.parse(widget.receiverId),
+//                             );
+
+//                             if (!mounted) return;
+
+//                             if (success) {
+//                               Navigator.popUntil(
+//                                 context,
+//                                 (route) =>
+//                                     route.settings.name ==
+//                                     RouteNames.profile_qr,
 //                               );
 
 //                               ScaffoldMessenger.of(context).showSnackBar(
-//                                 SnackBar(
-//                                   content: Text(
-//                                     success
-//                                         ? '✅ Connection request sent'
-//                                         : '❌ Connection request failed',
-//                                   ),
-//                                   backgroundColor:
-//                                       success ? Colors.green : Colors.red,
+//                                 const SnackBar(
+//                                   content: Text('✅ Connection request sent'),
+//                                   backgroundColor: Colors.green,
 //                                 ),
 //                               );
-//                             },
-//                             child: const Text('Confirm'),
-//                           ),
-//                         ],
+//                             }
+//                             // ❌ Error already shown by provider
+//                           },
+//                     style: ElevatedButton.styleFrom(
+//                       backgroundColor: Colors.blue,
+//                       shape: RoundedRectangleBorder(
+//                         borderRadius: BorderRadius.circular(16),
 //                       ),
-//                     );
-//                   },
-//                   style: ElevatedButton.styleFrom(
-//                     backgroundColor: Colors.blue,
-//                     shape: RoundedRectangleBorder(
-//                       borderRadius: BorderRadius.circular(16),
 //                     ),
+//                     child: chatProvider.isLoading
+//                         ? const SizedBox(
+//                             width: 22,
+//                             height: 22,
+//                             child: CircularProgressIndicator(
+//                               strokeWidth: 2,
+//                               color: Colors.white,
+//                             ),
+//                           )
+//                         : const Text(
+//                             'Send Request',
+//                             style: TextStyle(fontSize: 16),
+//                           ),
 //                   ),
-//                   child: const Text(
-//                     'Send Request',
-//                     style: TextStyle(fontSize: 16),
-//                   ),
-//                 ),
-//               ),
-//             ],
-//           ),
+//                 );
+//               },
+//             ),
+//           ],
 //         ),
 //       ),
 //     );
 //   }
 // }
 
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../core/services/chat_provider.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:gridcard/config/app_config.dart';
+import 'package:http/http.dart' as http;
+
 import '../../routes/route_names.dart';
-import '../../routes/app_routes.dart';
 
 class QRScanViewProfile extends StatefulWidget {
   final String receiverId;
   final String name;
   final String email;
   final String mobile;
-
   final String senderId;
   final String senderName;
 
@@ -292,6 +265,41 @@ class QRScanViewProfile extends StatefulWidget {
 }
 
 class _QRScanViewProfileState extends State<QRScanViewProfile> {
+  static const String _baseUrl = AppConfig.apiBaseUrl;
+  static const _storage = FlutterSecureStorage();
+
+  bool _isLoading = false;
+
+  // 🔹 Headers
+  static Future<Map<String, String>> _getHeaders() async {
+    final token = await _storage.read(key: 'token');
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // 🔹 Direct API Call
+  Future<bool> _sendConnectionRequest(int userId) async {
+    final url = Uri.parse('$_baseUrl/connection-create');
+    try {
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({'request_to': userId}),
+      );
+
+      debugPrint('📡 Status Code: ${response.statusCode}');
+      debugPrint('📩 Response: ${response.body}');
+
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('🚨 Error creating connection: $e');
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -304,265 +312,138 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        title: const Text('Profile Details'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            /// 🔹 PROFILE CARD
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 24),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  /// 🔹 Avatar + Logo
-                  Stack(
-                    alignment: Alignment.bottomRight,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          color: Colors.grey.shade100,
-                        ),
-                        child: CircleAvatar(
-                          radius: 50,
-                          backgroundColor: Colors.grey.shade300,
-                          child: const Icon(
-                            Icons.person,
-                            size: 60,
-                            color: Colors.black54,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        right: 4,
-                        bottom: 4,
-                        child: CircleAvatar(
-                          radius: 16,
-                          backgroundColor: Colors.blue,
-                          child: const Icon(
-                            Icons.rocket_launch,
-                            size: 16,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              _profileCard(),
+              const SizedBox(height: 30),
 
-                  const SizedBox(height: 16),
+              // 🔹 SEND CONNECTION REQUEST BUTTON
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () async {
+                          try {
+                            final receiverId = int.parse(widget.receiverId);
 
-                  /// 🔹 NAME
-                  Text(
-                    widget.name,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                            setState(() => _isLoading = true);
 
-                  const SizedBox(height: 6),
-
-                  /// 🔹 MOBILE
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.call, size: 16, color: Colors.blue),
-                      const SizedBox(width: 6),
-                      Text(widget.mobile),
-                    ],
-                  ),
-
-                  const SizedBox(height: 4),
-
-                  /// 🔹 EMAIL
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.email, size: 16, color: Colors.blue),
-                      const SizedBox(width: 6),
-                      Text(widget.email),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// 🔹 CONNECTIONS (Dummy)
-                  Container(
-                    width: 120,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Column(
-                      children: [
-                        Text(
-                          '23',
-                          style: TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue,
-                          ),
-                        ),
-                        SizedBox(height: 4),
-                        Text(
-                          'Connections',
-                          style: TextStyle(fontSize: 12),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const Spacer(),
-
-            /// 🔹 SEND REQUEST BUTTON (Provider Controlled)
-            // Consumer<ChatProvider>(
-            //   builder: (context, chatProvider, _) {
-            //     return SizedBox(
-            //       width: double.infinity,
-            //       height: 52,
-            //       child: ElevatedButton(
-            //         onPressed: chatProvider.isLoading
-            //             ? null
-            //             : () async {
-            //                 final success =
-            //                     await chatProvider.sendConnectionRequest(
-            //                   int.parse(widget.receiverId),
-            //                 );
-
-            //                 if (!mounted) return;
-
-            //                 if (success) {
-            //                   // 🔥 Scanner + Profile View remove
-            //                   // Navigator.popUntil(
-            //                   //   context,
-            //                   //   (route) =>
-            //                   //       route.settings.name == '/profile_qr',
-            //                   // );
-
-            //                   Navigator.popUntil(
-            //                     context,
-            //                     (route) =>
-            //                         route.settings.name ==
-            //                         RouteNames.profile_qr,
-            //                   );
-
-            //                   ScaffoldMessenger.of(context).showSnackBar(
-            //                     const SnackBar(
-            //                       content: Text('✅ Connection request sent'),
-            //                       backgroundColor: Colors.green,
-            //                     ),
-            //                   );
-            //                 } else {
-            //                   ScaffoldMessenger.of(context).showSnackBar(
-            //                     const SnackBar(
-            //                       content: Text('❌ Connection request failed'),
-            //                       backgroundColor: Colors.red,
-            //                     ),
-            //                   );
-            //                 }
-            //               },
-            //         style: ElevatedButton.styleFrom(
-            //           backgroundColor: Colors.blue,
-            //           shape: RoundedRectangleBorder(
-            //             borderRadius: BorderRadius.circular(16),
-            //           ),
-            //         ),
-            //         child: chatProvider.isLoading
-            //             ? const SizedBox(
-            //                 width: 22,
-            //                 height: 22,
-            //                 child: CircularProgressIndicator(
-            //                   strokeWidth: 2,
-            //                   color: Colors.white,
-            //                 ),
-            //               )
-            //             : const Text(
-            //                 'Send Request',
-            //                 style: TextStyle(fontSize: 16),
-            //               ),
-            //       ),
-            //     );
-            //   },
-            // ),
-
-            /// 🔹 SEND REQUEST BUTTON (Provider Controlled)
-            Consumer<ChatProvider>(
-              builder: (context, chatProvider, _) {
-                return SizedBox(
-                  width: double.infinity,
-                  height: 52,
-                  child: ElevatedButton(
-                    onPressed: chatProvider.isLoading
-                        ? null
-                        : () async {
-                            // ✅ Context pass karo provider ko
                             final success =
-                                await chatProvider.sendConnectionRequest(
-                              context, // 👈 Add context here
-                              int.parse(widget.receiverId),
-                            );
+                                await _sendConnectionRequest(receiverId);
+
+                            setState(() => _isLoading = false);
 
                             if (!mounted) return;
 
                             if (success) {
-                              Navigator.popUntil(
-                                context,
-                                (route) =>
-                                    route.settings.name ==
-                                    RouteNames.profile_qr,
-                              );
-
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text('✅ Connection request sent'),
                                   backgroundColor: Colors.green,
                                 ),
                               );
+
+                              Navigator.popUntil(
+                                context,
+                                (route) =>
+                                    route.settings.name ==
+                                    RouteNames.profile_qr,
+                              );
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('❌ Failed to send request'),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
                             }
-                            // ❌ Error already shown by provider
-                          },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                          } catch (e) {
+                            setState(() => _isLoading = false);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Invalid Receiver ID: $e'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: chatProvider.isLoading
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Text(
-                            'Send Request',
-                            style: TextStyle(fontSize: 16),
-                          ),
                   ),
-                );
-              },
-            ),
-          ],
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.send, size: 20),
+                            SizedBox(width: 10),
+                            Text(
+                              'Send Connection Request',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  // ================= UI PART =================
+
+  Widget _profileCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Icon(Icons.person, size: 80, color: Colors.blue),
+          const SizedBox(height: 16),
+          Text(
+            widget.name,
+            style: const TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(widget.email),
+          Text(widget.mobile),
+        ],
       ),
     );
   }
