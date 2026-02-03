@@ -234,15 +234,17 @@
 // }
 
 
-
+import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:http/http.dart' as http;
 
 import '../../routes/route_names.dart';
+import 'package:http_parser/http_parser.dart';
 
 class QRScanViewProfile extends StatefulWidget {
   final String receiverId;
@@ -273,10 +275,11 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
   bool _isLoading = false;
 
   // ================= HEADERS =================
-  static Future<Map<String, String>> _getHeaders() async {
-    final token = await _storage.read(key: 'token');
+  static Future<Map<String, String>> _getHeaders(
+      {bool isMultipart = false}) async {
+    final token = await UserStorageService().getToken();
     return {
-      'Content-Type': 'application/json',
+      if (!isMultipart) 'Content-Type': 'application/json',
       'Accept': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
