@@ -383,12 +383,13 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
                                 ),
                               );
 
-                              Navigator.popUntil(
-                                context,
-                                (route) =>
-                                    route.settings.name ==
-                                    RouteNames.profile_qr,
-                              );
+                              // Navigator.popUntil(
+                              //   context,
+                              //   (route) =>
+                              //       route.settings.name ==
+                              //       RouteNames.profile_qr,
+                              // );
+                               Navigator.pop(context, true);
                             }
                             // ❌ ERROR FROM API
                             else {
