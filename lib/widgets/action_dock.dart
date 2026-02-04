@@ -30,8 +30,11 @@ class ActionDock extends StatelessWidget {
               const BusinessFeedPage()),
           _buildActionItem(CupertinoIcons.graph_square, 'Stats', context,
               const BusinessFeedPage()),
-          _buildActionItem(CupertinoIcons.person_2, 'Network', context,
-              const ConnectionsPage()),
+          _buildActionItem(
+            CupertinoIcons.person_2, 'Network', context,
+            // const ConnectionsPage()
+            const ConnectionsPage(initialTabIndex: 0),
+          ),
         ],
       ),
     );
