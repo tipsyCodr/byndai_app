@@ -8,4 +8,5 @@ class RouteNames {
   static const String events = '/events';
   static const String onboarding = '/onboarding';
   static const String phone = '/phone';
+  static const String profile_qr = '/profile_qr';
 }

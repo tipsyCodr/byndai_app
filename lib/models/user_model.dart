@@ -3,6 +3,7 @@ import 'master_user.dart';
 class UserModel {
   final int? id;
   final String? userMobile;
+  final String? userName;
   final String? email;
   final String? pin;
   final String? otp;
@@ -12,6 +13,7 @@ class UserModel {
   UserModel({
     this.id,
     this.userMobile,
+    this.userName,
     this.email,
     this.pin,
     this.otp,
@@ -23,6 +25,7 @@ class UserModel {
     return UserModel(
       id: json['id'],
       userMobile: json['user_mobile'],
+      userName: json['user_name'],
       email: json['email'],
       pin: json['pin'],
       otp: json['otp']?.toString(),
@@ -37,6 +40,7 @@ class UserModel {
     return {
       'id': id,
       'user_mobile': userMobile,
+      'user_name': userName,
       'email': email,
       'pin': pin,
       'otp': otp,

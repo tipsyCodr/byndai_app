@@ -1,32 +1,68 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:qr_flutter/qr_flutter.dart'; // ✅ QR package
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/services/auth_provider.dart';
 import './qr_scanner.dart';
 
-class ProfileQRCodePage extends StatelessWidget {
+class ProfileQRCodePage extends StatefulWidget {
   const ProfileQRCodePage({super.key});
+
+  @override
+  State<ProfileQRCodePage> createState() => _ProfileQRCodePageState();
+}
+
+class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
+  int _selectedTab = 0; // 0 = Connect, 1 = Add to Contact
 
   String jsonEncode(Map<String, dynamic> data) {
     return json.encode(data);
   }
 
-  // Function to generate QR data from user
-  String _generateQrData(Map<String, dynamic> userData) {
+  // Function to generate QR data for CONNECT tab - सिर्फ ID के लिए
+  String _generateConnectQrData(Map<String, dynamic> userData) {
+    final data = {
+      // 'id': userData['id']?.toString() ?? '',
+      'user_name': userData['user_name']?.toString() ?? '',
+      'type': 'gridcard_connect',
+      'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
+    };
+    return jsonEncode(data);
+  }
+
+  // Function to generate QR data for ADD TO CONTACT tab - Full data
+  String _generateContactQrData(Map<String, dynamic> userData) {
     final data = {
       'id': userData['id']?.toString() ?? '',
       'user_mobile': userData['user_mobile']?.toString() ?? '',
       'email': userData['email']?.toString() ?? '',
       'fname': userData['master_user']?['fname']?.toString() ?? '',
-      'type': 'gridcard_profile',
+      'type': 'gridcard_contact',
       'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
     };
-
-    // Convert to JSON string for QR code
     return jsonEncode(data);
+  }
+
+  // Get appropriate QR data based on selected tab
+  String _getQrData(Map<String, dynamic> userData) {
+    if (_selectedTab == 0) {
+      return _generateConnectQrData(userData);
+    } else {
+      return _generateContactQrData(userData);
+    }
+  }
+
+  // Get title based on selected tab
+  String _getTitle() {
+    return _selectedTab == 0 ? 'Scan to Connect' : 'Add to Contact';
+  }
+
+  // Get description based on selected tab
+  String _getDescription() {
+    return _selectedTab == 0
+        ? 'Scan to connect using user ID'
+        : 'Share this QR code to save contact details';
   }
 
   @override
@@ -93,11 +129,17 @@ class ProfileQRCodePage extends StatelessWidget {
     final userData = {
       'id': user.id,
       'user_mobile': user.userMobile,
+      'user_name': user.userName,
       'email': user.email,
+      'fname': user.masterUser?.fname,
       'master_user': user.masterUser?.toJson(),
     };
 
-    final qrData = _generateQrData(userData);
+    debugPrint('========== USER DATA ==========');
+    debugPrint(jsonEncode(userData));
+    debugPrint('================================');
+
+    final qrData = _getQrData(userData);
     final userName = user.masterUser?.fname ?? 'User';
     final userMobile = user.userMobile ?? '';
     final userEmail = user.email ?? '';
@@ -163,7 +205,6 @@ class ProfileQRCodePage extends StatelessWidget {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: Colors.blue[100],
-                                // Check if profile_pic exists in master_user
                                 image:
                                     user.masterUser?.toJson()?['profile_pic'] !=
                                             null
@@ -201,7 +242,6 @@ class ProfileQRCodePage extends StatelessWidget {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  // Check if desg exists in master_user
                                   if (user.masterUser?.toJson()?['desg'] !=
                                       null)
                                     Text(
@@ -234,6 +274,86 @@ class ProfileQRCodePage extends StatelessWidget {
                         ),
                       ),
 
+                      // Tab Selection
+                      Container(
+                        margin: const EdgeInsets.only(bottom: 24),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: Row(
+                          children: [
+                            // Connect Tab (ID only)
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedTab = 0;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: _selectedTab == 0
+                                        ? Colors.blue
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'Online QR Code',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: _selectedTab == 0
+                                            ? Colors.white
+                                            : Colors.grey[600],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            // Add to Contact Tab (Full data)
+                            Expanded(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedTab = 1;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: 12, horizontal: 16),
+                                  decoration: BoxDecoration(
+                                    color: _selectedTab == 1
+                                        ? Colors.blue
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(25),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      'Offline QR Code',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: _selectedTab == 1
+                                            ? Colors.white
+                                            : Colors.grey[600],
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
                       // QR Code Container
                       Container(
                         padding: const EdgeInsets.all(24),
@@ -253,9 +373,9 @@ class ProfileQRCodePage extends StatelessWidget {
                         child: Column(
                           children: [
                             // QR Code Title
-                            const Text(
-                              'Scan to Connect',
-                              style: TextStyle(
+                            Text(
+                              _getTitle(),
+                              style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.black87,
@@ -292,7 +412,6 @@ class ProfileQRCodePage extends StatelessWidget {
                                     dataModuleShape: QrDataModuleShape.square,
                                     color: Colors.black,
                                   ),
-                                  // Add logo in center if profile_pic exists
                                   embeddedImage: user.masterUser
                                               ?.toJson()?['profile_pic'] !=
                                           null
@@ -312,7 +431,7 @@ class ProfileQRCodePage extends StatelessWidget {
 
                             // Instructions
                             Text(
-                              'Share this QR code to connect with others',
+                              _getDescription(),
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 14,
@@ -331,7 +450,9 @@ class ProfileQRCodePage extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Scan to get contact details',
+                              _selectedTab == 0
+                                  ? 'Scan to connect using user ID'
+                                  : 'Scan to save contact details',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 12,
@@ -370,7 +491,7 @@ class ProfileQRCodePage extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       onPressed: () {
-                        _showScanDialog(context);
+                        _showScanDialog(context, _selectedTab);
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
@@ -404,7 +525,6 @@ class ProfileQRCodePage extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
-                        // Share QR code functionality
                         _shareQrCode(context, qrData, userName);
                       },
                       style: OutlinedButton.styleFrom(
@@ -441,85 +561,109 @@ class ProfileQRCodePage extends StatelessWidget {
     );
   }
 
-  // void _showScanDialog(BuildContext context) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (context) => AlertDialog(
-  //       title: const Text('Scan QR Code'),
-  //       content: const Text(
-  //           'Point your camera at another GridCard QR code to connect.'),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(context),
-  //           child: const Text('OK'),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  void _showScanDialog(BuildContext context) {
-  // Old dialog को replace करें नीचे के code से:
-  
-  // QR Scanner Page को open करें
-  Navigator.of(context).push(
-    MaterialPageRoute(
-      builder: (context) => QRScannerPage(
-        onScanComplete: (scannedData) {
-          // जब QR scan complete हो जाए
-          _handleScannedData(context, scannedData);
-        },
+  void _showScanDialog(BuildContext context, int selectedTab) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => QRScannerPage(
+          onScanComplete: (scannedData) {
+            _handleScannedData(context, scannedData, selectedTab);
+          },
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
-void _handleScannedData(BuildContext context, Map<String, dynamic> data) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Contact Scanned'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (data['fname'] != null)
-            Text('Name: ${data['fname']}'),
-          if (data['user_mobile'] != null)
-            Text('Phone: ${data['user_mobile']}'),
-          if (data['email'] != null)
-            Text('Email: ${data['email']}'),
-          const SizedBox(height: 16),
-          const Text('Do you want to save this contact?'),
+// New method to show contact save dialog
+  void _showContactSaveDialog(BuildContext context, Map<String, dynamic> data) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Contact Scanned'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (data['fname'] != null) Text('Name: ${data['fname']}'),
+            if (data['name'] != null) Text('Name: ${data['name']}'),
+            if (data['user_mobile'] != null)
+              Text('Phone: ${data['user_mobile']}'),
+            if (data['mobile'] != null) Text('Phone: ${data['mobile']}'),
+            if (data['email'] != null) Text('Email: ${data['email']}'),
+            const SizedBox(height: 16),
+            const Text('This contact can be saved to your phone.'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Navigate to scanner page for saving
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => QRScannerPage(
+                    onScanComplete: (scannedData) {
+                      // This will trigger the automatic contact save in QRScannerPage
+                    },
+                  ),
+                ),
+              );
+            },
+            child: const Text('Save to Phone'),
+          ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+    );
+  }
+
+  void _handleScannedData(
+      BuildContext context, Map<String, dynamic> data, int selectedTab) {
+    // Check if this is a contact QR code (Add to Contact tab)
+    if (selectedTab == 1) {
+      // Show contact save dialog directly
+      _showContactSaveDialog(context, data);
+    } else {
+      // For Connect tab, show regular dialog
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Connection ID Scanned'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (data['id'] != null) Text('User ID: ${data['id']}'),
+              const SizedBox(height: 16),
+              const Text('Do you want to connect using this ID?'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Connection request sent successfully!'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+              },
+              child: const Text('Connect'),
+            ),
+          ],
         ),
-        ElevatedButton(
-          onPressed: () {
-            // यहाँ आप contact save करने की logic add कर सकते हैं
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Contact saved successfully!'),
-                duration: Duration(seconds: 2),
-              ),
-            );
-          },
-          child: const Text('Save Contact'),
-        ),
-      ],
-    ),
-  );
-}
+      );
+    }
+  }
 
   void _shareQrCode(BuildContext context, String qrData, String userName) {
-    // Implement share functionality
-    // You can use share_plus package for sharing
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Share $userName\'s QR code'),

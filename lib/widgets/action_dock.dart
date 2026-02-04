@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:gridcard/features/business_feed/business_feed_page.dart';
+import '../features/chat/connections_page.dart';
 
 class ActionDock extends StatelessWidget {
   const ActionDock({super.key});
@@ -30,7 +31,7 @@ class ActionDock extends StatelessWidget {
           _buildActionItem(CupertinoIcons.graph_square, 'Stats', context,
               const BusinessFeedPage()),
           _buildActionItem(CupertinoIcons.person_2, 'Network', context,
-              const BusinessFeedPage()),
+              const ConnectionsPage()),
         ],
       ),
     );
