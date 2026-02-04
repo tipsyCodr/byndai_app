@@ -1,8 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:gridcard/core/services/chat_provider.dart';
-import 'package:gridcard/features/chat/chat_room_page.dart';
-import 'package:provider/provider.dart';
+import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:http/http.dart' as http;
 
 class ConnectionsPage extends StatefulWidget {
   const ConnectionsPage({super.key});
@@ -15,30 +16,148 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<ChatProvider>().fetchConnections();
-    });
+  // 🔹 Pending
+  List<dynamic> pendingConnections = [];
+  bool isLoading = true;
+
+  // 🔹 Accepted
+  List<dynamic> acceptedFriends = [];
+  bool acceptedLoading = true;
+
+  static const String _baseUrl = AppConfig.apiBaseUrl;
+
+  // ================= HEADERS =================
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await UserStorageService().getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
   }
 
   @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    // _tabController = TabController(length: 2, vsync: this);
+    _tabController = TabController(
+      length: 2,
+      vsync: this,
+      initialIndex: 1, // ✅ Pending tab by default
+    );
+
+    fetchConnections(); // 🔸 pending (existing)
+    fetchAcceptedFriends(); // 🔸 accepted (new)
+  }
+
+  // ================= FETCH PENDING =================
+  Future<void> fetchConnections() async {
+    setState(() => isLoading = true);
+
+    final session = await UserStorageService().loadSession();
+    final userId = session.user?.id;
+
+    if (userId == null) {
+      setState(() => isLoading = false);
+      return;
+    }
+
+    final url = Uri.parse("$_baseUrl/connection-receiver-senders/$userId");
+
+    try {
+      final response = await http.get(url, headers: await _getHeaders());
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        final List data = jsonData['data'] ?? [];
+
+        setState(() {
+          pendingConnections = data.where((e) => e['status'] == 0).toList();
+          isLoading = false;
+        });
+      } else {
+        isLoading = false;
+      }
+    } catch (_) {
+      isLoading = false;
+    }
+  }
+
+  // ================= FETCH ACCEPTED =================
+  Future<void> fetchAcceptedFriends() async {
+    setState(() => acceptedLoading = true);
+
+    final session = await UserStorageService().loadSession();
+    final userId = session.user?.id;
+
+    if (userId == null) {
+      setState(() => acceptedLoading = false);
+      return;
+    }
+
+    final url = Uri.parse("$_baseUrl/friends/$userId");
+
+    try {
+      final response = await http.get(url, headers: await _getHeaders());
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        setState(() {
+          acceptedFriends = json['data'] ?? [];
+          acceptedLoading = false;
+        });
+      } else {
+        acceptedLoading = false;
+      }
+    } catch (_) {
+      acceptedLoading = false;
+    }
+  }
+
+  // ================= ACCEPT / REJECT =================
+  Future<void> updateStatus({
+    required int senderId,
+    required int receiverId,
+    required int status,
+    required int index,
+  }) async {
+    final url = Uri.parse("$_baseUrl/connection-request/update-status");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "sender_id": senderId,
+          "receiver_id": receiverId,
+          "status": status,
+        }),
+      );
+
+      final json = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && json['status'] == true) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(json['message'])));
+
+        setState(() {
+          pendingConnections.removeAt(index);
+        });
+
+        // accepted tab refresh
+        fetchAcceptedFriends();
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(json['message'])));
+      }
+    } catch (_) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Network error')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final provider = context.watch<ChatProvider>();
-    final connections = provider.connections;
-    // Assuming pending requests are separate or filtered from connections
-    final pending = connections.where((c) => c['status'] == 'pending').toList();
-    final accepted =
-        connections.where((c) => c['status'] == 'accepted').toList();
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -50,11 +169,16 @@ class _ConnectionsPageState extends State<ConnectionsPage>
         ),
         bottom: TabBar(
           controller: _tabController,
+          indicatorColor: Colors.blueAccent,
           labelColor: Colors.blueAccent,
           unselectedLabelColor: Colors.white54,
-          indicatorColor: Colors.blueAccent,
+          // tabs: const [
+          //   Tab(text: 'Accepted'),
+          //   Tab(text: 'Pending'),
+          // ],
+
           tabs: const [
-            Tab(text: 'Accepted'),
+            Tab(text: 'Connections'), // ✅ renamed
             Tab(text: 'Pending'),
           ],
         ),
@@ -62,80 +186,143 @@ class _ConnectionsPageState extends State<ConnectionsPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildConnectionList(accepted, isPending: false),
-          _buildConnectionList(pending, isPending: true),
+          _buildAcceptedList(), // ✅ new
+          isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : _buildPendingList(),
         ],
       ),
     );
   }
 
-  Widget _buildConnectionList(List<dynamic> list, {required bool isPending}) {
-    if (list.isEmpty) {
-      return Center(
+  // ================= ACCEPTED UI =================
+  Widget _buildAcceptedList() {
+    if (acceptedLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (acceptedFriends.isEmpty) {
+      return const Center(
         child: Text(
-          isPending ? 'No pending requests' : 'No connections yet',
-          style: const TextStyle(color: Colors.white38),
+          'No connections found',
+          style: TextStyle(color: Colors.white38),
         ),
       );
     }
 
-    return ListView.separated(
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: list.length,
-      separatorBuilder: (context, index) =>
-          const Divider(color: Colors.white10),
+      itemCount: acceptedFriends.length,
       itemBuilder: (context, index) {
-        final item = list[index];
-        final user = item['user'] ?? {};
+        final item = acceptedFriends[index];
 
-        return ListTile(
-          onTap: isPending
-              ? null
-              : () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatRoomPage(
-                        connectionId: item['id'],
-                        otherUserName: user['name'] ?? 'User',
-                      ),
-                    ),
-                  );
-                },
-          leading: CircleAvatar(
-            backgroundColor: Colors.grey[800],
-            backgroundImage: user['profile_pic'] != null
-                ? NetworkImage(user['profile_pic'])
-                : null,
-            child: user['profile_pic'] == null
-                ? const Icon(Icons.person, color: Colors.white)
-                : null,
+        return Card(
+          color: const Color(0xFF1E1E1E),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.only(bottom: 12),
+          child: ListTile(
+            leading: const CircleAvatar(
+              backgroundImage: AssetImage('assets/images/default_avatar.png'),
+            ),
+            title: Text(
+              item['fname'] ?? 'User',
+              style: const TextStyle(color: Colors.white),
+            ),
+            subtitle: Text(
+              item['user_name'] ?? '',
+              style: const TextStyle(color: Colors.white38),
+            ),
+            trailing: PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.white),
+              onSelected: (value) {
+                debugPrint('ACTION: $value');
+                debugPrint('USER DATA: ${jsonEncode(item)}');
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(
+                  value: 'view',
+                  child: Row(
+                    children: [
+                      Icon(Icons.visibility),
+                      SizedBox(width: 8),
+                      Text('View'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.redAccent),
+                      SizedBox(width: 8),
+                      Text('Delete'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-          title: Text(user['name'] ?? 'Unknown User',
-              style: const TextStyle(color: Colors.white)),
-          subtitle: Text(user['designation'] ?? '',
-              style: const TextStyle(color: Colors.white38, fontSize: 12)),
-          trailing: isPending
-              ? Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.check_circle,
-                          color: Colors.greenAccent),
-                      onPressed: () {
-                        // Accept request
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.cancel, color: Colors.redAccent),
-                      onPressed: () {
-                        // Reject request
-                      },
-                    ),
-                  ],
-                )
-              : const Icon(CupertinoIcons.chevron_right,
-                  color: Colors.white24, size: 16),
+        );
+      },
+    );
+  }
+
+  // ================= PENDING UI (UNCHANGED) =================
+  Widget _buildPendingList() {
+    if (pendingConnections.isEmpty) {
+      return const Center(
+        child: Text('No pending requests',
+            style: TextStyle(color: Colors.white38)),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: pendingConnections.length,
+      itemBuilder: (context, index) {
+        final item = pendingConnections[index];
+        final senderId = item['sender_id'];
+
+        return Card(
+          color: const Color(0xFF1E1E1E),
+          child: ListTile(
+            leading: const CircleAvatar(child: Icon(Icons.person)),
+            title: Text(item['fname'] ?? '',
+                style: const TextStyle(color: Colors.white)),
+            subtitle: Text(item['user_name'] ?? '',
+                style: const TextStyle(color: Colors.white38)),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                IconButton(
+                  icon:
+                      const Icon(Icons.check_circle, color: Colors.greenAccent),
+                  onPressed: () async {
+                    final session = await UserStorageService().loadSession();
+                    updateStatus(
+                      senderId: senderId,
+                      receiverId: session.user!.id!,
+                      status: 2,
+                      index: index,
+                    );
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.cancel, color: Colors.redAccent),
+                  onPressed: () async {
+                    final session = await UserStorageService().loadSession();
+                    updateStatus(
+                      senderId: senderId,
+                      receiverId: session.user!.id!,
+                      status: 1,
+                      index: index,
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
