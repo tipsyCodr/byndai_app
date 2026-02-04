@@ -1,6 +1,4 @@
 
-//===================================================================================
-
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
@@ -8,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
+import './chat_screen.dart';
 
 class ConnectionsPage extends StatefulWidget {
   /// 0 = Connections
@@ -392,8 +391,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     final queryParams = <String, String>{
       "per_page": _sentPerPage.toString(),
       "page": _sentCurrentPage.toString(),
-      if (_sentSearchQuery.trim().isNotEmpty)
-        "search": _sentSearchQuery.trim(),
+      if (_sentSearchQuery.trim().isNotEmpty) "search": _sentSearchQuery.trim(),
       "sort_by": "fname",
       "order": "asc",
     };
@@ -729,8 +727,6 @@ class _ConnectionsPageState extends State<ConnectionsPage>
             ],
           ),
         ),
-
-
         Expanded(
           child: acceptedFriends.isEmpty
               ? const Center(
@@ -766,7 +762,46 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                           borderRadius: BorderRadius.circular(12),
                         ),
                         margin: const EdgeInsets.only(bottom: 12),
+                        
                         child: ListTile(
+                          onTap: () async {
+                            debugPrint(
+                                "✅ Accepted Friend Item: ${jsonEncode(item)}");
+
+                            // receiverId = friend_id
+                            final receiverId =
+                                int.tryParse(item['friend_id'].toString());
+
+                            if (receiverId == null) {
+                              debugPrint("❌ friend_id missing");
+                              return;
+                            }
+
+                            // senderId = logged in user id
+                            final session =
+                                await UserStorageService().loadSession();
+                            final senderId = session.user?.id;
+
+                            if (senderId == null) {
+                              debugPrint("❌ senderId (myId) null");
+                              return;
+                            }
+
+                            debugPrint(
+                                "📌 senderId=$senderId receiverId=$receiverId");
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChatScreen(
+                                  receiverId: receiverId,
+                                  receiverName: item['fname'] ??
+                                      "User", // ✅ header me kavita show hoga
+                                  receiverUserName: item['user_name'],
+                                ),
+                              ),
+                            );
+                          },
                           leading: const CircleAvatar(
                             backgroundImage:
                                 AssetImage('assets/images/default_avatar.png'),
@@ -870,8 +905,6 @@ class _ConnectionsPageState extends State<ConnectionsPage>
             ],
           ),
         ),
-
-
         Expanded(
           child: pendingConnections.isEmpty
               ? const Center(
@@ -1018,8 +1051,6 @@ class _ConnectionsPageState extends State<ConnectionsPage>
             ],
           ),
         ),
-
-        
 
         // list
         Expanded(
