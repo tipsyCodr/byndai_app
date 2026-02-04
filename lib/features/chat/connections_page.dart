@@ -1151,7 +1151,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     );
   }
 
-  // ================= SENT UI =================
+  // ================= SENT UI ====================
   Widget _buildSentList() {
     if (sentLoading) {
       return const Center(child: CircularProgressIndicator());
