@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
@@ -120,6 +119,31 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     _acceptedScrollController.addListener(_acceptedScrollListener);
     _pendingScrollController.addListener(_pendingScrollListener);
     _sentScrollController.addListener(_sentScrollListener); // ✅
+  }
+
+  Future<int?> _createChatAndGetChatId(int otherUserId) async {
+    try {
+      final uri = Uri.parse("$_baseUrl/chat/create-chat/$otherUserId");
+
+      final response = await http.post(
+        uri,
+        headers: await _getHeaders(),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+
+        if (jsonData["status"] == true && jsonData["chat"] != null) {
+          return int.tryParse(jsonData["chat"]["id"].toString());
+        }
+      }
+
+      debugPrint("❌ createChat failed: ${response.body}");
+      return null;
+    } catch (e) {
+      debugPrint("❌ _createChatAndGetChatId Exception: $e");
+      return null;
+    }
   }
 
   // ================== CONNECTIONS TAB LAZY LOAD LISTENER ==================
@@ -762,46 +786,91 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                           borderRadius: BorderRadius.circular(12),
                         ),
                         margin: const EdgeInsets.only(bottom: 12),
-                        
                         child: ListTile(
+                          // onTap: () async {
+                          //   debugPrint(
+                          //       "✅ Accepted Friend Item: ${jsonEncode(item)}");
+
+                          //   // receiverId = friend_id
+                          //   final receiverId =
+                          //       int.tryParse(item['friend_id'].toString());
+
+                          //   if (receiverId == null) {
+                          //     debugPrint("❌ friend_id missing");
+                          //     return;
+                          //   }
+
+                          //   // senderId = logged in user id
+                          //   final session =
+                          //       await UserStorageService().loadSession();
+                          //   final senderId = session.user?.id;
+
+                          //   if (senderId == null) {
+                          //     debugPrint("❌ senderId (myId) null");
+                          //     return;
+                          //   }
+
+                          //   debugPrint(
+                          //       "📌 senderId=$senderId receiverId=$receiverId");
+
+                          //   Navigator.push(
+                          //     context,
+                          //     MaterialPageRoute(
+                          //       builder: (_) => ChatScreen(
+                          //         receiverId: receiverId,
+                          //         receiverName: item['fname'] ??
+                          //             "User", // ✅ header me kavita show hoga
+                          //         receiverUserName: item['user_name'],
+                          //       ),
+                          //     ),
+                          //   );
+                          // },
+
                           onTap: () async {
                             debugPrint(
                                 "✅ Accepted Friend Item: ${jsonEncode(item)}");
 
-                            // receiverId = friend_id
                             final receiverId =
                                 int.tryParse(item['friend_id'].toString());
-
                             if (receiverId == null) {
                               debugPrint("❌ friend_id missing");
                               return;
                             }
 
-                            // senderId = logged in user id
-                            final session =
-                                await UserStorageService().loadSession();
-                            final senderId = session.user?.id;
+                            // Loader
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (_) => const Center(
+                                  child: CircularProgressIndicator()),
+                            );
 
-                            if (senderId == null) {
-                              debugPrint("❌ senderId (myId) null");
+                            final chatId =
+                                await _createChatAndGetChatId(receiverId);
+
+                            if (!mounted) return;
+                            Navigator.pop(context); // close loader
+
+                            if (chatId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text("Chat create nahi ho paya")),
+                              );
                               return;
                             }
-
-                            debugPrint(
-                                "📌 senderId=$senderId receiverId=$receiverId");
 
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => ChatScreen(
+                                  chatId: chatId,
                                   receiverId: receiverId,
-                                  receiverName: item['fname'] ??
-                                      "User", // ✅ header me kavita show hoga
-                                  receiverUserName: item['user_name'],
+                                  receiverName: item['fname'] ?? "User",
                                 ),
                               ),
                             );
                           },
+
                           leading: const CircleAvatar(
                             backgroundImage:
                                 AssetImage('assets/images/default_avatar.png'),
