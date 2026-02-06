@@ -37,7 +37,8 @@ dependencies:
   dotted_border: ^2.1.0  
   video_player: ^2.8.6
   cached_network_image: ^3.3.0
-  
+  better_player: ^0.0.84
+  chewie: ^1.7.5
 
 
   
