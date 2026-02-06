@@ -34,7 +34,9 @@ dependencies:
   flutter_svg: ^2.0.10+1
   mobile_scanner: ^5.0.1
   flutter_contacts: ^1.1.9+2
-  
+  dotted_border: ^2.1.0  
+  video_player: ^2.8.6
+  cached_network_image: ^3.3.0
   
 
 
