@@ -148,9 +148,9 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-
       appBar: AppBar(
-        title: const Text("Business Feed", style: TextStyle(color: Colors.white)),
+        title:
+            const Text("Business Feed", style: TextStyle(color: Colors.white)),
         centerTitle: true,
         backgroundColor: Colors.black,
         leading: IconButton(
@@ -164,7 +164,6 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
           ),
         ],
       ),
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blueAccent,
         onPressed: () {
@@ -175,7 +174,6 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
         },
         child: const Icon(Icons.add, color: Colors.white),
       ),
-
       body: _isLoading && _posts.isEmpty
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -184,6 +182,21 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
+                // itemBuilder: (context, index) {
+                //   // Loading more indicator
+                //   if (index == _posts.length) {
+                //     return const Padding(
+                //       padding: EdgeInsets.symmetric(vertical: 18),
+                //       child: Center(child: CircularProgressIndicator()),
+                //     );
+                //   }
+
+                //   final post = _posts[index];
+
+                //   return PostCard(post: post);
+                // },
+
+                // BusinessFeedPage में ListView.builder का itemBuilder update करें:
                 itemBuilder: (context, index) {
                   // Loading more indicator
                   if (index == _posts.length) {
@@ -195,7 +208,19 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
 
                   final post = _posts[index];
 
-                  return PostCard(post: post);
+                  return PostCard(
+                    post: post,
+                    onPostUpdated: (postId, updatedPost) {
+                      // Find and update the post in the list
+                      final postIndex =
+                          _posts.indexWhere((p) => p["id"] == postId);
+                      if (postIndex != -1) {
+                        setState(() {
+                          _posts[postIndex] = updatedPost;
+                        });
+                      }
+                    },
+                  );
                 },
               ),
             ),
