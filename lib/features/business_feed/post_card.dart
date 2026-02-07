@@ -27,7 +27,7 @@
 //   final PageController _videoController = PageController();
 
 //   final Map<int, VideoPlayerController> _videoPlayers = {};
-
+// //.................
 //   @override
 //   void dispose() {
 //     _imageController.dispose();
