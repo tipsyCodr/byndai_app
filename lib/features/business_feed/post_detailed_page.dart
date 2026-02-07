@@ -1,3 +1,4 @@
+
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -8,7 +9,7 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 class PostDetailsPage extends StatefulWidget {
   final int postId;
   final Map<String, dynamic>? initialPostData;
-  
+
   const PostDetailsPage({
     super.key,
     required this.postId,
@@ -31,22 +32,26 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   bool _isLoadingComments = false;
   bool _isPostingComment = false;
   bool _expandedDescription = false;
-  
+
   final TextEditingController _commentController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final PageController _imageController = PageController();
-  
+
   // Comments
   final List<Map<String, dynamic>> _comments = [];
   final List<Map<String, dynamic>> _replies = [];
+
+  // Reply Modal State
   int? _replyingToCommentId;
   String _replyingToUserName = "";
+  String _replyingToCommentText = "";
+  bool _showReplyModal = false;
 
   @override
   void initState() {
     super.initState();
     _postData = widget.initialPostData ?? {};
-    
+
     if (widget.initialPostData != null && widget.initialPostData!.isNotEmpty) {
       // If we have initial data, use it and fetch comments
       _isLoading = false;
@@ -82,30 +87,30 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   // =========================
   Future<void> _fetchPostDetails() async {
     setState(() => _isLoading = true);
-    
+
     try {
       final headers = await _getHeaders();
       final uri = Uri.parse("$_baseUrl/posts/list?page=1");
-      
+
       final response = await http.get(uri, headers: headers);
-      
+
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
-        
+
         if (jsonData["status"] == true) {
           final List<dynamic> postsList = jsonData["data"] ?? [];
-          
+
           // Find our specific post
           final post = postsList.firstWhere(
             (p) => p["id"] == widget.postId,
             orElse: () => null,
           );
-          
+
           if (post != null) {
             setState(() {
               _postData = Map<String, dynamic>.from(post);
             });
-            
+
             // Now fetch comments
             _fetchComments();
           }
@@ -123,43 +128,45 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   // =========================
   Future<void> _fetchComments() async {
     if (_isLoadingComments) return;
-    
+
     setState(() => _isLoadingComments = true);
-    
+
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse("$_baseUrl/api/posts/comments_list/${widget.postId}");
-      
+      final uri =
+          Uri.parse("$_baseUrl/api/posts/comments_list/${widget.postId}");
+
       final response = await http.get(uri, headers: headers);
-      
+
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
-        
+
         if (jsonData["status"] == true) {
           final List<dynamic> commentsList = jsonData["data"] ?? [];
-          
+
           // Separate main comments and replies
           final List<Map<String, dynamic>> mainComments = [];
           final List<Map<String, dynamic>> allReplies = [];
-          
+
           for (var comment in commentsList) {
             final commentMap = Map<String, dynamic>.from(comment);
-            
+
             if (commentMap["parent_id"] == null) {
               mainComments.add(commentMap);
             } else {
               allReplies.add(commentMap);
             }
           }
-          
-          // Attach replies to their parent comments
+
+          // Count replies for each comment
           for (var comment in mainComments) {
             final commentId = comment["id"];
-            comment["replies"] = allReplies
+            final replyCount = allReplies
                 .where((reply) => reply["parent_id"] == commentId)
-                .toList();
+                .length;
+            comment["reply_count"] = replyCount;
           }
-          
+
           setState(() {
             _comments.clear();
             _comments.addAll(mainComments);
@@ -181,43 +188,43 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   Future<void> _postComment() async {
     if (_isPostingComment) return;
     if (_commentController.text.trim().isEmpty) return;
-    
+
     setState(() => _isPostingComment = true);
-    
+
     try {
       final headers = await _getHeaders();
       final uri = Uri.parse("$_baseUrl/api/posts/comment");
-      
+
       final body = {
         "post_id": widget.postId,
         "comment": _commentController.text.trim(),
         if (_replyingToCommentId != null) "parent_id": _replyingToCommentId,
       };
-      
+
       final response = await http.post(
         uri,
         headers: headers,
         body: jsonEncode(body),
       );
-      
+
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
-        
+
         if (jsonData["status"] == true) {
           // Clear and reset
           _commentController.clear();
-          _cancelReply();
-          
+          _closeReplyModal();
+
           // Refresh comments
           _fetchComments();
-          
+
           // Scroll to top
           _scrollController.animateTo(
             0,
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
           );
-          
+
           // Show success snackbar
           _showSnackBar(
             _replyingToCommentId != null ? "Reply posted!" : "Comment posted!",
@@ -236,23 +243,64 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   // =========================
   // REPLY FUNCTIONS
   // =========================
-  void _setReplyMode(int commentId, String userName) {
+  void _openReplyModal(int commentId, String userName, String commentText) {
     setState(() {
       _replyingToCommentId = commentId;
       _replyingToUserName = userName;
+      _replyingToCommentText = commentText;
+      _showReplyModal = true;
     });
-    
+
     // Focus on comment field
     Future.delayed(const Duration(milliseconds: 100), () {
       FocusScope.of(context).requestFocus(FocusNode());
     });
   }
 
-  void _cancelReply() {
+  void _closeReplyModal() {
     setState(() {
+      _showReplyModal = false;
       _replyingToCommentId = null;
       _replyingToUserName = "";
+      _replyingToCommentText = "";
     });
+  }
+
+  // =========================
+  // SHOW REPLIES FUNCTION
+  // =========================
+  void _showRepliesModal(int commentId, String userName) {
+    final replies =
+        _replies.where((reply) => reply["parent_id"] == commentId).toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.black,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return RepliesModal(
+          userName: userName,
+          replies: replies,
+          onReplyPressed: () {
+            Navigator.pop(context);
+            final comment = _comments.firstWhere(
+              (c) => c["id"] == commentId,
+              orElse: () => {},
+            );
+            if (comment.isNotEmpty) {
+              _openReplyModal(
+                commentId,
+                comment["user"]?["fname"] ?? "User",
+                comment["comment"] ?? "",
+              );
+            }
+          },
+        );
+      },
+    );
   }
 
   // =========================
@@ -290,17 +338,17 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
 
   String _formatHumanTime(String? dateTimeStr) {
     if (dateTimeStr == null || dateTimeStr.isEmpty) return "";
-    
+
     try {
       final dt = DateTime.parse(dateTimeStr.replaceAll(" ", "T"));
       final now = DateTime.now();
       final difference = now.difference(dt);
-      
+
       if (difference.inSeconds < 60) return "Just now";
       if (difference.inMinutes < 60) return "${difference.inMinutes}m ago";
       if (difference.inHours < 24) return "${difference.inHours}h ago";
       if (difference.inDays < 30) return "${difference.inDays}d ago";
-      
+
       return "${difference.inDays ~/ 30}mo ago";
     } catch (_) {
       return "";
@@ -349,7 +397,8 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text("Post Details", style: TextStyle(color: Colors.white)),
+        title:
+            const Text("Post Details", style: TextStyle(color: Colors.white)),
         centerTitle: true,
         backgroundColor: Colors.black,
         leading: IconButton(
@@ -357,76 +406,232 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                // =========================
-                // POST CONTENT SECTION
-                // =========================
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _scrollController,
-                    child: Column(
-                      children: [
-                        // Post Card
-                        _buildPostCard(),
-                        
-                        // Comments Section Header
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                          child: Row(
-                            children: [
-                              const Text(
-                                "Comments",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
+      body: Stack(
+        children: [
+          _isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  children: [
+                    // =========================
+                    // POST CONTENT SECTION
+                    // =========================
+                    Expanded(
+                      child: SingleChildScrollView(
+                        controller: _scrollController,
+                        child: Column(
+                          children: [
+                            // Post Card
+                            _buildPostCard(),
+
+                            // Comments Section Header
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                              child: Row(
+                                children: [
+                                  const Text(
+                                    "Comments",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    "(${_comments.length})",
+                                    style: const TextStyle(
+                                      color: Colors.white60,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(width: 8),
-                              Text(
-                                "(${_comments.length})",
-                                style: const TextStyle(
-                                  color: Colors.white60,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        
-                        // Comments List
-                        if (_isLoadingComments)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 20),
-                            child: Center(child: CircularProgressIndicator()),
-                          )
-                        else if (_comments.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 40),
-                            child: Text(
-                              "No comments yet. Be the first to comment!",
-                              style: TextStyle(color: Colors.white60),
                             ),
-                          )
-                        else
-                          ..._comments.map((comment) => _buildCommentItem(comment)),
-                        
-                        const SizedBox(height: 100), // Space for bottom input
-                      ],
+
+                            // Comments List
+                            if (_isLoadingComments)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 20),
+                                child:
+                                    Center(child: CircularProgressIndicator()),
+                              )
+                            else if (_comments.isEmpty)
+                              const Padding(
+                                padding: EdgeInsets.symmetric(vertical: 40),
+                                child: Text(
+                                  "No comments yet. Be the first to comment!",
+                                  style: TextStyle(color: Colors.white60),
+                                ),
+                              )
+                            else
+                              ..._comments
+                                  .map((comment) => _buildCommentItem(comment)),
+
+                            const SizedBox(
+                                height: 100), // Space for bottom input
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
+
+                    // =========================
+                    // COMMENT INPUT SECTION
+                    // =========================
+                    _buildCommentInput(),
+                  ],
                 ),
-                
-                // =========================
-                // COMMENT INPUT SECTION
-                // =========================
-                _buildCommentInput(),
-              ],
+
+          // Reply Modal
+          if (_showReplyModal)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                color: Colors.black.withOpacity(0.8),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 8),
+
+                    // Modal Header
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      color: Colors.grey[900],
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: _closeReplyModal,
+                          ),
+                          const SizedBox(width: 10),
+                          const Text(
+                            "Replying to",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Original Comment
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      color: Colors.grey[900],
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: Colors.grey[700],
+                            child: Text(
+                              _replyingToUserName.isNotEmpty
+                                  ? _replyingToUserName[0].toUpperCase()
+                                  : "U",
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _replyingToUserName,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _replyingToCommentText,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Reply Input in Modal
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: _commentController,
+                              style: const TextStyle(color: Colors.white),
+                              decoration: InputDecoration(
+                                hintText: "Write a reply...",
+                                hintStyle:
+                                    const TextStyle(color: Colors.white60),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                  borderSide: BorderSide.none,
+                                ),
+                                filled: true,
+                                fillColor: Colors.grey[800],
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                                suffixIcon: _isPostingComment
+                                    ? const Padding(
+                                        padding: EdgeInsets.all(12),
+                                        child: SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        ),
+                                      )
+                                    : null,
+                              ),
+                              maxLines: null,
+                              keyboardType: TextInputType.multiline,
+                              autofocus: true,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (!_isPostingComment)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.blue,
+                                borderRadius: BorderRadius.circular(25),
+                              ),
+                              child: IconButton(
+                                icon:
+                                    const Icon(Icons.send, color: Colors.white),
+                                onPressed: _postComment,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+
+                    // const Spacer(),
+                    const SizedBox(height: 12),
+
+                   
+                  ],
+                ),
+              ),
             ),
+        ],
+      ),
     );
   }
 
@@ -514,7 +719,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                         Text(
                           _expandedDescription
                               ? description
-                              : (description.length > 100 
+                              : (description.length > 100
                                   ? "${description.substring(0, 100)}..."
                                   : description),
                           style: const TextStyle(fontSize: 14, height: 1.35),
@@ -529,7 +734,9 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                             child: Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                _expandedDescription ? "Read less" : "...Read more",
+                                _expandedDescription
+                                    ? "Read less"
+                                    : "...Read more",
                                 style: const TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -613,11 +820,11 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
     final user = comment["user"] ?? {};
     final fname = (user["fname"] ?? "User").toString();
     final userName = (user["user_name"] ?? "").toString();
-    final replies = comment["replies"] ?? [];
+    final replyCount = comment["reply_count"] ?? 0;
     final commentId = comment["id"];
     final commentText = comment["comment"] ?? "";
-    final createdAtHuman = comment["created_at_human"] ?? 
-                          _formatHumanTime(comment["created_at"]?.toString());
+    final createdAtHuman = comment["created_at_human"] ??
+        _formatHumanTime(comment["created_at"]?.toString());
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -685,101 +892,56 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
           const SizedBox(height: 8),
           Padding(
             padding: const EdgeInsets.only(left: 42),
-            child: InkWell(
-              onTap: () => _setReplyMode(commentId, fname),
-              child: Text(
-                "Reply",
-                style: TextStyle(
-                  color: Colors.blue[400],
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-
-          // Replies
-          if (replies.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            const Divider(color: Colors.grey, height: 1),
-            const SizedBox(height: 12),
-            ...replies.map<Widget>((reply) => _buildReplyItem(reply)),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // =========================
-  // REPLY ITEM WIDGET
-  // =========================
-  Widget _buildReplyItem(Map<String, dynamic> reply) {
-    final user = reply["user"] ?? {};
-    final fname = (user["fname"] ?? "User").toString();
-    final userName = (user["user_name"] ?? "").toString();
-    final replyText = reply["comment"] ?? "";
-    final createdAtHuman = reply["created_at_human"] ?? 
-                          _formatHumanTime(reply["created_at"]?.toString());
-
-    return Container(
-      margin: const EdgeInsets.only(left: 32, top: 8),
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Reply Header
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              CircleAvatar(
-                radius: 14,
-                backgroundColor: Colors.grey[700],
-                child: Text(
-                  fname.isNotEmpty ? fname[0].toUpperCase() : "U",
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      fname,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 13,
+            child: Row(
+              children: [
+                // Reply Icon Button (YouTube Style)
+                InkWell(
+                  onTap: () => _openReplyModal(commentId, fname, commentText),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.reply,
+                        size: 18,
+                        color: Colors.blue[400],
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      "@$userName • $createdAtHuman",
-                      style: const TextStyle(
-                        color: Colors.white60,
-                        fontSize: 11,
+                      const SizedBox(width: 6),
+                      Text(
+                        "Reply",
+                        style: TextStyle(
+                          color: Colors.blue[400],
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
 
-          // Reply Text
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.only(left: 36), // Align with avatar
-            child: Text(
-              replyText,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-              ),
+                const Spacer(),
+
+                // View Replies Button (if replies exist)
+                if (replyCount > 0)
+                  InkWell(
+                    onTap: () => _showRepliesModal(commentId, fname),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 14,
+                          color: Colors.white60,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          "$replyCount ${replyCount == 1 ? 'reply' : 'replies'}",
+                          style: const TextStyle(
+                            color: Colors.white60,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
           ),
         ],
@@ -796,36 +958,6 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
       color: Colors.grey[900],
       child: Column(
         children: [
-          // Reply Indicator
-          if (_replyingToCommentId != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.reply, size: 16, color: Colors.blue),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "Replying to $_replyingToUserName",
-                      style: const TextStyle(color: Colors.blue, fontSize: 13),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 16, color: Colors.blue),
-                    onPressed: _cancelReply,
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-            ),
-          
-          // Input Field
-          const SizedBox(height: 8),
           Row(
             children: [
               Expanded(
@@ -833,9 +965,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                   controller: _commentController,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: _replyingToCommentId != null
-                        ? "Write a reply..."
-                        : "Add a comment...",
+                    hintText: "Add a comment...",
                     hintStyle: const TextStyle(color: Colors.white60),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(25),
@@ -878,6 +1008,217 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// =========================
+// REPLIES MODAL WIDGET
+// =========================
+class RepliesModal extends StatelessWidget {
+  final String userName;
+  final List<Map<String, dynamic>> replies;
+  final VoidCallback onReplyPressed;
+
+  const RepliesModal({
+    super.key,
+    required this.userName,
+    required this.replies,
+    required this.onReplyPressed,
+  });
+
+  String _formatHumanTime(String? dateTimeStr) {
+    if (dateTimeStr == null || dateTimeStr.isEmpty) return "";
+
+    try {
+      final dt = DateTime.parse(dateTimeStr.replaceAll(" ", "T"));
+      final now = DateTime.now();
+      final difference = now.difference(dt);
+
+      if (difference.inSeconds < 60) return "Just now";
+      if (difference.inMinutes < 60) return "${difference.inMinutes}m ago";
+      if (difference.inHours < 24) return "${difference.inHours}h ago";
+      if (difference.inDays < 30) return "${difference.inDays}d ago";
+
+      return "${difference.inDays ~/ 30}mo ago";
+    } catch (_) {
+      return "";
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DraggableScrollableSheet(
+      initialChildSize: 0.9,
+      minChildSize: 0.5,
+      maxChildSize: 0.95,
+      expand: false,
+      builder: (context, scrollController) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.black,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            children: [
+              // Modal Header
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[900],
+                  borderRadius:
+                      const BorderRadius.vertical(top: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      "Replies to $userName",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const Spacer(),
+                    IconButton(
+                      icon: const Icon(Icons.reply, color: Colors.blue),
+                      onPressed: onReplyPressed,
+                    ),
+                  ],
+                ),
+              ),
+
+              // Replies List
+              Expanded(
+                child: replies.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(
+                              Icons.comment_outlined,
+                              color: Colors.white60,
+                              size: 50,
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              "No replies yet",
+                              style: TextStyle(
+                                color: Colors.white60,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            ElevatedButton(
+                              onPressed: onReplyPressed,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.blue,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                              ),
+                              child: const Text(
+                                "Be the first to reply",
+                                style: TextStyle(color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollController,
+                        padding: const EdgeInsets.all(16),
+                        itemCount: replies.length,
+                        itemBuilder: (context, index) {
+                          final reply = replies[index];
+                          final user = reply["user"] ?? {};
+                          final fname = (user["fname"] ?? "User").toString();
+                          final userName = (user["user_name"] ?? "").toString();
+                          final replyText = reply["comment"] ?? "";
+                          final createdAtHuman = reply["created_at_human"] ??
+                              _formatHumanTime(reply["created_at"]?.toString());
+
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey[900],
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                // Reply Header
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 14,
+                                      backgroundColor: Colors.grey[700],
+                                      child: Text(
+                                        fname.isNotEmpty
+                                            ? fname[0].toUpperCase()
+                                            : "U",
+                                        style: const TextStyle(
+                                            color: Colors.white, fontSize: 12),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            fname,
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            "@$userName • $createdAtHuman",
+                                            style: const TextStyle(
+                                              color: Colors.white60,
+                                              fontSize: 11,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Reply Text
+                                const SizedBox(height: 6),
+                                Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 36), // Align with avatar
+                                  child: Text(
+                                    replyText,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }
