@@ -601,6 +601,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/core/services/user_storage_service.dart';
+import './post_detailed_page.dart';
 
 class PostCard extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -1252,13 +1253,28 @@ class _PostCardState extends State<PostCard> {
           onTap: () => _sendReaction("dislike"),
         ),
 
+        // _footerBtn(
+        //   icon: Icons.mode_comment_outlined,
+        //   label: comments.toString(),
+        //   onTap: () {
+        //     // TODO: open comments page
+        //   },
+        // ),
         _footerBtn(
-          icon: Icons.mode_comment_outlined,
-          label: comments.toString(),
-          onTap: () {
-            // TODO: open comments page
-          },
+  icon: Icons.mode_comment_outlined,
+  label: comments.toString(),
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PostDetailsPage(
+          postId: _postData["id"],
+          initialPostData: _postData,
         ),
+      ),
+    );
+  },
+),
 
         // SAVE BUTTON
         _footerSaveBtn(
