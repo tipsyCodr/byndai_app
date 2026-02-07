@@ -18,11 +18,7 @@
 //   final TextEditingController _titleController = TextEditingController();
 //   final TextEditingController _descriptionController = TextEditingController();
 
-//   // final List<File?> _images = [];
-//   // final List<File?> _videos = [];
-
 //   final List<XFile?> _images = [];
-//   final List<XFile?> _videos = [];
 
 //   final ImagePicker _picker = ImagePicker();
 
@@ -33,7 +29,6 @@
 //     {'id': 1, 'name': 'Technology'},
 //     {'id': 2, 'name': 'Healthcare'},
 //     {'id': 3, 'name': 'Education'},
-//     // Add more industries as needed
 //   ];
 
 //   int? _selectedIndustryId;
@@ -50,8 +45,6 @@
 //   }
 
 //   // ================= IMAGE PICKING =================
- 
-
 //   Future<void> _pickImage(int index) async {
 //     final XFile? selected =
 //         await _picker.pickImage(source: ImageSource.gallery);
@@ -61,23 +54,6 @@
 //           _images[index] = selected;
 //         } else {
 //           _images.add(selected);
-//         }
-//       });
-//     }
-//   }
-
-//   // ================= VIDEO PICKING =================
-  
-
-//   Future<void> _pickVideo(int index) async {
-//     final XFile? selected =
-//         await _picker.pickVideo(source: ImageSource.gallery);
-//     if (selected != null) {
-//       setState(() {
-//         if (_videos.length > index) {
-//           _videos[index] = selected;
-//         } else {
-//           _videos.add(selected);
 //         }
 //       });
 //     }
@@ -103,26 +79,6 @@
 //     });
 //   }
 
-//   // ================= ADD VIDEO FIELD =================
-//   void _addVideoField() {
-//     if (_videos.length < 2) {
-//       setState(() {
-//         _videos.add(null);
-//       });
-//     } else {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//         const SnackBar(content: Text('Maximum 2 videos allowed')),
-//       );
-//     }
-//   }
-
-//   // ================= REMOVE VIDEO FIELD =================
-//   void _removeVideoField(int index) {
-//     setState(() {
-//       _videos.removeAt(index);
-//     });
-//   }
-
 //   // ================= PRINT REQUEST DATA =================
 //   void _printRequestData() {
 //     print('================== POST REQUEST DATA ==================');
@@ -140,20 +96,10 @@
 //       }
 //     }
 
-//     print('Number of Videos: ${_videos.length}');
-//     for (int i = 0; i < _videos.length; i++) {
-//       if (_videos[i] != null) {
-//         print('Video $i: ${_videos[i]!.path}');
-//       } else {
-//         print('Video $i: Not selected');
-//       }
-//     }
 //     print('========================================================');
 //   }
 
 //   // ================= SUBMIT POST =================
-
-
 //   Future<Map<String, String>> _getHeadersMultipart() async {
 //     final token = await UserStorageService().getToken();
 
@@ -195,21 +141,6 @@
 //         }
 //       }
 
-//       // ✅ Videos
-//       for (int i = 0; i < _videos.length; i++) {
-//         if (_videos[i] != null) {
-//           final bytes = await _videos[i]!.readAsBytes();
-
-//           request.files.add(
-//             http.MultipartFile.fromBytes(
-//               "videos[]",
-//               bytes,
-//               filename: _videos[i]!.name,
-//             ),
-//           );
-//         }
-//       }
-
 //       final streamedResponse = await request.send();
 //       final responseBody = await streamedResponse.stream.bytesToString();
 
@@ -225,11 +156,10 @@
 //   // ================= CHECK PLATFORM =================
 //   Future<bool> _isMobilePlatform() async {
 //     try {
-//       // Try to access platform-specific features
 //       await File('test').exists();
-//       return true; // Mobile platform
+//       return true;
 //     } catch (e) {
-//       return false; // Web platform
+//       return false;
 //     }
 //   }
 
@@ -305,78 +235,6 @@
 //     );
 //   }
 
-//   // ================= BUILD VIDEO FIELD =================
-//   Widget _buildVideoField(int index) {
-//     return Column(
-//       children: [
-//         const SizedBox(height: 12),
-//         Container(
-//           padding: const EdgeInsets.all(12),
-//           decoration: BoxDecoration(
-//             color: Colors.grey[900],
-//             borderRadius: BorderRadius.circular(12),
-//             border: Border.all(color: Colors.grey.shade700),
-//           ),
-//           child: Row(
-//             children: [
-//               Expanded(
-//                 child: GestureDetector(
-//                   onTap: () => _pickVideo(index),
-//                   child: Container(
-//                     padding: const EdgeInsets.symmetric(vertical: 16),
-//                     decoration: BoxDecoration(
-//                       border: Border.all(
-//                         color: _videos[index] != null
-//                             ? Colors.green
-//                             : Colors.blueAccent,
-//                         width: 2,
-//                       ),
-//                       borderRadius: BorderRadius.circular(8),
-//                     ),
-//                     child: Column(
-//                       mainAxisAlignment: MainAxisAlignment.center,
-//                       children: [
-//                         Icon(
-//                           _videos[index] != null
-//                               ? Icons.check_circle
-//                               : Icons.video_library,
-//                           color: _videos[index] != null
-//                               ? Colors.green
-//                               : Colors.blueAccent,
-//                           size: 30,
-//                         ),
-//                         const SizedBox(height: 8),
-//                         Text(
-//                           _videos[index] != null
-//                               ? 'Video Selected'
-//                               : 'Choose Video',
-//                           style: TextStyle(
-//                             color: _videos[index] != null
-//                                 ? Colors.green
-//                                 : Colors.blueAccent,
-//                             fontWeight: FontWeight.bold,
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                   ),
-//                 ),
-//               ),
-//               const SizedBox(width: 12),
-//               IconButton(
-//                 onPressed: () => _removeVideoField(index),
-//                 icon: const Icon(Icons.delete, color: Colors.red),
-//                 style: IconButton.styleFrom(
-//                   backgroundColor: Colors.black54,
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//       ],
-//     );
-//   }
-
 //   @override
 //   Widget build(BuildContext context) {
 //     return Scaffold(
@@ -395,7 +253,6 @@
 //         child: Column(
 //           crossAxisAlignment: CrossAxisAlignment.start,
 //           children: [
-//             // Container with form fields
 //             Container(
 //               padding: const EdgeInsets.all(16),
 //               decoration: BoxDecoration(
@@ -484,7 +341,6 @@
 //                   const SizedBox(height: 8),
 //                   GestureDetector(
 //                     onTap: () {
-//                       // Show industry selection dialog
 //                       showDialog(
 //                         context: context,
 //                         builder: (context) => AlertDialog(
@@ -633,88 +489,15 @@
 //                       ),
 //                     ),
 
-//                   // Videos Section
-//                   const SizedBox(height: 24),
-//                   Row(
-//                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                     children: [
-//                       Text(
-//                         'Videos (Max: 2)',
-//                         style: TextStyle(
-//                           color: Colors.grey[300],
-//                           fontSize: 16,
-//                           fontWeight: FontWeight.w600,
-//                         ),
-//                       ),
-//                       if (_videos.length < 2)
-//                         IconButton(
-//                           onPressed: _addVideoField,
-//                           icon: const Icon(
-//                             Icons.add_circle,
-//                             color: Colors.blueAccent,
-//                             size: 30,
-//                           ),
-//                           tooltip: 'Add video field',
-//                         ),
-//                     ],
-//                   ),
-
-//                   // Video Fields
-//                   if (_videos.isEmpty)
-//                     Column(
-//                       children: [
-//                         const SizedBox(height: 12),
-//                         GestureDetector(
-//                           onTap: _addVideoField,
-//                           child: Container(
-//                             padding: const EdgeInsets.symmetric(vertical: 20),
-//                             decoration: BoxDecoration(
-//                               border: Border.all(
-//                                 color: Colors.blueAccent,
-//                                 width: 2,
-//                               ),
-//                               borderRadius: BorderRadius.circular(12),
-//                             ),
-//                             child: Column(
-//                               children: [
-//                                 Icon(
-//                                   Icons.video_library,
-//                                   color: Colors.blueAccent,
-//                                   size: 40,
-//                                 ),
-//                                 const SizedBox(height: 8),
-//                                 Text(
-//                                   'Add Video',
-//                                   style: TextStyle(
-//                                     color: Colors.blueAccent,
-//                                     fontSize: 16,
-//                                     fontWeight: FontWeight.bold,
-//                                   ),
-//                                 ),
-//                               ],
-//                             ),
-//                           ),
-//                         ),
-//                       ],
-//                     )
-//                   else
-//                     Column(
-//                       children: List.generate(
-//                         _videos.length,
-//                         (index) => _buildVideoField(index),
-//                       ),
-//                     ),
 //                 ],
 //               ),
 //             ),
 
-//             // Spacing
 //             const SizedBox(height: 40),
 //           ],
 //         ),
 //       ),
 
-//       // Bottom Post Button
 //       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
 //       floatingActionButton: Container(
 //         margin: const EdgeInsets.only(bottom: 20, right: 20),
@@ -731,7 +514,6 @@
 //     );
 //   }
 // }
-
 
 import 'dart:io';
 import 'dart:convert';
@@ -754,20 +536,15 @@ class _PostCreationPageState extends State<PostCreationPage> {
   final TextEditingController _descriptionController = TextEditingController();
 
   final List<XFile?> _images = [];
-
-  // ❌ Videos list disabled
-  // final List<XFile?> _videos = [];
-
   final ImagePicker _picker = ImagePicker();
 
   bool _isLoading = false;
 
-  // Industry options
-  final List<Map<String, dynamic>> _industryOptions = [
-    {'id': 1, 'name': 'Technology'},
-    {'id': 2, 'name': 'Healthcare'},
-    {'id': 3, 'name': 'Education'},
-  ];
+  // ===========================
+  // ✅ INDUSTRY OPTIONS (API)
+  // ===========================
+  List<Map<String, dynamic>> _industryOptions = [];
+  bool _isIndustryLoading = false;
 
   int? _selectedIndustryId;
   String? _selectedIndustryName;
@@ -780,6 +557,74 @@ class _PostCreationPageState extends State<PostCreationPage> {
       'Accept': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
+  }
+
+  Future<Map<String, String>> _getHeadersMultipart() async {
+    final token = await UserStorageService().getToken();
+
+    return {
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // ===========================
+  // ✅ FETCH INDUSTRIES API
+  // ===========================
+  Future<void> _fetchIndustries() async {
+    setState(() => _isIndustryLoading = true);
+
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse("${AppConfig.apiBaseUrl}/industries");
+
+      final response = await http.get(uri, headers: headers);
+
+      debugPrint("Industries Status: ${response.statusCode}");
+      debugPrint("Industries Body: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+
+        if (jsonData["status"] == true) {
+          final List data = jsonData["data"];
+
+          setState(() {
+            _industryOptions = data.map((item) {
+              return {
+                "id": item["id"],
+                "name": item["title"], // 👈 backend title -> dropdown name
+                "icons": item["icons"],
+              };
+            }).toList();
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content:
+                    Text(jsonData["message"] ?? "Failed to load industries")),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Failed to load industries")),
+        );
+      }
+    } catch (e) {
+      debugPrint("Fetch industries error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Network error while loading industries")),
+      );
+    } finally {
+      if (mounted) setState(() => _isIndustryLoading = false);
+    }
+  }
+
+  // ================= INIT =================
+  @override
+  void initState() {
+    super.initState();
+    _fetchIndustries(); // ✅ page open होते ही call
   }
 
   // ================= IMAGE PICKING =================
@@ -796,23 +641,6 @@ class _PostCreationPageState extends State<PostCreationPage> {
       });
     }
   }
-
-  // ================= VIDEO PICKING =================
-  /*
-  Future<void> _pickVideo(int index) async {
-    final XFile? selected =
-        await _picker.pickVideo(source: ImageSource.gallery);
-    if (selected != null) {
-      setState(() {
-        if (_videos.length > index) {
-          _videos[index] = selected;
-        } else {
-          _videos.add(selected);
-        }
-      });
-    }
-  }
-  */
 
   // ================= ADD IMAGE FIELD =================
   void _addImageField() {
@@ -834,30 +662,6 @@ class _PostCreationPageState extends State<PostCreationPage> {
     });
   }
 
-  // ================= ADD VIDEO FIELD =================
-  /*
-  void _addVideoField() {
-    if (_videos.length < 2) {
-      setState(() {
-        _videos.add(null);
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum 2 videos allowed')),
-      );
-    }
-  }
-  */
-
-  // ================= REMOVE VIDEO FIELD =================
-  /*
-  void _removeVideoField(int index) {
-    setState(() {
-      _videos.removeAt(index);
-    });
-  }
-  */
-
   // ================= PRINT REQUEST DATA =================
   void _printRequestData() {
     print('================== POST REQUEST DATA ==================');
@@ -875,32 +679,19 @@ class _PostCreationPageState extends State<PostCreationPage> {
       }
     }
 
-    // ❌ Videos printing disabled
-    /*
-    print('Number of Videos: ${_videos.length}');
-    for (int i = 0; i < _videos.length; i++) {
-      if (_videos[i] != null) {
-        print('Video $i: ${_videos[i]!.path}');
-      } else {
-        print('Video $i: Not selected');
-      }
-    }
-    */
-
     print('========================================================');
   }
 
   // ================= SUBMIT POST =================
-  Future<Map<String, String>> _getHeadersMultipart() async {
-    final token = await UserStorageService().getToken();
-
-    return {
-      'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-  }
-
   Future<void> _submitPost() async {
+    // ✅ Industry validation
+    if (_selectedIndustryId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select industry")),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -915,6 +706,8 @@ class _PostCreationPageState extends State<PostCreationPage> {
 
       request.fields["title"] = _titleController.text;
       request.fields["description"] = _descriptionController.text;
+
+      // ✅ selected industry id
       request.fields["industry_id"] = _selectedIndustryId.toString();
 
       // ✅ Images
@@ -932,22 +725,8 @@ class _PostCreationPageState extends State<PostCreationPage> {
         }
       }
 
-      // ❌ Videos upload disabled
-      /*
-      for (int i = 0; i < _videos.length; i++) {
-        if (_videos[i] != null) {
-          final bytes = await _videos[i]!.readAsBytes();
-
-          request.files.add(
-            http.MultipartFile.fromBytes(
-              "videos[]",
-              bytes,
-              filename: _videos[i]!.name,
-            ),
-          );
-        }
-      }
-      */
+      // debug
+      _printRequestData();
 
       final streamedResponse = await request.send();
       final responseBody = await streamedResponse.stream.bytesToString();
@@ -1043,80 +822,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
     );
   }
 
-  // ================= BUILD VIDEO FIELD =================
-  /*
-  Widget _buildVideoField(int index) {
-    return Column(
-      children: [
-        const SizedBox(height: 12),
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade700),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => _pickVideo(index),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: _videos[index] != null
-                            ? Colors.green
-                            : Colors.blueAccent,
-                        width: 2,
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          _videos[index] != null
-                              ? Icons.check_circle
-                              : Icons.video_library,
-                          color: _videos[index] != null
-                              ? Colors.green
-                              : Colors.blueAccent,
-                          size: 30,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _videos[index] != null
-                              ? 'Video Selected'
-                              : 'Choose Video',
-                          style: TextStyle(
-                            color: _videos[index] != null
-                                ? Colors.green
-                                : Colors.blueAccent,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              IconButton(
-                onPressed: () => _removeVideoField(index),
-                icon: const Icon(Icons.delete, color: Colors.red),
-                style: IconButton.styleFrom(
-                  backgroundColor: Colors.black54,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-  */
-
+  // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1211,7 +917,9 @@ class _PostCreationPageState extends State<PostCreationPage> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Industry Dropdown
+                  // ===========================
+                  // ✅ Industry Dropdown (API)
+                  // ===========================
                   Text(
                     'Industry *',
                     style: TextStyle(
@@ -1222,40 +930,61 @@ class _PostCreationPageState extends State<PostCreationPage> {
                   ),
                   const SizedBox(height: 8),
                   GestureDetector(
-                    onTap: () {
-                      showDialog(
-                        context: context,
-                        builder: (context) => AlertDialog(
-                          backgroundColor: Colors.grey[900],
-                          title: const Text(
-                            'Select Industry',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          content: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: _industryOptions.map((industry) {
-                              return ListTile(
-                                title: Text(
-                                  industry['name'],
-                                  style: const TextStyle(color: Colors.white),
+                    onTap: _isIndustryLoading
+                        ? null
+                        : () {
+                            if (_industryOptions.isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("No industries found"),
                                 ),
-                                trailing: _selectedIndustryId == industry['id']
-                                    ? const Icon(Icons.check,
-                                        color: Colors.blueAccent)
-                                    : null,
-                                onTap: () {
-                                  setState(() {
-                                    _selectedIndustryId = industry['id'];
-                                    _selectedIndustryName = industry['name'];
-                                  });
-                                  Navigator.pop(context);
-                                },
                               );
-                            }).toList(),
-                          ),
-                        ),
-                      );
-                    },
+                              return;
+                            }
+
+                            showDialog(
+                              context: context,
+                              builder: (context) => AlertDialog(
+                                backgroundColor: Colors.grey[900],
+                                title: const Text(
+                                  'Select Industry',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                                content: SizedBox(
+                                  width: double.maxFinite,
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: _industryOptions.length,
+                                    itemBuilder: (context, index) {
+                                      final industry = _industryOptions[index];
+
+                                      return ListTile(
+                                        title: Text(
+                                          industry['name'],
+                                          style: const TextStyle(
+                                              color: Colors.white),
+                                        ),
+                                        trailing: _selectedIndustryId ==
+                                                industry['id']
+                                            ? const Icon(Icons.check,
+                                                color: Colors.blueAccent)
+                                            : null,
+                                        onTap: () {
+                                          setState(() {
+                                            _selectedIndustryId =
+                                                industry['id'];
+                                            _selectedIndustryName =
+                                                industry['name'];
+                                          });
+                                          Navigator.pop(context);
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -1281,7 +1010,10 @@ class _PostCreationPageState extends State<PostCreationPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              _selectedIndustryName ?? 'Select Industry',
+                              _isIndustryLoading
+                                  ? "Loading industries..."
+                                  : (_selectedIndustryName ??
+                                      'Select Industry'),
                               style: TextStyle(
                                 color: _selectedIndustryId != null
                                     ? Colors.white
@@ -1290,10 +1022,17 @@ class _PostCreationPageState extends State<PostCreationPage> {
                               ),
                             ),
                           ),
-                          Icon(
-                            Icons.arrow_drop_down,
-                            color: Colors.grey,
-                          ),
+                          if (_isIndustryLoading)
+                            const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else
+                            const Icon(
+                              Icons.arrow_drop_down,
+                              color: Colors.grey,
+                            ),
                         ],
                       ),
                     ),
@@ -1370,88 +1109,13 @@ class _PostCreationPageState extends State<PostCreationPage> {
                         (index) => _buildImageField(index),
                       ),
                     ),
-
-                  // ❌ Videos UI disabled
-                  /*
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Videos (Max: 2)',
-                        style: TextStyle(
-                          color: Colors.grey[300],
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (_videos.length < 2)
-                        IconButton(
-                          onPressed: _addVideoField,
-                          icon: const Icon(
-                            Icons.add_circle,
-                            color: Colors.blueAccent,
-                            size: 30,
-                          ),
-                          tooltip: 'Add video field',
-                        ),
-                    ],
-                  ),
-
-                  if (_videos.isEmpty)
-                    Column(
-                      children: [
-                        const SizedBox(height: 12),
-                        GestureDetector(
-                          onTap: _addVideoField,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 20),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: Colors.blueAccent,
-                                width: 2,
-                              ),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.video_library,
-                                  color: Colors.blueAccent,
-                                  size: 40,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Add Video',
-                                  style: TextStyle(
-                                    color: Colors.blueAccent,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    )
-                  else
-                    Column(
-                      children: List.generate(
-                        _videos.length,
-                        (index) => _buildVideoField(index),
-                      ),
-                    ),
-                  */
                 ],
               ),
             ),
-
             const SizedBox(height: 40),
           ],
         ),
       ),
-
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: Container(
         margin: const EdgeInsets.only(bottom: 20, right: 20),
@@ -1466,5 +1130,12 @@ class _PostCreationPageState extends State<PostCreationPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
   }
 }
