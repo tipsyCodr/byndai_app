@@ -551,9 +551,9 @@ class _PostCardState extends State<PostCard> {
                 ],
               ),
 
-            // =========================
+            // =============================
             // IMAGE CAROUSEL
-            // =========================
+            // =============================
             if (_images.isNotEmpty) ...[
               const SizedBox(height: 14),
               Text(
