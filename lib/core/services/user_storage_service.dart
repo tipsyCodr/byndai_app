@@ -32,6 +32,26 @@ class UserStorageService {
   static const String _kPrefTokenBackup = 'token_backup';
   static const String _kPrefUserId = 'user_id';
 
+  Future<int?> getUserId() async {
+    // 1) Try from secure storage user json
+    try {
+      final userJson = await _secureStorage.read(key: _kKeyUser);
+      if (userJson != null) {
+        final user = UserModel.fromJson(jsonDecode(userJson));
+        return user.id;
+      }
+    } catch (_) {}
+
+    // 2) Fallback from SharedPreferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final id = prefs.getInt(_kPrefUserId);
+      if (id != null && id != 0) return id;
+    } catch (_) {}
+
+    return null;
+  }
+
   /// Saves the user session to both SecureStorage (primary) and SharedPreferences (backup).
   Future<void> saveSession(LoginResponse response) async {
     debugPrint("UserStorage: Saving session...");
