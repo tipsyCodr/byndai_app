@@ -24,6 +24,9 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   bool _isLoading = false;
   final List<XFile?> _selectedImages = [];
   final ImagePicker _picker = ImagePicker();
+  String? _selectedStateName;
+  List<Map<String, dynamic>> _districts = []; // all districts
+  List<Map<String, dynamic>> _filteredDistricts = []; // state wise
 
   List<IndustryModel> industries = [];
   int? selectedIndustryId;
@@ -44,7 +47,8 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   String? _selectedIndustry;
   String? _selectedIndustryName;
   String? _selectedCountry;
-  String? _selectedState;
+  // String? _selectedState;
+  int? _selectedState;
   String? _selectedDistrict;
   String? _selectedIsAudience;
   String? _selectedIsOnline;
@@ -54,7 +58,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   List<Map<String, dynamic>> _industries = [];
   List<Map<String, dynamic>> _countries = [];
   List<Map<String, dynamic>> _states = [];
-  List<Map<String, dynamic>> _districts = [];
+
   bool _isIndustryLoading = false;
 
   // Validation Keys
@@ -94,7 +98,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
       debugPrint("========== INDUSTRY API ==========");
       debugPrint("URL: $uri");
       debugPrint("STATUS: ${response.statusCode}");
-      debugPrint("BODY: ${response.body}");
+      // debugPrint("BODY: ${response.body}");
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
@@ -114,12 +118,110 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
     }
   }
 
+  Future<void> _fetchStates() async {
+    try {
+      final uri = Uri.parse("$_baseUrl/states");
+
+      final response = await http.get(
+        uri,
+        headers: await _getHeaders(),
+      );
+
+      debugPrint("========== STATES API ==========");
+      debugPrint("URL: $uri");
+      debugPrint("STATUS: ${response.statusCode}");
+      // debugPrint("BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+
+        if (jsonData["status"] == true) {
+          final List list = jsonData["data"];
+
+          // ✅ agar tum states list bhi store karna chahte ho
+          setState(() {
+            _states = list.map((e) {
+              return {
+                "id": e["id"],
+                "state_name": e["state_name"],
+                "c_id": e["c_id"],
+              };
+            }).toList();
+          });
+
+          // ✅ console me print
+          debugPrint("TOTAL STATES: ${_states.length}");
+          for (var s in _states) {
+            debugPrint("State: ${s["id"]} - ${s["state_name"]}");
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("States fetch error: $e");
+    }
+  }
+
+  Future<void> _fetchDistricts() async {
+    try {
+      final uri = Uri.parse("$_baseUrl/districts");
+
+      final response = await http.get(
+        uri,
+        headers: await _getHeaders(),
+      );
+
+      debugPrint("========== DISTRICTS API ==========");
+      debugPrint("URL: $uri");
+      debugPrint("STATUS: ${response.statusCode}");
+      debugPrint("BODY: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+
+        if (jsonData["status"] == true) {
+          final List list = jsonData["data"];
+
+          // setState(() {
+          //   _districts = list.map((e) {
+          //     return {
+          //       "id": e["id"],
+          //       "district_name": e["district_name"],
+          //       "s_id": e["s_id"],
+          //     };
+          //   }).toList();
+          // });
+
+          setState(() {
+            _districts = list.map((e) {
+              return {
+                "id": e["id"],
+                "district_name": e["district_name"],
+                "s_id": e["s_id"],
+              };
+            }).toList();
+
+            _filteredDistricts = []; // initially empty
+          });
+
+          debugPrint("TOTAL DISTRICTS: ${_districts.length}");
+          for (var d in _districts) {
+            debugPrint(
+                "District: ${d["id"]} - ${d["district_name"]} (State ID: ${d["s_id"]})");
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Districts fetch error: $e");
+    }
+  }
+
   // ================= INIT =================
   @override
   void initState() {
     super.initState();
     _fetchIndustries();
-    // _fetchDropdownData(); // Uncomment when APIs are available
+    _fetchStates();
+    _fetchDistricts();
   }
 
   // ================= STEPPER CONTROLS =================
@@ -147,8 +249,14 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           return false;
         }
         return true;
+      // case 1:
+      //   if (_selectedIndustry == null) {
+      //     _showError('Please select industry');
+      //     return false;
+      //   }
+      //   return true;
       case 1:
-        if (_selectedIndustry == null) {
+        if (selectedIndustryId == null) {
           _showError('Please select industry');
           return false;
         }
@@ -272,8 +380,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         request.fields['link'] = _linkController.text.trim();
       }
 
-      if (_selectedIndustry != null) {
-        request.fields['indus_type'] = _selectedIndustry!;
+      // if (_selectedIndustry != null) {
+      //   request.fields['indus_type'] = _selectedIndustry!;
+      // }
+      if (selectedIndustryId != null) {
+        request.fields['indus_type'] = selectedIndustryId.toString();
       }
 
       if (_endDateController.text.trim().isNotEmpty) {
@@ -288,8 +399,12 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         request.fields['country_id'] = _selectedCountry!;
       }
 
+      // if (_selectedState != null) {
+      //   request.fields['state_id'] = _selectedState!;
+      // }
+
       if (_selectedState != null) {
-        request.fields['state_id'] = _selectedState!;
+        request.fields['state_id'] = _selectedState.toString();
       }
 
       if (_selectedDistrict != null) {
@@ -583,50 +698,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         ),
         const SizedBox(height: 16),
 
-        // Industry Type
-        // Container(
-        //   decoration: BoxDecoration(
-        //     color: Colors.grey[900],
-        //     borderRadius: BorderRadius.circular(10),
-        //     border: Border.all(color: Colors.grey.shade600),
-        //   ),
-        //   child: DropdownButtonHideUnderline(
-
-        //     child: DropdownButtonFormField<int>(
-        //       value: selectedIndustryId,
-        //       dropdownColor: Colors.grey[900],
-        //       decoration: InputDecoration(
-        //         labelText: "Industry Type",
-        //         labelStyle: const TextStyle(color: Colors.white),
-        //         enabledBorder: OutlineInputBorder(
-        //           borderRadius: BorderRadius.circular(12),
-        //           borderSide: BorderSide(color: Colors.grey[700]!),
-        //         ),
-        //         focusedBorder: OutlineInputBorder(
-        //           borderRadius: BorderRadius.circular(12),
-        //           borderSide: const BorderSide(color: Colors.blue),
-        //         ),
-        //       ),
-        //       items: industries.map((industry) {
-        //         return DropdownMenuItem<int>(
-        //           value: industry.id, // ✅ value = id
-        //           child: Text(
-        //             industry.title, // ✅ show title
-        //             style: const TextStyle(color: Colors.white),
-        //           ),
-        //         );
-        //       }).toList(),
-        //       onChanged: (value) {
-        //         setState(() {
-        //           selectedIndustryId = value; // ✅ selected id save
-        //         });
-
-        //         debugPrint("Selected Industry ID: $selectedIndustryId");
-        //       },
-        //     ),
-        //   ),
-        // ),
-
         // Industry Type Dropdown
         Container(
           decoration: BoxDecoration(
@@ -684,6 +755,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
               value: _selectedCountry,
+              dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white),
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
               decoration: InputDecoration(
@@ -719,48 +791,63 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         ),
         const SizedBox(height: 16),
 
-        // State
         Container(
+          height: 56,
           decoration: BoxDecoration(
             color: Colors.grey[900],
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey.shade600),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade700),
           ),
           child: DropdownButtonHideUnderline(
-            child: DropdownButtonFormField<String>(
+            child: DropdownButtonFormField<int>(
               value: _selectedState,
-              style: const TextStyle(color: Colors.white),
-              icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+              isExpanded: true,
+              dropdownColor: Colors.grey[900],
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
               decoration: InputDecoration(
-                labelText: 'State',
-                labelStyle: TextStyle(color: Colors.grey[400]),
+                labelText: "State",
+                labelStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               ),
-              items: _states.isEmpty
-                  ? [
-                      const DropdownMenuItem(
-                        value: '5',
-                        child: Text('Chhattisgarh',
-                            style: TextStyle(color: Colors.white)),
-                      ),
-                    ]
-                  : _states.map((state) {
-                      return DropdownMenuItem(
-                        value: state['id'].toString(),
-                        child: Text(state['state_name'],
-                            style: const TextStyle(color: Colors.white)),
-                      );
-                    }).toList(),
+              items: _states.map((state) {
+                return DropdownMenuItem<int>(
+                  value: state['id'],
+                  child: Text(
+                    state['state_name'],
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              }).toList(),
+
+              
+
               onChanged: (value) {
+                if (value == null) return;
+
+                final selectedState =
+                    _states.firstWhere((state) => state['id'] == value);
+
                 setState(() {
                   _selectedState = value;
+                  _selectedStateName = selectedState['state_name'];
+
                   _selectedDistrict = null;
+
+                  // ✅ Filter districts based on state id
+                  _filteredDistricts =
+                      _districts.where((d) => d["s_id"] == value).toList();
                 });
+
+                debugPrint("Selected State ID: $_selectedState");
+                debugPrint("Filtered Districts: ${_filteredDistricts.length}");
               },
             ),
           ),
         ),
+
         const SizedBox(height: 16),
 
         // District
@@ -773,6 +860,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
               value: _selectedDistrict,
+              dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white),
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
               decoration: InputDecoration(
@@ -781,24 +869,23 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              items: _districts.isEmpty
-                  ? [
-                      const DropdownMenuItem(
-                        value: '135',
-                        child:
-                            Text('Durg', style: TextStyle(color: Colors.white)),
-                      ),
-                    ]
-                  : _districts.map((district) {
-                      return DropdownMenuItem(
-                        value: district['id'].toString(),
-                        child: Text(district['district_name'],
-                            style: const TextStyle(color: Colors.white)),
-                      );
-                    }).toList(),
-              onChanged: (value) {
-                setState(() => _selectedDistrict = value);
-              },
+              
+              items: _filteredDistricts.map((district) {
+                return DropdownMenuItem(
+                  value: district['id'].toString(),
+                  child: Text(
+                    district['district_name'],
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                );
+              }).toList(),
+
+            
+              onChanged: (_selectedState == null)
+                  ? null
+                  : (value) {
+                      setState(() => _selectedDistrict = value);
+                    },
             ),
           ),
         ),
@@ -896,6 +983,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
               value: _selectedIsAudience,
+              dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white),
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
               decoration: InputDecoration(
@@ -932,6 +1020,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
               value: _selectedIsOnline,
+              dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white),
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
               decoration: InputDecoration(
@@ -969,6 +1058,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
             child: DropdownButtonFormField<String>(
               value: _selectedStatus,
               style: const TextStyle(color: Colors.white),
+              dropdownColor: Colors.grey[900],
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
               decoration: InputDecoration(
                 labelText: 'Status',

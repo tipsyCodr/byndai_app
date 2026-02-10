@@ -26,7 +26,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
   int? _currentUserId;
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
-  static const String _imageBaseUrl = "https://powderblue-jellyfish-554082.hostingersite.com";
+  static const String _imageBaseUrl =
+      "https://powderblue-jellyfish-554082.hostingersite.com";
 
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {
@@ -81,7 +82,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
-        
+
         if (jsonData['status'] == true) {
           setState(() {
             allEvents = jsonData['data'] ?? [];
@@ -98,7 +99,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         try {
           final error = jsonDecode(response.body);
           setState(() {
-            errorMessage = error['message'] ?? 'Failed to fetch events. Status: ${response.statusCode}';
+            errorMessage = error['message'] ??
+                'Failed to fetch events. Status: ${response.statusCode}';
           });
         } catch (e) {
           setState(() {
@@ -136,7 +138,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         if (title.contains(lowerCaseQuery)) return true;
 
         // Search in description
-        final description = event['description']?.toString().toLowerCase() ?? '';
+        final description =
+            event['description']?.toString().toLowerCase() ?? '';
         if (description.contains(lowerCaseQuery)) return true;
 
         // Search in location
@@ -148,7 +151,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         if (eventType.contains(lowerCaseQuery)) return true;
 
         // Search in industry
-        final industryTitle = event['industry']?['title']?.toString().toLowerCase() ?? '';
+        final industryTitle =
+            event['industry']?['title']?.toString().toLowerCase() ?? '';
         if (industryTitle.contains(lowerCaseQuery)) return true;
 
         return false;
@@ -278,7 +282,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                             border: InputBorder.none,
                             suffixIcon: searchQuery.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.clear, color: Colors.grey),
+                                    icon: const Icon(Icons.clear,
+                                        color: Colors.grey),
                                     onPressed: _clearSearch,
                                   )
                                 : null,
@@ -290,7 +295,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                   ),
                 ),
               ),
-              
+
               // Search results info
               if (searchQuery.isNotEmpty)
                 Padding(
@@ -316,9 +321,9 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                     ],
                   ),
                 ),
-              
+
               const SizedBox(height: 8),
-              
+
               // Events List
               Expanded(
                 child: _currentUserId == null
@@ -373,7 +378,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                                     ),
                                     const SizedBox(height: 16),
                                     Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 32),
                                       child: Text(
                                         errorMessage,
                                         style: const TextStyle(
@@ -389,7 +395,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.blue,
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                         padding: const EdgeInsets.symmetric(
                                           horizontal: 24,
@@ -411,7 +418,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                             : filteredEvents.isEmpty
                                 ? Center(
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         Icon(
                                           searchQuery.isNotEmpty
@@ -438,12 +446,14 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                                             style: ElevatedButton.styleFrom(
                                               backgroundColor: Colors.grey[800],
                                               shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(8),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
                                               ),
                                             ),
                                             child: const Text(
                                               "Clear Search",
-                                              style: TextStyle(color: Colors.white),
+                                              style: TextStyle(
+                                                  color: Colors.white),
                                             ),
                                           ),
                                         if (!searchQuery.isNotEmpty)
@@ -468,12 +478,21 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                                       return;
                                     },
                                     child: ListView.builder(
-                                      padding: const EdgeInsets.only(bottom: 80),
+                                      padding:
+                                          const EdgeInsets.only(bottom: 80),
                                       itemCount: filteredEvents.length,
                                       itemBuilder: (context, index) {
+                                      
+
                                         return EventCard(
                                           event: filteredEvents[index],
                                           baseImageUrl: _imageBaseUrl,
+                                          isMyEvent:
+                                              true, // ✅ This enables the 3 dots menu
+                                          onDeleted:
+                                              _refreshEvents, // Refresh when deleted
+                                          onUpdated:
+                                              _refreshEvents, // ✅ New: Refresh when updated
                                         );
                                       },
                                     ),

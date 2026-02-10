@@ -1,19 +1,28 @@
 
-
-
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import './image_viewer_screen.dart';
+import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/core/services/user_storage_service.dart';
+import 'edit_event_screen.dart'; // ✅ Edit Screen import करें
 
 class EventCard extends StatefulWidget {
   final Map<String, dynamic> event;
   final String baseImageUrl;
+  final bool isMyEvent;
+  final VoidCallback? onDeleted;
+  final VoidCallback? onUpdated; // ✅ New callback for update
 
   const EventCard({
     super.key,
     required this.event,
     required this.baseImageUrl,
+    this.isMyEvent = false,
+    this.onDeleted,
+    this.onUpdated, // ✅ Optional update callback
   });
 
   @override
@@ -23,6 +32,149 @@ class EventCard extends StatefulWidget {
 class _EventCardState extends State<EventCard> {
   bool _showFullDescription = false;
   bool _isExpanded = false;
+  static const String _baseUrl = AppConfig.apiBaseUrl;
+
+  // ================= HEADERS =================
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await UserStorageService().getToken();
+
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // ================= EDIT EVENT NAVIGATION =================
+  void _navigateToEditEvent() {
+    // Navigator.pop(context); // Close menu if open
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => EditEventScreen(
+            eventData: widget.event,
+            onEventUpdated: () {
+              // Callback when event is updated
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Event updated successfully!'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
+                ),
+              );
+
+              // Trigger the update callback if provided
+              widget.onUpdated?.call();
+            },
+          ),
+        ),
+      );
+    });
+  }
+
+  // ================= DELETE EVENT =================
+  Future<void> _confirmDeleteEvent() async {
+    final eventId = widget.event['id'];
+
+    if (eventId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Event ID not found!"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text(
+            "Confirm Delete",
+            style: TextStyle(color: Colors.white),
+          ),
+          content: const Text(
+            "Are you sure you want to delete this event? This action cannot be undone.",
+            style: TextStyle(color: Colors.grey),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                "Cancel",
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Text(
+                  "Delete",
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      await _deleteEvent(eventId);
+    }
+  }
+
+  Future<void> _deleteEvent(int eventId) async {
+    try {
+      final uri = Uri.parse("$_baseUrl/delete-event/$eventId");
+
+      final response = await http.delete(
+        uri,
+        headers: await _getHeaders(),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['status'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['message'] ?? "Event deleted successfully"),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // ✅ Call the delete callback to refresh UI
+        widget.onDeleted?.call();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['message'] ?? "Failed to delete event"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   // Format date and time
   String _formatDateTime(String dateTimeStr) {
@@ -48,12 +200,11 @@ class _EventCardState extends State<EventCard> {
     return null;
   }
 
-  // Get industry icon (FontAwesome icon class से icon बनाने के लिए)
+  // Get industry icon
   IconData? _getIndustryIcon() {
     final industry = widget.event['industry'];
     if (industry != null && industry['icons'] != null) {
       final iconClass = industry['icons'] as String;
-      // FontAwesome icons को Flutter icons में convert करें
       if (iconClass.contains('fa-piggy-bank')) {
         return Icons.account_balance;
       } else if (iconClass.contains('fa-building')) {
@@ -71,17 +222,19 @@ class _EventCardState extends State<EventCard> {
   List<String> _getEventImages() {
     final images = widget.event['images'] as List?;
     if (images != null && images.isNotEmpty) {
-      return images.map<String>((img) {
-        final path = img['event_img_path'] as String?;
-        if (path != null) {
-          // Remove any leading slash and encode URL
-          String cleanPath = path.startsWith('/') ? path.substring(1) : path;
-          // Spaces को %20 में convert करें
-          cleanPath = cleanPath.replaceAll(' ', '%20');
-          return '${widget.baseImageUrl}/$cleanPath';
-        }
-        return '';
-      }).where((url) => url.isNotEmpty).toList();
+      return images
+          .map<String>((img) {
+            final path = img['event_img_path'] as String?;
+            if (path != null) {
+              String cleanPath =
+                  path.startsWith('/') ? path.substring(1) : path;
+              cleanPath = cleanPath.replaceAll(' ', '%20');
+              return '${widget.baseImageUrl}/$cleanPath';
+            }
+            return '';
+          })
+          .where((url) => url.isNotEmpty)
+          .toList();
     }
     return [];
   }
@@ -209,6 +362,65 @@ class _EventCardState extends State<EventCard> {
                     ),
                   ),
                 ),
+
+                if (widget.isMyEvent) ...[
+                  const SizedBox(width: 8),
+                  PopupMenuButton<String>(
+                    icon: Container(
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[800],
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.more_vert,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                    color: Colors.grey[900],
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    onSelected: (value) {
+                      if (value == "edit") {
+                        _navigateToEditEvent();
+                      } else if (value == "delete") {
+                        _confirmDeleteEvent();
+                      }
+                    },
+                    itemBuilder: (context) => [
+                      PopupMenuItem(
+                        value: "edit",
+                        child: Row(
+                          children: [
+                            Icon(Icons.edit, color: Colors.blue[300], size: 20),
+                            const SizedBox(width: 12),
+                            const Text(
+                              "Edit Event",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem(
+                        value: "delete",
+                        child: Row(
+                          children: [
+                            Icon(Icons.delete,
+                                color: Colors.red[300], size: 20),
+                            const SizedBox(width: 12),
+                            const Text(
+                              "Delete Event",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ]
               ],
             ),
             const SizedBox(height: 16),
@@ -362,7 +574,8 @@ class _EventCardState extends State<EventCard> {
                 });
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                 decoration: BoxDecoration(
                   color: Colors.blueGrey[800],
                   borderRadius: BorderRadius.circular(8),
