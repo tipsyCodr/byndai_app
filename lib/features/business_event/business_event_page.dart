@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
@@ -12,7 +11,8 @@ import 'create_event_screen.dart';
 import 'my_event.dart';
 
 class BusinessEventPage extends StatefulWidget {
-  const BusinessEventPage({super.key});
+  final int? openEventId;
+  const BusinessEventPage({super.key, this.openEventId});
 
   @override
   State<BusinessEventPage> createState() => _BusinessEventPageState();
@@ -64,10 +64,26 @@ class _BusinessEventPageState extends State<BusinessEventPage> {
         final jsonData = jsonDecode(response.body);
 
         if (jsonData['status'] == true) {
+          
+
           setState(() {
             allEvents = jsonData['data'] ?? [];
-            filteredEvents = List.from(allEvents); // Initially show all events
+            filteredEvents = List.from(allEvents);
+
+            if (widget.openEventId != null) {
+              final index =
+                  allEvents.indexWhere((e) => e['id'] == widget.openEventId);
+
+              if (index != -1) {
+                final selectedEvent = allEvents[index];
+                allEvents.removeAt(index);
+                allEvents.insert(0, selectedEvent);
+
+                filteredEvents = List.from(allEvents);
+              }
+            }
           });
+
           debugPrint("TOTAL EVENTS FETCHED: ${allEvents.length}");
         } else {
           setState(() {
@@ -186,14 +202,6 @@ class _BusinessEventPageState extends State<BusinessEventPage> {
   }
 
   // ================= CREATE EVENT BUTTON =================
-  // void _createEvent() {
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     const SnackBar(
-  //       content: Text("Create Event Clicked"),
-  //       backgroundColor: Colors.blue,
-  //     ),
-  //   );
-  // }
 
   void _createEvent() {
     Navigator.push(
@@ -485,5 +493,3 @@ class _BusinessEventPageState extends State<BusinessEventPage> {
     );
   }
 }
-
-
