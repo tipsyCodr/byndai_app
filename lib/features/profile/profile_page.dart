@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -7,9 +8,14 @@ import 'package:gridcard/features/profile/links_management_page.dart';
 import 'package:gridcard/features/profile/products_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:http/http.dart' as http;
+import 'package:gridcard/features/profile/edit_profile_page.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final Map<String, dynamic>? userDetails;
+  const ProfilePage({super.key, this.userDetails});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -17,11 +23,73 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
+  static const String _baseUrl = AppConfig.apiBaseUrl;
+  static const String _imgBaseUrl = AppConfig.apiProfileImg;
+  Map<String, dynamic>? _userDetails; // ✅ NEW
+
+  // ================= HEADERS =================
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await UserStorageService().getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // ================= USER DETAILS API CALL =================
+  Future<void> _fetchUserDetails() async {
+    try {
+      final userId = await UserStorageService().getUserId();
+      debugPrint("🟣 LOGGED IN USER ID = $userId");
+
+      if (userId == null) {
+        debugPrint("🔴 ERROR: userId is null, cannot call user-details api");
+        return;
+      }
+
+      final headers = await _getHeaders();
+
+      final url = Uri.parse("$_baseUrl/user-details/$userId");
+
+      debugPrint("🟡 CALLING API: $url");
+      debugPrint("🟡 HEADERS: $headers");
+
+      final response = await http.get(url, headers: headers);
+
+      debugPrint("🟢 STATUS CODE: ${response.statusCode}");
+      debugPrint("🟢 RAW RESPONSE: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+
+        // ✅ console me pura response print
+        debugPrint("✅ USER DETAILS API RESPONSE: $decoded");
+
+        if (decoded["status"] == true) {
+          setState(() {
+            _userDetails = decoded["data"];
+          });
+        } else {
+          debugPrint("🔴 API status false: ${decoded["message"]}");
+        }
+      } else {
+        debugPrint("🔴 API FAILED: ${response.statusCode} => ${response.body}");
+      }
+    } catch (e) {
+      debugPrint("🔴 EXCEPTION in _fetchUserDetails(): $e");
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 🔥 NEW: user-details api call
+      await _fetchUserDetails();
+
+      // Existing call
       context.read<ProfileProvider>().fetchAllProfileData();
     });
   }
@@ -41,13 +109,25 @@ class _ProfilePageState extends State<ProfilePage> {
   void _showEditProfileDialog() {
     final profile = context.read<ProfileProvider>().profileData;
     final colorScheme = Theme.of(context).colorScheme;
+
+    // ✅ prefer api data first
+    final apiMasterUser = _userDetails?['master_user'];
+
     final nameController = TextEditingController(
-        text: profile?['name'] ??
-            profile?['fname'] ??
-            profile?['master_user']?['fname'] ??
-            '');
-    final deptController = TextEditingController(text: profile?['dept'] ?? '');
-    final desgController = TextEditingController(text: profile?['desg'] ?? '');
+      text: apiMasterUser?['fname'] ??
+          profile?['name'] ??
+          profile?['fname'] ??
+          profile?['master_user']?['fname'] ??
+          '',
+    );
+
+    final deptController = TextEditingController(
+      text: apiMasterUser?['dept'] ?? profile?['dept'] ?? '',
+    );
+
+    final desgController = TextEditingController(
+      text: apiMasterUser?['desg'] ?? profile?['desg'] ?? '',
+    );
 
     showDialog(
       context: context,
@@ -62,25 +142,28 @@ class _ProfilePageState extends State<ProfilePage> {
               controller: nameController,
               style: TextStyle(color: colorScheme.onSurface),
               decoration: InputDecoration(
-                  labelText: 'Name',
-                  labelStyle:
-                      TextStyle(color: colorScheme.onSurface.withOpacity(0.6))),
+                labelText: 'Name',
+                labelStyle:
+                    TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
+              ),
             ),
             TextField(
               controller: deptController,
               style: TextStyle(color: colorScheme.onSurface),
               decoration: InputDecoration(
-                  labelText: 'Department',
-                  labelStyle:
-                      TextStyle(color: colorScheme.onSurface.withOpacity(0.6))),
+                labelText: 'Department',
+                labelStyle:
+                    TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
+              ),
             ),
             TextField(
               controller: desgController,
               style: TextStyle(color: colorScheme.onSurface),
               decoration: InputDecoration(
-                  labelText: 'Designation',
-                  labelStyle:
-                      TextStyle(color: colorScheme.onSurface.withOpacity(0.6))),
+                labelText: 'Designation',
+                labelStyle:
+                    TextStyle(color: colorScheme.onSurface.withOpacity(0.6)),
+              ),
             ),
           ],
         ),
@@ -113,6 +196,18 @@ class _ProfilePageState extends State<ProfilePage> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // ✅ API DATA (user-details) priority
+    final apiMasterUser = _userDetails?['master_user'];
+
+    final String? apiProfilePic = apiMasterUser?['profile_pic'];
+
+    final String? apiProfilePicUrl =
+        (apiProfilePic != null && apiProfilePic.toString().isNotEmpty)
+            ? "$_imgBaseUrl/$apiProfilePic"
+            : null;
+
+    debugPrint("🟦 FINAL PROFILE PIC URL = $apiProfilePicUrl");
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
@@ -127,11 +222,20 @@ class _ProfilePageState extends State<ProfilePage> {
         actions: [
           IconButton(
             icon: Icon(Icons.edit, color: colorScheme.primary),
-            onPressed: _showEditProfileDialog,
+            // onPressed: _showEditProfileDialog,
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) =>
+                      EditProfilePage(userDetails: _userDetails),
+                ),
+              );
+            },
           ),
         ],
       ),
-      body: profileProvider.isLoading && profile == null
+      body: profileProvider.isLoading && profile == null && _userDetails == null
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
@@ -152,11 +256,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                 backgroundColor: isDark
                                     ? colorScheme.surfaceContainerHighest
                                     : Colors.blueGrey,
-                                backgroundImage:
-                                    (profile?['profile_pic'] != null)
+                                backgroundImage: (apiProfilePicUrl != null)
+                                    ? NetworkImage(apiProfilePicUrl)
+                                    : (profile?['profile_pic'] != null)
                                         ? NetworkImage(profile!['profile_pic'])
                                         : null,
-                                child: (profile?['profile_pic'] == null)
+                                child: (apiProfilePicUrl == null &&
+                                        profile?['profile_pic'] == null)
                                     ? Icon(CupertinoIcons.person_fill,
                                         size: 60, color: colorScheme.onPrimary)
                                     : null,
@@ -180,8 +286,12 @@ class _ProfilePageState extends State<ProfilePage> {
                           ],
                         ),
                         const SizedBox(height: 16),
+
+                        // ✅ NAME (API first)
                         Text(
-                          profile?['name'] ??
+                          apiMasterUser?['fname'] ??
+                              _userDetails?['user_name'] ??
+                              profile?['name'] ??
                               profile?['fname'] ??
                               profile?['master_user']?['fname'] ??
                               profile?['user']?['name'] ??
@@ -193,8 +303,12 @@ class _ProfilePageState extends State<ProfilePage> {
                               fontSize: 24,
                               fontWeight: FontWeight.bold),
                         ),
+
+                        // ✅ EMAIL (API first)
                         Text(
-                          profile?['email'] ??
+                          _userDetails?['email'] ??
+                              apiMasterUser?['email_one'] ??
+                              profile?['email'] ??
                               profile?['user']?['email'] ??
                               "Email not set",
                           style: TextStyle(
@@ -228,10 +342,24 @@ class _ProfilePageState extends State<ProfilePage> {
                   _buildInfoCard(context, [
                     _buildInfoRow(context, CupertinoIcons.briefcase, "Company",
                         business?['company_name'] ?? "Not set"),
-                    _buildInfoRow(context, CupertinoIcons.person_2,
-                        "Department", profile?['dept'] ?? "Not set"),
-                    _buildInfoRow(context, CupertinoIcons.tag, "Designation",
-                        profile?['desg'] ?? "Not set"),
+
+                    // ✅ dept from API first
+                    _buildInfoRow(
+                        context,
+                        CupertinoIcons.person_2,
+                        "Department",
+                        apiMasterUser?['dept'] ??
+                            profile?['dept'] ??
+                            "Not set"),
+
+                    // ✅ desg from API first
+                    _buildInfoRow(
+                        context,
+                        CupertinoIcons.tag,
+                        "Designation",
+                        apiMasterUser?['desg'] ??
+                            profile?['desg'] ??
+                            "Not set"),
                   ]),
 
                   const SizedBox(height: 24),
