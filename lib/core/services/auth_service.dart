@@ -141,4 +141,36 @@ class AuthService {
     // agar null aaya to ya to 422 error hai ya exception
     return false; // ❌ already exists
   }
+
+  static Future<LoginResponse?> registerWithToken(
+      Map<String, dynamic> data) async {
+    final token = data['token'];
+    final phone = data['mobile'];
+
+    if (phone == null || token == null) {
+      debugPrint('❌ Registration failed: Missing phone or token.');
+      return null;
+    }
+
+    final json = await _post('registration/$phone/$token', data);
+    if (json == null) return null;
+
+    // ✅ Case 1: Backend returns token + user
+    if (json['user'] != null && json['token'] != null) {
+      return LoginResponse(
+        token: json['token'],
+        user: UserModel.fromJson(json['user']),
+      );
+    }
+
+    // ✅ Case 2: Backend returns only user, token missing → use OTP token
+    if (json['user'] != null) {
+      return LoginResponse(
+        token: token,
+        user: UserModel.fromJson(json['user']),
+      );
+    }
+
+    return null;
+  }
 }
