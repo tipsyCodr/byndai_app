@@ -1,5 +1,3 @@
-
-
 // import 'dart:convert';
 // import 'dart:io';
 // import 'package:flutter/material.dart';
@@ -1233,7 +1231,6 @@
 //   }
 // }
 
-
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -1487,7 +1484,7 @@ class _ProfileTabState extends State<ProfileTab> {
     setState(() => _isSaving = true);
 
     try {
-      final uri = Uri.parse("$_baseUrl/profile-data/update");
+      final uri = Uri.parse("$_baseUrl/update_profile");
       final request = http.MultipartRequest("POST", uri);
 
       // Add headers
@@ -1687,16 +1684,28 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   // ================= INIT =================
+  // @override
+  // void initState() {
+  //   super.initState();
+  //   _fetchStates();
+  //   _fetchDistricts();
+
+  //   // Prefill from API data
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     _loadUserData();
+  //   });
+  // }
+
   @override
   void initState() {
     super.initState();
-    _fetchStates();
-    _fetchDistricts();
+    _init();
+  }
 
-    // Prefill from API data
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadUserData();
-    });
+  Future<void> _init() async {
+    await _fetchStates();
+    await _fetchDistricts();
+    _loadUserData();
   }
 
   // ✅ GENDER: Convert DB code (M/F) to display text (Male/Female)
@@ -1738,7 +1747,18 @@ class _ProfileTabState extends State<ProfileTab> {
         _dobController.text = apiMasterUser?['dob'] ?? "";
 
         // ✅ GENDER: Convert DB code (M/F) to display text
-        final apiGender = apiMasterUser?['gender'];
+        // final apiGender = apiMasterUser?['gender'];
+        // if (apiGender == 'M') {
+        //   _selectedGender = 'Male';
+        // } else if (apiGender == 'F') {
+        //   _selectedGender = 'Female';
+        // } else {
+        //   _selectedGender = null;
+        // }
+
+        final apiGender =
+            (apiMasterUser?['gender'] ?? '').toString().toUpperCase();
+
         if (apiGender == 'M') {
           _selectedGender = 'Male';
         } else if (apiGender == 'F') {
@@ -2114,7 +2134,10 @@ class _ProfileTabState extends State<ProfileTab> {
 
           // District Dropdown
           DropdownButtonFormField<int>(
-            value: _selectedDistrictId,
+            // value: _selectedDistrictId,
+            value: _filteredDistricts.any((d) => d['id'] == _selectedDistrictId)
+                ? _selectedDistrictId
+                : null,
             isExpanded: true,
             dropdownColor: Colors.white,
             style: const TextStyle(color: Colors.black, fontSize: 14),
@@ -2165,7 +2188,7 @@ class _ProfileTabState extends State<ProfileTab> {
           // Address Field (4 lines)
           TextField(
             controller: _addressController,
-            maxLines: 4,
+            // maxLines: 4,
             decoration: const InputDecoration(
               labelText: 'Address',
               border: OutlineInputBorder(),
