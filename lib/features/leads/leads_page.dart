@@ -188,8 +188,10 @@ class _LeadsPageState extends State<LeadsPage> {
 // }
 
   void _showImagePreview(BuildContext context, LeadModel lead) {
-    final imageUrl = lead.imageUrl ??
-        (lead.leadImage != null ? '$_baseUrl/storage/${lead.leadImage}' : null);
+    // final imageUrl = lead.imageUrl ??
+    //     (lead.leadImage != null ? '$_baseUrl/storage/${lead.leadImage}' : null);
+
+    final imageUrl = lead.imageUrl;
 
     showDialog(
       context: context,
@@ -227,7 +229,7 @@ class _LeadsPageState extends State<LeadsPage> {
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: Text(
-                            "Lead Image - ${lead.name}",
+                            "${lead.name}",
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
