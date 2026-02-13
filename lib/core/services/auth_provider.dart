@@ -193,30 +193,7 @@ class AuthProvider extends ChangeNotifier {
         false;
   }
 
-  // Future<bool> register(Map<String, dynamic> data) async {
-  //   return await _handleLoading(() async {
-  //         final user = await AuthService.register(data);
-  //         if (user != null) {
-  //           _user = user;
-  //           _isAuthenticated = true;
 
-  //           // Reconstruct a login response to save session
-  //           // Note: Register API needs to ensure it returns a token if we want immediate login
-  //           // If API doesn't return token, user might need to login again.
-  //           // Assuming register flow ends with a login or provides token.
-  //           if (_pendingRegisterToken != null) {
-  //             final response =
-  //                 LoginResponse(user: user, token: _pendingRegisterToken!);
-  //             await _storageService.saveSession(response);
-  //           }
-
-  //           await _clearPendingState();
-  //           return true;
-  //         }
-  //         return false;
-  //       }) ??
-  //       false;
-  // }
 
   Future<bool> register(Map<String, dynamic> data) async {
     return await _handleLoading(() async {

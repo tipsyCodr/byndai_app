@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import './profile_tab.dart';
+import './links_tab.dart';
 
 class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic>? userDetails; 
@@ -39,6 +40,7 @@ class _EditProfilePageState extends State<EditProfilePage>
           tabs: const [
             Tab(text: "Profile"),
             Tab(text: "Links"),
+            Tab(text: "Keywords"),
             Tab(text: "Business Info"),
             Tab(text: "Product"),
             Tab(text: "Review"),
@@ -49,8 +51,9 @@ class _EditProfilePageState extends State<EditProfilePage>
   controller: _tabController,
   children: [
     ProfileTab(userDetails: widget.userDetails),
-
-    const Center(child: Text("Links Page Content")),
+    LinksTab(userDetails: widget.userDetails),
+    // const Center(child: Text("Links Page Content")),
+    const Center(child: Text("Keywords Page Content")),
     const Center(child: Text("Business Info Page Content")),
     const Center(child: Text("Product Page Content")),
     const Center(child: Text("Review Page Content")),
