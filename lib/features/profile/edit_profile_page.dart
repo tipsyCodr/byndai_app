@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import './profile_tab.dart';
 import './links_tab.dart';
+import './keywords_tab.dart';
+import './business_info_tab.dart';
 
 class EditProfilePage extends StatefulWidget {
-  final Map<String, dynamic>? userDetails; 
+  final Map<String, dynamic>? userDetails;
   const EditProfilePage({super.key, this.userDetails});
 
   @override
@@ -48,17 +50,20 @@ class _EditProfilePageState extends State<EditProfilePage>
         ),
       ),
       body: TabBarView(
-  controller: _tabController,
-  children: [
-    ProfileTab(userDetails: widget.userDetails),
-    LinksTab(userDetails: widget.userDetails),
-    // const Center(child: Text("Links Page Content")),
-    const Center(child: Text("Keywords Page Content")),
-    const Center(child: Text("Business Info Page Content")),
-    const Center(child: Text("Product Page Content")),
-    const Center(child: Text("Review Page Content")),
-  ],
-),
+        controller: _tabController,
+        children: [
+          ProfileTab(userDetails: widget.userDetails),
+          LinksTab(userDetails: widget.userDetails),
+          KeywordsTab(userDetails: widget.userDetails),
+          BusinessInfoTab(userDetails: widget.userDetails),
+
+          // const Center(child: Text("Links Page Content")),
+          // const Center(child: Text("Keywords Page Content")),
+          // const Center(child: Text("Business Info Page Content")),
+          const Center(child: Text("Product Page Content")),
+          const Center(child: Text("Review Page Content")),
+        ],
+      ),
     );
   }
 }
