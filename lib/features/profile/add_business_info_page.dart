@@ -424,16 +424,10 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
   final emailCtrl = TextEditingController();
   final upiCtrl = TextEditingController();
 
+  List<Map<String, dynamic>> industries = [];
+  bool isIndustriesLoading = false;
   // Dropdown
   int? selectedIndustryId;
-
-  // Dummy industries
-  final List<Map<String, dynamic>> industries = [
-    {"id": 1, "name": "IT Services"},
-    {"id": 2, "name": "Education"},
-    {"id": 3, "name": "Retail"},
-    {"id": 4, "name": "Manufacturing"},
-  ];
 
   // user_id from storage
   int? userId;
@@ -457,6 +451,49 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
     super.initState();
     _loadUserId();
     _prefillIfEdit();
+    _fetchIndustries();
+  }
+
+  Future<void> _fetchIndustries() async {
+    setState(() => isIndustriesLoading = true);
+
+    try {
+      final headers = await _getHeaders();
+      final url = Uri.parse("$_baseUrl/industries");
+
+      final res = await http.get(url, headers: headers);
+
+      final jsonData = jsonDecode(res.body);
+
+      if (res.statusCode == 200 && jsonData["status"] == true) {
+        final List list = (jsonData["data"] ?? []) as List;
+
+        industries = list.map((e) {
+          return {
+            "id": e["id"],
+            "title": e["title"],
+          };
+        }).toList();
+
+        // ✅ IMPORTANT: edit mode me agar selectedIndustryId list me exist nahi karta
+        // to dropdown crash na ho
+        if (selectedIndustryId != null &&
+            !industries.any((x) => x["id"] == selectedIndustryId)) {
+          selectedIndustryId = null;
+        }
+
+        if (mounted) setState(() {});
+      } else {
+        throw (jsonData["message"] ?? "Industries load failed");
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Industries Error: $e")),
+      );
+    } finally {
+      if (mounted) setState(() => isIndustriesLoading = false);
+    }
   }
 
   void _prefillIfEdit() {
@@ -676,28 +713,34 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
               _inputField(label: "Legal Name", controller: legalNameCtrl),
 
               // Industry dropdown
+              // Padding(
+              //   padding: const EdgeInsets.only(bottom: 14),
+              //   child: DropdownButtonFormField<int>(
+              //     value: industries.any((e) => e["id"] == selectedIndustryId)
+              //         ? selectedIndustryId
+              //         : null,
+              //     decoration: InputDecoration(
+              //       labelText: "Industry",
+              //       border: OutlineInputBorder(
+              //         borderRadius: BorderRadius.circular(12),
+              //       ),
+              //     ),
+              //     items: industries.map((industry) {
+              //       return DropdownMenuItem<int>(
+              //         value: industry["id"],
+              //         child: Text(industry["name"]),
+              //       );
+              //     }).toList(),
+              //     onChanged: (val) {
+              //       setState(() {
+              //         selectedIndustryId = val;
+              //       });
+              //     },
+              //   ),
+              // ),
+
               Padding(
                 padding: const EdgeInsets.only(bottom: 14),
-                // child: DropdownButtonFormField<int>(
-                //   value: selectedIndustryId,
-                //   decoration: InputDecoration(
-                //     labelText: "Industry",
-                //     border: OutlineInputBorder(
-                //       borderRadius: BorderRadius.circular(12),
-                //     ),
-                //   ),
-                //   items: industries.map((industry) {
-                //     return DropdownMenuItem<int>(
-                //       value: industry["id"],
-                //       child: Text(industry["name"]),
-                //     );
-                //   }).toList(),
-                //   onChanged: (val) {
-                //     setState(() {
-                //       selectedIndustryId = val;
-                //     });
-                //   },
-                // ),
                 child: DropdownButtonFormField<int>(
                   value: industries.any((e) => e["id"] == selectedIndustryId)
                       ? selectedIndustryId
@@ -711,14 +754,16 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
                   items: industries.map((industry) {
                     return DropdownMenuItem<int>(
                       value: industry["id"],
-                      child: Text(industry["name"]),
+                      child: Text(industry["title"].toString()),
                     );
                   }).toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      selectedIndustryId = val;
-                    });
-                  },
+                  onChanged: isIndustriesLoading
+                      ? null
+                      : (val) {
+                          setState(() {
+                            selectedIndustryId = val;
+                          });
+                        },
                 ),
               ),
 
