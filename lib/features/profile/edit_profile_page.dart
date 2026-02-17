@@ -3,6 +3,8 @@ import './profile_tab.dart';
 import './links_tab.dart';
 import './keywords_tab.dart';
 import './business_info_tab.dart';
+import './product/products_tab.dart';
+import './review/review_tab.dart';
 
 class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
@@ -19,7 +21,7 @@ class _EditProfilePageState extends State<EditProfilePage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: 6, vsync: this);
   }
 
   @override
@@ -56,12 +58,9 @@ class _EditProfilePageState extends State<EditProfilePage>
           LinksTab(userDetails: widget.userDetails),
           KeywordsTab(userDetails: widget.userDetails),
           BusinessInfoTab(userDetails: widget.userDetails),
-
-          // const Center(child: Text("Links Page Content")),
-          // const Center(child: Text("Keywords Page Content")),
-          // const Center(child: Text("Business Info Page Content")),
-          const Center(child: Text("Product Page Content")),
-          const Center(child: Text("Review Page Content")),
+          ProductsTab(userDetails: widget.userDetails),
+          ReviewTab(userDetails: widget.userDetails),
+          
         ],
       ),
     );
