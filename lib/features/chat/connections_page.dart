@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:http/http.dart' as http;
 import './chat_screen.dart';
 
@@ -664,7 +665,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
   @override
   Widget build(BuildContext context) {
-    final connectionTitle = "Connect ($_acceptedCount)";
+    final connectionTitle = "Connected ($_acceptedCount)";
     final pendingTitle = "Pending ($_pendingCount)";
     final sentTitle = "Sent ($_sentCount)"; // ✅
 
@@ -701,6 +702,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
   }
 
   // ================= ACCEPTED UI =================
+
   Widget _buildAcceptedList() {
     if (acceptedLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -779,139 +781,134 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                       }
 
                       final item = acceptedFriends[index];
+                      final friendId =
+                          int.tryParse(item['friend_id'].toString());
+                      if (friendId == null) return const SizedBox.shrink();
 
-                      return Card(
-                        color: const Color(0xFF1E1E1E),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          // onTap: () async {
-                          //   debugPrint(
-                          //       "✅ Accepted Friend Item: ${jsonEncode(item)}");
-
-                          //   // receiverId = friend_id
-                          //   final receiverId =
-                          //       int.tryParse(item['friend_id'].toString());
-
-                          //   if (receiverId == null) {
-                          //     debugPrint("❌ friend_id missing");
-                          //     return;
-                          //   }
-
-                          //   // senderId = logged in user id
-                          //   final session =
-                          //       await UserStorageService().loadSession();
-                          //   final senderId = session.user?.id;
-
-                          //   if (senderId == null) {
-                          //     debugPrint("❌ senderId (myId) null");
-                          //     return;
-                          //   }
-
-                          //   debugPrint(
-                          //       "📌 senderId=$senderId receiverId=$receiverId");
-
-                          //   Navigator.push(
-                          //     context,
-                          //     MaterialPageRoute(
-                          //       builder: (_) => ChatScreen(
-                          //         receiverId: receiverId,
-                          //         receiverName: item['fname'] ??
-                          //             "User", // ✅ header me kavita show hoga
-                          //         receiverUserName: item['user_name'],
-                          //       ),
-                          //     ),
-                          //   );
-                          // },
-
-                          onTap: () async {
-                            debugPrint(
-                                "✅ Accepted Friend Item: ${jsonEncode(item)}");
-
-                            final receiverId =
-                                int.tryParse(item['friend_id'].toString());
-                            if (receiverId == null) {
-                              debugPrint("❌ friend_id missing");
-                              return;
-                            }
-
-                            // Loader
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (_) => const Center(
-                                  child: CircularProgressIndicator()),
-                            );
-
-                            final chatId =
-                                await _createChatAndGetChatId(receiverId);
-
-                            if (!mounted) return;
-                            Navigator.pop(context); // close loader
-
-                            if (chatId == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text("Chat create nahi ho paya")),
-                              );
-                              return;
-                            }
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ChatScreen(
-                                  chatId: chatId,
-                                  receiverId: receiverId,
-                                  receiverName: item['fname'] ?? "User",
-                                ),
+                      return GestureDetector(
+                        
+                        onTap: () async {
+                          final session =
+                              await UserStorageService().loadSession();
+                          final viewerId = session.user?.id;
+                          if (viewerId == null) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProfilePage(
+                                userId: friendId,
+                                viewerUserId: viewerId,
+                                isConnected: true, // ← added
                               ),
-                            );
-                          },
+                            ),
+                          );
+                        },
+                        child: Card(
+                          color: const Color(0xFF1E1E1E),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            leading: const CircleAvatar(
+                              backgroundImage: AssetImage(
+                                  'assets/images/default_avatar.png'),
+                            ),
+                            title: Text(
+                              item['fname'] ?? 'User',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              item['user_name'] ?? '',
+                              style: const TextStyle(color: Colors.white38),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.chat_bubble_outline,
+                                      color: Colors.blueAccent),
+                                  onPressed: () async {
+                                    debugPrint(
+                                        "✅ Accepted Friend Item: ${jsonEncode(item)}");
 
-                          leading: const CircleAvatar(
-                            backgroundImage:
-                                AssetImage('assets/images/default_avatar.png'),
-                          ),
-                          title: Text(
-                            item['fname'] ?? 'User',
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          subtitle: Text(
-                            item['user_name'] ?? '',
-                            style: const TextStyle(color: Colors.white38),
-                          ),
-                          trailing: PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert,
-                                color: Colors.white),
-                            onSelected: (value) {
-                              debugPrint('ACTION: $value');
-                              debugPrint('USER DATA: ${jsonEncode(item)}');
-                            },
-                            itemBuilder: (context) => const [
-                              PopupMenuItem(
-                                value: 'view',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.visibility),
-                                    SizedBox(width: 8),
-                                    Text('View'),
+                                    final receiverId = int.tryParse(
+                                        item['friend_id'].toString());
+                                    if (receiverId == null) {
+                                      debugPrint("❌ friend_id missing");
+                                      return;
+                                    }
+
+                                    showDialog(
+                                      context: context,
+                                      barrierDismissible: false,
+                                      builder: (_) => const Center(
+                                          child: CircularProgressIndicator()),
+                                    );
+
+                                    final chatId =
+                                        await _createChatAndGetChatId(
+                                            receiverId);
+
+                                    if (!mounted) return;
+                                    Navigator.pop(context);
+
+                                    if (chatId == null) {
+                                      ScaffoldMessenger.of(context)
+                                          .showSnackBar(
+                                        const SnackBar(
+                                            content: Text(
+                                                "Chat create nahi ho paya")),
+                                      );
+                                      return;
+                                    }
+
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ChatScreen(
+                                          chatId: chatId,
+                                          receiverId: receiverId,
+                                          receiverName: item['fname'] ?? "User",
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                PopupMenuButton<String>(
+                                  icon: const Icon(Icons.more_vert,
+                                      color: Colors.white),
+                                  onSelected: (value) {
+                                    debugPrint('ACTION: $value');
+                                    debugPrint(
+                                        'USER DATA: ${jsonEncode(item)}');
+                                  },
+                                  itemBuilder: (context) => const [
+                                    PopupMenuItem(
+                                      value: 'view',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.visibility),
+                                          SizedBox(width: 8),
+                                          Text('View'),
+                                        ],
+                                      ),
+                                    ),
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete,
+                                              color: Colors.redAccent),
+                                          SizedBox(width: 8),
+                                          Text('Delete'),
+                                        ],
+                                      ),
+                                    ),
                                   ],
                                 ),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete, color: Colors.redAccent),
-                                    SizedBox(width: 8),
-                                    Text('Delete'),
-                                  ],
-                                ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -1002,61 +999,89 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                       }
 
                       final item = pendingConnections[index];
-                      final senderId = item['sender_id'];
+                      final senderId =
+                          int.tryParse(item['sender_id'].toString());
 
-                      return Card(
-                        color: const Color(0xFF1E1E1E),
-                        child: ListTile(
-                          leading:
-                              const CircleAvatar(child: Icon(Icons.person)),
-                          title: Text(
-                            item['fname'] ?? '',
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          subtitle: Text(
-                            item['user_name'] ?? '',
-                            style: const TextStyle(color: Colors.white38),
-                          ),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.check_circle,
-                                    color: Colors.greenAccent),
-                                onPressed: () async {
-                                  final session =
-                                      await UserStorageService().loadSession();
-                                  updateStatus(
-                                    senderId: senderId,
-                                    receiverId: session.user!.id!,
-                                    status: 2,
-                                    index: index,
-                                  );
-                                },
+                      return GestureDetector(
+                      
+
+                        onTap: () async {
+                          final session =
+                              await UserStorageService().loadSession();
+                          final viewerId = session.user?.id;
+                          if (viewerId == null || senderId == null) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProfilePage(
+                                userId: senderId,
+                                viewerUserId: viewerId,
+                                fromConnectionTab: 'pending', // ← ADD THIS
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.cancel,
-                                    color: Colors.redAccent),
-                                onPressed: () async {
-                                  final session =
-                                      await UserStorageService().loadSession();
+                            ),
+                          );
+                        },
 
-                                  final receiverId = session.user?.id;
-                                  if (receiverId == null) return;
+                        child: Card(
+                          color: const Color(0xFF1E1E1E),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            leading: const CircleAvatar(
+                              backgroundImage: AssetImage(
+                                  'assets/images/default_avatar.png'),
+                            ),
+                            title: Text(
+                              item['fname'] ?? '',
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              item['user_name'] ?? '',
+                              style: const TextStyle(color: Colors.white38),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  icon: const Icon(Icons.check_circle,
+                                      color: Colors.greenAccent),
+                                  onPressed: () async {
+                                    final session = await UserStorageService()
+                                        .loadSession();
+                                    updateStatus(
+                                      senderId: item['sender_id'],
+                                      receiverId: session.user!.id!,
+                                      status: 2,
+                                      index: index,
+                                    );
+                                  },
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.cancel,
+                                      color: Colors.redAccent),
+                                  onPressed: () async {
+                                    final session = await UserStorageService()
+                                        .loadSession();
 
-                                  final senderId = item['sender_id'];
-                                  final status = item['status'];
+                                    final receiverId = session.user?.id;
+                                    if (receiverId == null) return;
 
-                                  await deleteConnectionRequest(
-                                    senderId: senderId,
-                                    receiverId: receiverId,
-                                    status: status,
-                                    fromTab: "pending",
-                                    index: index,
-                                  );
-                                },
-                              ),
-                            ],
+                                    final senderId = item['sender_id'];
+                                    final status = item['status'];
+
+                                    await deleteConnectionRequest(
+                                      senderId: senderId,
+                                      receiverId: receiverId,
+                                      status: status,
+                                      fromTab: "pending",
+                                      index: index,
+                                    );
+                                  },
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
@@ -1153,79 +1178,111 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                       final fname = item['fname'] ?? 'User';
                       final userName = item['user_name'] ?? '';
 
-                      return Card(
-                        color: const Color(0xFF1E1E1E),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: ListTile(
-                          leading: const CircleAvatar(
-                            backgroundImage:
-                                AssetImage('assets/images/default_avatar.png'),
-                          ),
-                          title: Text(
-                            fname,
-                            style: const TextStyle(color: Colors.white),
-                          ),
-                          subtitle: Text(
-                            "$userName",
-                            style: const TextStyle(color: Colors.white38),
-                          ),
-                          trailing: PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert,
-                                color: Colors.white),
-                            onSelected: (value) async {
-                              final session =
-                                  await UserStorageService().loadSession();
-                              final senderId = session.user?.id;
+                      return GestureDetector(
+                        
 
-                              if (senderId == null) return;
-
-                              final receiverId = item['receiver_id'];
-                              final status = item['status'];
-
-                              if (value == "view") {
-                                debugPrint("👁 SENT VIEW CLICK:");
-                                debugPrint(jsonEncode({
-                                  "sender_id": senderId,
-                                  "receiver_id": receiverId,
-                                  "status": status,
-                                }));
-                              }
-
-                              if (value == "cancel") {
-                                await deleteConnectionRequest(
-                                  senderId: senderId,
-                                  receiverId: receiverId,
-                                  status: status,
-                                  fromTab: "sent",
-                                  index: index,
-                                );
-                              }
-                            },
-                            itemBuilder: (context) => const [
-                              PopupMenuItem(
-                                value: 'view',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.visibility),
-                                    SizedBox(width: 8),
-                                    Text('View'),
-                                  ],
-                                ),
+                        onTap: () async {
+                          final session =
+                              await UserStorageService().loadSession();
+                          final viewerId = session.user?.id;
+                          final profileUserId =
+                              int.tryParse(item['receiver_id'].toString());
+                          if (viewerId == null || profileUserId == null) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProfilePage(
+                                userId: profileUserId,
+                                viewerUserId: viewerId,
+                                fromConnectionTab: 'sent', // ← ADD THIS
                               ),
-                              PopupMenuItem(
-                                value: 'cancel',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete, color: Colors.redAccent),
-                                    SizedBox(width: 8),
-                                    Text('cancel'),
-                                  ],
+                            ),
+                          );
+                        },
+
+                        child: Card(
+                          color: const Color(0xFF1E1E1E),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          child: ListTile(
+                            leading: const CircleAvatar(
+                              backgroundImage: AssetImage(
+                                  'assets/images/default_avatar.png'),
+                            ),
+                            title: Text(
+                              fname,
+                              style: const TextStyle(color: Colors.white),
+                            ),
+                            subtitle: Text(
+                              userName,
+                              style: const TextStyle(color: Colors.white38),
+                            ),
+                            trailing: PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert,
+                                  color: Colors.white),
+                              onSelected: (value) async {
+                                final session =
+                                    await UserStorageService().loadSession();
+                                final senderId = session.user?.id;
+
+                                if (senderId == null) return;
+
+                                final receiverId = item['receiver_id'];
+                                final status = item['status'];
+
+                                if (value == "view") {
+                                  // 👁 view => also open profile
+                                  final profileUserId =
+                                      int.tryParse(receiverId.toString());
+                                  if (profileUserId == null) return;
+
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ProfilePage(
+                                        userId: profileUserId,
+                                        viewerUserId: senderId,
+                                      ),
+                                    ),
+                                  );
+                                }
+
+                                if (value == "cancel") {
+                                  await deleteConnectionRequest(
+                                    senderId: senderId,
+                                    receiverId: receiverId,
+                                    status: status,
+                                    fromTab: "sent",
+                                    index: index,
+                                  );
+                                }
+                              },
+                              itemBuilder: (context) => const [
+                                PopupMenuItem(
+                                  value: 'view',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.visibility),
+                                      SizedBox(width: 8),
+                                      Text('View'),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                                PopupMenuItem(
+                                  value: 'cancel',
+                                  child: Row(
+                                    children: [
+                                      Icon(Icons.delete,
+                                          color: Colors.redAccent),
+                                      SizedBox(width: 8),
+                                      Text('Cancel'),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       );
