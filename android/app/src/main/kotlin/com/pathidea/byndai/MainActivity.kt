@@ -1,4 +1,4 @@
-package com.example.gridcard
+package com.pathidea.byndai
 
 import io.flutter.embedding.android.FlutterActivity
 
