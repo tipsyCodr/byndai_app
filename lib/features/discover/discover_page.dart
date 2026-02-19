@@ -140,11 +140,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
               children: [
                 _buildSearchBar(),
                 const SizedBox(height: 24),
-                _buildSectionHeader("Suggested Connections", () {}),
-                const SizedBox(height: 12),
-                const ConnectionSuggest(),
-                const SizedBox(height: 32),
-
                 _buildSectionHeader("Upcoming Events", () {
                   Navigator.push(
                     context,
@@ -153,12 +148,16 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     ),
                   );
                 }),
-
                 const SizedBox(height: 12),
 
                 // Existing Event Card (as it is)
                 // _buildEventCard(),
                 _buildEventsCarousel(),
+                const SizedBox(height: 32),
+
+                _buildSectionHeader("Suggested Connections", () {}),
+                const SizedBox(height: 12),
+                const ConnectionSuggest(),
 
                 const SizedBox(height: 32),
                 _buildSectionHeader("Trending Updates", () {}),
@@ -329,7 +328,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
             ),
           ),
 
-          const SizedBox(width: 10),          
+          const SizedBox(width: 10),
 
           GestureDetector(
             onTap: () {
@@ -352,7 +351,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
- 
   Widget _buildSectionHeader(String title, VoidCallback onSeeAll) {
     final colorScheme = Theme.of(context).colorScheme;
 

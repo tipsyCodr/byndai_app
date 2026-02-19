@@ -10,6 +10,7 @@ import 'package:gridcard/core/services/auth_provider.dart'; // ✅ Your AuthProv
 import 'package:gridcard/features/chat/connections_page.dart';
 import 'package:gridcard/core/services/lead_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/routes/route_names.dart';
 import '../qr_scan/profile_qr_code.dart';
 import 'dart:ui';
@@ -99,15 +100,31 @@ class _HomePageState extends State<HomePage> {
           ),
           centerTitle: true,
           automaticallyImplyLeading: false,
+          
           leading: IconButton(
             icon:
                 Icon(Icons.account_circle_outlined, color: colorScheme.primary),
-            onPressed: () {
+            onPressed: () async {
+              final userId = await UserStorageService().getUserId();
+
+              if (userId == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("User ID not found")),
+                );
+                return;
+              }
+
               Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const ProfilePage()),
+                MaterialPageRoute(
+                  builder: (context) => ProfilePage(
+                    userId: userId,
+                    viewerUserId: userId, // self view
+                  ),
+                ),
               );
             },
           ),
+
           actions: [
             IconButton(
               icon: Icon(CupertinoIcons.qrcode, color: colorScheme.primary),
