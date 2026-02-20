@@ -193,8 +193,6 @@ class AuthProvider extends ChangeNotifier {
         false;
   }
 
-
-
   Future<bool> register(Map<String, dynamic> data) async {
     return await _handleLoading(() async {
           final response = await AuthService.registerWithToken(data);
@@ -368,6 +366,27 @@ class AuthProvider extends ChangeNotifier {
             await _storageService.savePin(newPin);
           }
           return success;
+        }) ??
+        false;
+  }
+
+  /// Check email availability (used during registration)
+  Future<bool> checkEmailAvailability(String email) async {
+    return await _handleLoading(() async {
+          final isAvailable = await AuthService.checkEmailAvailability(email);
+
+          if (isAvailable == true) {
+            return true; // ✅ email available
+          }
+
+          if (isAvailable == false) {
+            Fluttertoast.showToast(msg: "Email already exists");
+            return false; // ❌ email already exists
+          }
+
+          // null case → API error
+          Fluttertoast.showToast(msg: "Unable to verify email. Try again.");
+          return false;
         }) ??
         false;
   }

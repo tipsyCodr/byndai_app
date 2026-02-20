@@ -100,7 +100,6 @@ class _HomePageState extends State<HomePage> {
           ),
           centerTitle: true,
           automaticallyImplyLeading: false,
-          
           leading: IconButton(
             icon:
                 Icon(Icons.account_circle_outlined, color: colorScheme.primary),
@@ -124,7 +123,6 @@ class _HomePageState extends State<HomePage> {
               );
             },
           ),
-
           actions: [
             IconButton(
               icon: Icon(CupertinoIcons.qrcode, color: colorScheme.primary),
@@ -202,25 +200,54 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Widget _buildDockItem(int index, IconData icon) {
+  //   final isSelected = _selectedIndex == index;
+
+  //   return GestureDetector(
+  //     onTap: () => _onItemTapped(index),
+  //     child: AnimatedContainer(
+  //       duration: const Duration(milliseconds: 220),
+  //       curve: Curves.easeOut,
+  //       padding: const EdgeInsets.all(8),
+  //       decoration: isSelected
+  //           ? BoxDecoration(
+  //               color: Colors.white.withOpacity(0.12),
+  //               shape: BoxShape.circle,
+  //             )
+  //           : null,
+  //       child: Icon(
+  //         icon,
+  //         color: isSelected ? Colors.white : Colors.white60,
+  //         size: 22,
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildDockItem(int index, IconData icon) {
     final isSelected = _selectedIndex == index;
 
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.all(8),
-        decoration: isSelected
-            ? BoxDecoration(
-                color: Colors.white.withOpacity(0.12),
-                shape: BoxShape.circle,
-              )
-            : null,
-        child: Icon(
-          icon,
-          color: isSelected ? Colors.white : Colors.white60,
-          size: 22,
+    return Expanded(
+      // 🔥 equal spacing + bigger tap zone
+      child: GestureDetector(
+        onTap: () => _onItemTapped(index),
+        behavior: HitTestBehavior.opaque, // 🔥 full tap area active
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          height: 40, // 🔥 bigger height
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.white.withOpacity(0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(28), // 🔥 rounded rectangle
+          ),
+          child: Icon(
+            icon,
+            color: isSelected ? Colors.white : Colors.white60,
+            size: 24,
+          ),
         ),
       ),
     );

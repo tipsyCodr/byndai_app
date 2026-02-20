@@ -8,6 +8,27 @@ import 'package:http/http.dart' as http;
 class AuthService {
   static const String _baseUrl = AppConfig.apiBaseUrl;
 
+  /// Check if email already exists or not
+  static Future<bool?> checkEmailAvailability(String email) async {
+    final response = await _post(
+      'check-email',
+      {'email': email},
+    );
+
+    // Agar response mila aur status true hai
+    if (response != null && response['status'] == true) {
+      // Backend se 'exists' flag aa raha hai
+      final bool exists = response['exists'] == true;
+
+      // Agar exists true → email already registered
+      // Agar exists false → email available
+      return !exists;
+    }
+
+    // Agar null aaya → API error
+    return null;
+  }
+
   /// A centralized POST request handler.
   static Future<Map<String, dynamic>?> _post(
     String endpoint,
