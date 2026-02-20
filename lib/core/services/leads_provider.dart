@@ -13,9 +13,16 @@ class LeadProviders extends ChangeNotifier {
   String? get errorMessage => _errorMessage;
   bool get isBackendLive => _isBackendLive;
 
+  int get currentPage => _currentPage;
+  int get lastPage => _lastPage;
+  int get total => _total;
+
   int _currentPage = 1;
   int _perPage = 10;
   int _lastPage = 1;
+  int _total = 0;
+  // Current user_id being fetched
+  int? _currentUserId;
 
   String? _search;
   String? _company;
@@ -25,6 +32,84 @@ class LeadProviders extends ChangeNotifier {
   bool _isPaginating = false;
 
   bool get isPaginating => _isPaginating;
+
+  /// Fetch first page (or reset) for a given user_id
+  Future<void> fetchLeadsByUserId({
+    required int userId,
+    int perPage = 10,
+    bool reset = false,
+  }) async {
+    if (reset) {
+      _currentPage = 1;
+      _leads.clear();
+      _currentUserId = userId;
+      _perPage = perPage;
+    }
+
+    // If same user and we are already on the last page, do nothing
+    if (_currentUserId == userId && _currentPage > _lastPage) return;
+
+    _isLoading = reset ? true : false;
+    _isPaginating = !reset && _currentPage > 1;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final result = await LeadServices.fetchLeadsByUserId(
+        userId: userId,
+        perPage: _perPage,
+        page: _currentPage,
+      );
+
+      if (result != null) {
+        final newLeads = result['leads'] as List<LeadModel>;
+        final meta = result['meta'] as Map<String, dynamic>;
+
+        _lastPage = meta['last_page'] ?? 1;
+        _total = meta['total'] ?? 0;
+
+        if (_currentPage == 1) {
+          _leads = newLeads;
+        } else {
+          _leads.addAll(newLeads);
+        }
+
+        _currentPage++;
+        notifyListeners();
+      } else {
+        _errorMessage = 'Failed to load leads.';
+        notifyListeners();
+      }
+    } catch (e) {
+      _errorMessage = 'Connection error: $e';
+      notifyListeners();
+    } finally {
+      _isLoading = false;
+      _isPaginating = false;
+      notifyListeners();
+    }
+  }
+
+  /// Load next page (if available)
+  Future<void> loadNextPage() async {
+    if (_currentPage <= _lastPage && _currentUserId != null) {
+      await fetchLeadsByUserId(
+        userId: _currentUserId!,
+        perPage: _perPage,
+      );
+    }
+  }
+
+  /// Clear all data (e.g., when logging out)
+  void clear() {
+    _leads.clear();
+    _currentPage = 1;
+    _lastPage = 1;
+    _total = 0;
+    _currentUserId = null;
+    _errorMessage = null;
+    notifyListeners();
+  }
 
   Future<bool> addLead(LeadModel lead) async {
     _isLoading = true;
@@ -77,29 +162,58 @@ class LeadProviders extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Future<bool> updateLead(int id, Map<String, dynamic> data) async {
+  //   _isLoading = true;
+  //   notifyListeners();
+
+  //   final result = await LeadServices.updateLead(id, data);
+
+  //   if (result != null) {
+  //     final index = _leads.indexWhere((l) => l.id == id);
+  //     if (index != -1) {
+  //       _leads[index] = result;
+  //     }
+
+  //     _isLoading = false;
+  //     notifyListeners();
+  //     return true;
+  //   }
+
+  //   _isLoading = false;
+  //   notifyListeners();
+  //   return false;
+  // }
+
   Future<bool> updateLead(int id, Map<String, dynamic> data) async {
     _isLoading = true;
     notifyListeners();
 
-    final result = await LeadServices.updateLead(id, data);
+    try {
+      final result = await LeadServices.updateLead(id, data);
 
-    if (result != null) {
-      final index = _leads.indexWhere((l) => l.id == id);
-      if (index != -1) {
-        _leads[index] = result;
+      if (result != null) {
+        final index = _leads.indexWhere((l) => l.id == id);
+
+        if (index != -1) {
+          _leads[index] = result;
+        } else {
+          // Safety: agar list me na mile to add kar do
+          _leads.add(result);
+        }
+
+        notifyListeners();
+        return true;
       }
 
+      return false;
+    } catch (e) {
+      debugPrint("🚨 Provider Update Error: $e");
+      return false;
+    } finally {
       _isLoading = false;
       notifyListeners();
-      return true;
     }
-
-    _isLoading = false;
-    notifyListeners();
-    return false;
   }
-
-  
 
   Future<bool> addLeadRaw(Map<String, dynamic> data) async {
     debugPrint("🟢 Provider Received Data => $data");
