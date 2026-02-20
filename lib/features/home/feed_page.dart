@@ -35,9 +35,9 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
-  // ===========================
+  // =============================
   // NEW: Latest 5 Posts
-  // ===========================
+  // =============================
   static const String _baseUrl = AppConfig.apiBaseUrl;
 
   List<Map<String, dynamic>> _latestPosts = [];

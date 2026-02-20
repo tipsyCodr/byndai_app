@@ -962,21 +962,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
         .where((e) => e.isNotEmpty)
         .toList();
 
-    // final payload = {
-    //   "name": nameCtrl.text.trim(),
-    //   "company_name": companyCtrl.text.trim(),
-    //   "address": addressCtrl.text.trim(),
-    //   "website": websiteCtrl.text.trim(),
-    //   "mobile_no_1": mobiles.isNotEmpty ? mobiles[0] : "",
-    //   "mobile_no_2": mobiles.length > 1 ? mobiles[1] : null,
-    //   "mobile_no_3": mobiles.length > 2 ? mobiles[2] : null,
-    //   "email": emails.isNotEmpty ? emails[0] : null,
-    //   "email2": emails.length > 1 ? emails[1] : null,
-    //   // ✅ Add image data if changed
-    //   if (_isImageChanged && _imageBase64 != null) "lead_image": _imageBase64,
-    //   if (_isImageChanged && _imageFilename != null)
-    //     "image_filename": _imageFilename,
-    // };
+    
 
     final payload = {
       "name": nameCtrl.text.trim(),
