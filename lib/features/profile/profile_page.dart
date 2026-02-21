@@ -1060,7 +1060,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
 
-                  // ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) =================
+                  // ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) ==================
                   if (isViewerMode && !widget.isConnected) ...[
                     const SizedBox(height: 14),
                     Container(

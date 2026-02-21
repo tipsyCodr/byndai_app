@@ -38,7 +38,7 @@ class _LeadScanner2State extends State<LeadScanner2> {
   // final String apiUrl =
   //     "https://powderblue-jellyfish-554082.hostingersite.com/api/ocr-extract";
   static const String _baseUrl = AppConfig.apiBaseUrl;
-  final String apiUrl = "$_baseUrl/ocr-extract";
+  final String apiUrl = "$_baseUrl/gpt-ocr";
 
   @override
   void initState() {
@@ -131,40 +131,57 @@ class _LeadScanner2State extends State<LeadScanner2> {
       });
 
       var request = http.MultipartRequest('POST', Uri.parse(apiUrl));
-
+      request.headers['Accept'] = 'application/json';
       final bytes = await _capturedImage!.readAsBytes();
       request.files.add(
         http.MultipartFile.fromBytes(
-          'images[]',
+          'image', // 🔸 must match the API field name
           bytes,
           filename: _capturedImage!.name,
         ),
       );
 
-      var response = await request.send();
+      final response = await request.send();
       final resStr = await response.stream.bytesToString();
 
       if (response.statusCode == 200) {
         final json = jsonDecode(resStr);
 
-        // Extract formdata from response
-        if (json['formdata'] != null) {
-          _extractedData = Map<String, dynamic>.from(json['formdata']);
-        } else if (json['text'] != null) {
-          // If formdata is not directly in response, parse from text
-          _extractedData = _parseFormDataFromText(json['text']);
-        }
+        // ✅ Check if API returned success and data
+        if (json['success'] == true && json['data'] != null) {
+          final apiData = json['data'] as Map<String, dynamic>;
 
-        // Show extracted data in modal
-        if (_extractedData != null && _extractedData!.isNotEmpty) {
+          // 🔹 Map API fields to the keys our modal understands
+          final mappedData = <String, dynamic>{
+            if (apiData['name'] != null) 'name': apiData['name'],
+            if (apiData['company_name'] != null)
+              'company_name': apiData['company_name'],
+            if (apiData['email'] != null) 'email1': apiData['email'],
+            if (apiData['email2'] != null) 'email2': apiData['email2'],
+            if (apiData['website'] != null) 'website': apiData['website'],
+            if (apiData['address'] != null) 'address': apiData['address'],
+            if (apiData['mobile_no_1'] != null)
+              'mobile1': apiData['mobile_no_1'],
+            if (apiData['mobile_no_2'] != null)
+              'mobile2': apiData['mobile_no_2'],
+            if (apiData['mobile_no_3'] != null)
+              'mobile3': apiData['mobile_no_3'],
+          };
+
+          setState(() {
+            _extractedData = mappedData;
+          });
+
+          // ✅ Show the modal with prefilled data
           _showExtractedDataModal();
         } else {
           setState(() {
-            _errorMessage = "No data could be extracted from the image";
+            _errorMessage =
+                json['message'] ?? 'No data could be extracted from the image';
           });
         }
       } else {
-        throw Exception("OCR Failed: $resStr");
+        throw Exception('OCR failed: ${response.statusCode} - $resStr');
       }
     } catch (e) {
       setState(() => _errorMessage = e.toString());

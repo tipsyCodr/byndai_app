@@ -10,7 +10,12 @@ import 'post_creation_page.dart';
 
 class BusinessFeedPage extends StatefulWidget {
   final String industryType;
-  const BusinessFeedPage({super.key, this.industryType = 'All'});
+  final int? selectedPostId;
+  const BusinessFeedPage({
+    super.key,
+    this.industryType = 'All',
+    this.selectedPostId,
+  });
 
   @override
   State<BusinessFeedPage> createState() => _BusinessFeedPageState();
@@ -82,8 +87,28 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
         final List<Map<String, dynamic>> newPosts =
             dataList.map((e) => Map<String, dynamic>.from(e)).toList();
 
+        // setState(() {
+        //   _posts.clear();
+        //   _posts.addAll(newPosts);
+
+        //   _currentPage = pagination["current_page"] ?? 1;
+        //   _lastPage = pagination["last_page"] ?? 1;
+        // });
+
         setState(() {
           _posts.clear();
+
+          // 👇 If selectedPostId exists, bring it to top
+          if (widget.selectedPostId != null) {
+            final index =
+                newPosts.indexWhere((p) => p["id"] == widget.selectedPostId);
+
+            if (index != -1) {
+              final selectedPost = newPosts.removeAt(index);
+              newPosts.insert(0, selectedPost);
+            }
+          }
+
           _posts.addAll(newPosts);
 
           _currentPage = pagination["current_page"] ?? 1;
@@ -182,21 +207,6 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
-                // itemBuilder: (context, index) {
-                //   // Loading more indicator
-                //   if (index == _posts.length) {
-                //     return const Padding(
-                //       padding: EdgeInsets.symmetric(vertical: 18),
-                //       child: Center(child: CircularProgressIndicator()),
-                //     );
-                //   }
-
-                //   final post = _posts[index];
-
-                //   return PostCard(post: post);
-                // },
-
-                // BusinessFeedPage में ListView.builder का itemBuilder update करें:
                 itemBuilder: (context, index) {
                   // Loading more indicator
                   if (index == _posts.length) {

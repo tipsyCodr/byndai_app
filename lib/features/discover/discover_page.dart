@@ -10,6 +10,7 @@ import 'package:gridcard/widgets/post_card.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../business_event/business_event_page.dart';
+import 'package:gridcard/widgets/discover_page_connections.dart';
 
 class DiscoverPage extends StatefulWidget {
   const DiscoverPage({super.key});
@@ -157,10 +158,11 @@ class _DiscoverPageState extends State<DiscoverPage> {
 
                 _buildSectionHeader("Suggested Connections", () {}),
                 const SizedBox(height: 12),
-                const ConnectionSuggest(),
+                // const ConnectionSuggest(),
+                const DiscoverConnectionSuggest(),
 
                 const SizedBox(height: 32),
-                _buildSectionHeader("Trending Updates", () {}),
+                // _buildSectionHeader("Trending Updates", () {}),
               ],
             ),
           ),

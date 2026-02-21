@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:gridcard/core/services/user_storage_service.dart';
 import './post_detailed_page.dart';
 import './report_page.dart';
+import './industry_icon_mapper.dart';
 
 class PostCard extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -394,13 +395,16 @@ class _PostCardState extends State<PostCard> {
   Widget build(BuildContext context) {
     final user = _postData["user"] ?? {};
     final fname = (user["fname"] ?? "User").toString();
-
+    final profilePicPath = user["profile_pic"];
+    final profilePicUrl =
+        profilePicPath != null ? "$_baseUrl/storage/$profilePicPath" : null;
     final title = (_postData["title"] ?? "").toString();
     final description = (_postData["description"] ?? "").toString();
 
     final updatedAt = _formatTime(_postData["updated_at"]?.toString());
 
     return Card(
+      color: const Color(0xFFDCDEF7),
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -418,10 +422,35 @@ class _PostCardState extends State<PostCard> {
               },
               child: Row(
                 children: [
-                  const CircleAvatar(
+                  // const CircleAvatar(
+                  //   radius: 18,
+                  //   backgroundImage:
+                  //       AssetImage("assets/images/default_user.png"),
+                  // ),
+                  CircleAvatar(
                     radius: 18,
-                    backgroundImage:
-                        AssetImage("assets/images/default_user.png"),
+                    backgroundColor: Colors.grey.shade200,
+                    child: ClipOval(
+                      child: (profilePicUrl != null && profilePicUrl.isNotEmpty)
+                          ? Image.network(
+                              profilePicUrl,
+                              width: 36,
+                              height: 36,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return const Icon(
+                                  Icons.person,
+                                  size: 22,
+                                  color: Colors.grey,
+                                );
+                              },
+                            )
+                          : const Icon(
+                              Icons.person,
+                              size: 22,
+                              color: Colors.grey,
+                            ),
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -446,10 +475,14 @@ class _PostCardState extends State<PostCard> {
                       ],
                     ),
                   ),
-                  const CircleAvatar(
+                  CircleAvatar(
                     radius: 14,
-                    backgroundImage:
-                        AssetImage("assets/images/default_logo.png"),
+                    backgroundColor: Colors.grey.shade200,
+                    child: Icon(
+                      IndustryIconMapper.getIcon(_postData["industry_icon"]),
+                      size: 16,
+                      color: Colors.blue.shade700,
+                    ),
                   ),
                 ],
               ),
@@ -719,7 +752,7 @@ class _PostCardState extends State<PostCard> {
         // SAVE BUTTON
         _footerSaveBtn(
           icon: _isSaved ? Icons.bookmark : Icons.bookmark_border,
-          label: "Save",
+          label: "",
           active: _isSaved,
           isAnimating: _isSaveAnimating,
           onTap: _toggleSave,

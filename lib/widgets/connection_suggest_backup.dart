@@ -1,10 +1,9 @@
-
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
-import 'package:gridcard/features/profile/profile_page.dart'; 
+import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:http/http.dart' as http;
 
 class ConnectionSuggest extends StatefulWidget {
@@ -15,9 +14,13 @@ class ConnectionSuggest extends StatefulWidget {
 }
 
 class _ConnectionSuggestState extends State<ConnectionSuggest> {
-  final PageController _pageController = PageController(viewportFraction: .6);
+  final PageController _pageController = PageController(viewportFraction: .78);
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
+
+  // Image base url (as you said)
+  static const String _storageBaseUrl =
+      "https://powderblue-jellyfish-554082.hostingersite.com/storage";
 
   int? _userId;
 
@@ -29,6 +32,16 @@ class _ConnectionSuggestState extends State<ConnectionSuggest> {
 
   final List<Map<String, dynamic>> _users = [];
 
+  // ================= HEADERS =================
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await UserStorageService().getToken();
+    return {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      if (token != null) "Authorization": "Bearer $token",
+    };
+  }
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +49,8 @@ class _ConnectionSuggestState extends State<ConnectionSuggest> {
 
     _pageController.addListener(() {
       final currentPage = _pageController.page ?? 0;
+
+      // last 2-3 cards ke paas aate hi load next
       if (currentPage >= (_users.length - 3) && !_isLoading) {
         _loadNextPage();
       }
@@ -55,6 +70,7 @@ class _ConnectionSuggestState extends State<ConnectionSuggest> {
     await _fetchUsers(page: 1);
   }
 
+  // ================= API CALL =================
   Future<void> _fetchUsers({required int page}) async {
     if (_userId == null) return;
 
@@ -63,35 +79,43 @@ class _ConnectionSuggestState extends State<ConnectionSuggest> {
         _isLoading = true;
       });
 
-      final uri = Uri.parse("$_baseUrl/users/filter-list?page=$page");
+      // NEW API
+      final uri = Uri.parse("$_baseUrl/users-with-business/list?page=$page");
+
+      final headers = await _getHeaders();
 
       final response = await http.post(
         uri,
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
+        headers: headers,
         body: jsonEncode({
-          "user_id": _userId,
+          "userId": _userId,
         }),
       );
 
       final jsonData = jsonDecode(response.body);
 
       if (response.statusCode == 200 && jsonData["status"] == true) {
-        final List data = jsonData["data"] ?? [];
+        final List listUsers = jsonData["data"]?["users"] ?? [];
 
-        final pagination = jsonData["pagination"] ?? {};
+        final pagination = jsonData["data"]?["pagination"] ?? {};
         final int currentPage = pagination["current_page"] ?? page;
         final int lastPage = pagination["last_page"] ?? page;
 
-        final newUsers = data.map((e) => Map<String, dynamic>.from(e)).toList();
+        final newUsers =
+            listUsers.map((e) => Map<String, dynamic>.from(e)).toList();
 
         setState(() {
           if (page == 1) {
             _users.clear();
           }
-          _users.addAll(newUsers);
+
+          // avoid duplicates
+          final existingIds = _users.map((e) => e["id"]).toSet();
+          for (final u in newUsers) {
+            if (!existingIds.contains(u["id"])) {
+              _users.add(u);
+            }
+          }
 
           _currentPage = currentPage;
           _lastPage = lastPage;
@@ -120,21 +144,199 @@ class _ConnectionSuggestState extends State<ConnectionSuggest> {
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+  // ================= HELPERS =================
+  String? _fullStorageUrl(String? path) {
+    if (path == null) return null;
+    final p = path.trim();
+    if (p.isEmpty) return null;
+    return "$_storageBaseUrl/$p";
+  }
+
+  String _safeText(dynamic v) {
+    if (v == null) return "";
+    return v.toString().trim();
+  }
+
+  Widget _infoRow({
+    required IconData icon,
+    required String text,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14, color: Colors.grey.shade700),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey.shade800,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ================= CARD UI =================
+
+
+  Widget _userCard(Map<String, dynamic> user) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final fname = _safeText(user["fname"]);
+    final userName = _safeText(user["user_name"]);
+
+    final profilePic = _fullStorageUrl(user["profile_pic"]);
+    final profileLogo = _fullStorageUrl(user["profile_logo"]);
+
+    final industryTitle = _safeText(user["business"]?["industry"]?["title"]);
+
+    final showName =
+        fname.isNotEmpty ? fname : (userName.isNotEmpty ? userName : "Unknown");
+
+    return GestureDetector(
+      onTap: () {
+        if (_userId == null) return;
+
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProfilePage(
+              userId: user["id"],
+              viewerUserId: _userId,
+            ),
+          ),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? Colors.grey.shade900 : Colors.white,
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 14,
+              offset: const Offset(0, 10),
+              color: Colors.black.withOpacity(0.07),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // ================= IMAGE SECTION =================
+            Stack(
+              clipBehavior: Clip.none,
+              alignment: Alignment.bottomCenter,
+              children: [
+                Container(
+                  height: 150, // 🔥 Increased height
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(22)),
+                    color: Colors.white,
+                  ),
+                  child: profilePic == null
+                      ? const Icon(Icons.account_circle, size: 80)
+                      : ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(22)),
+                          child: Image.network(
+                            profilePic,
+                            fit: BoxFit.contain, // 🔥 Full image visible
+                          ),
+                        ),
+                ),
+
+                // 🔥 Logo bottom center (half inside half outside)
+                Positioned(
+                  bottom: -25,
+                  child: Container(
+                    height: 60,
+                    width: 60,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: [
+                        BoxShadow(
+                          blurRadius: 10,
+                          offset: const Offset(0, 6),
+                          color: Colors.black.withOpacity(0.25),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: profileLogo == null
+                          ? const Icon(Icons.business, size: 28)
+                          : Image.network(
+                              profileLogo,
+                              fit: BoxFit.cover,
+                            ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 35), // space for floating logo
+
+            // ================= ONLY NAME + INDUSTRY =================
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Column(
+                children: [
+                  Text(
+                    showName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (industryTitle.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      industryTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey.shade600,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ================= BUILD =================
+  @override
+  Widget build(BuildContext context) {
     if (_isFirstLoad) {
       return const SizedBox(
-        height: 150,
+        height: 320,
         child: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (_users.isEmpty) {
       return const SizedBox(
-        height: 150,
+        height: 320,
         child: Center(
           child: Text("No suggestions found"),
         ),
@@ -142,76 +344,13 @@ class _ConnectionSuggestState extends State<ConnectionSuggest> {
     }
 
     return SizedBox(
-      height: 150,
+      height: 280,
       child: PageView.builder(
         controller: _pageController,
         itemCount: _users.length,
         itemBuilder: (context, index) {
           final user = _users[index];
-          final userName = user["fname"] ?? "Unknown";
-
-          return GestureDetector(
-            onTap: () {
-              // 👇 Navigate to that user's profile
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProfilePage(
-                    userId: user['id'], // assuming 'id' exists
-                    viewerUserId: _userId, // ✅ add this
-                  ),
-                ),
-              );
-            },
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? colorScheme.surfaceContainerHighest
-                    : Colors.grey[100],
-                border: Border.all(
-                  color: colorScheme.onSurface.withOpacity(0.05),
-                ),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.account_circle,
-                    size: 60,
-                    color: colorScheme.primary,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    userName.toString(),
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: isDark ? colorScheme.onSurface : colorScheme.primary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  Text(
-                    'Occupation', // You may replace with actual field like user["occupation"]
-                    style: TextStyle(
-                      color: colorScheme.onSurface.withOpacity(0.5),
-                      fontSize: 12,
-                    ),
-                  ),
-                  if (_isLoading && index == _users.length - 1)
-                    const Padding(
-                      padding: EdgeInsets.only(top: 8),
-                      child: SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
+          return _userCard(user);
         },
       ),
     );
