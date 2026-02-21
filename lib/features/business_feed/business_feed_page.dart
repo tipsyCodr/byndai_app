@@ -182,21 +182,7 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
                 controller: _scrollController,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 itemCount: _posts.length + (_isLoadingMore ? 1 : 0),
-                // itemBuilder: (context, index) {
-                //   // Loading more indicator
-                //   if (index == _posts.length) {
-                //     return const Padding(
-                //       padding: EdgeInsets.symmetric(vertical: 18),
-                //       child: Center(child: CircularProgressIndicator()),
-                //     );
-                //   }
-
-                //   final post = _posts[index];
-
-                //   return PostCard(post: post);
-                // },
-
-                // BusinessFeedPage में ListView.builder का itemBuilder update करें:
+                
                 itemBuilder: (context, index) {
                   // Loading more indicator
                   if (index == _posts.length) {

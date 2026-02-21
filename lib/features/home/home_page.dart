@@ -200,29 +200,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget _buildDockItem(int index, IconData icon) {
-  //   final isSelected = _selectedIndex == index;
-
-  //   return GestureDetector(
-  //     onTap: () => _onItemTapped(index),
-  //     child: AnimatedContainer(
-  //       duration: const Duration(milliseconds: 220),
-  //       curve: Curves.easeOut,
-  //       padding: const EdgeInsets.all(8),
-  //       decoration: isSelected
-  //           ? BoxDecoration(
-  //               color: Colors.white.withOpacity(0.12),
-  //               shape: BoxShape.circle,
-  //             )
-  //           : null,
-  //       child: Icon(
-  //         icon,
-  //         color: isSelected ? Colors.white : Colors.white60,
-  //         size: 22,
-  //       ),
-  //     ),
-  //   );
-  // }
+  
 
   Widget _buildDockItem(int index, IconData icon) {
     final isSelected = _selectedIndex == index;

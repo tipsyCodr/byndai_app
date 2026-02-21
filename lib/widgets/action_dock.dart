@@ -30,7 +30,7 @@ class ActionDock extends StatelessWidget {
               const BusinessFeedPage()),
           _buildActionItem(CupertinoIcons.calendar, 'Events', context,
               const BusinessEventPage()),
-          _buildActionItem(CupertinoIcons.graph_square, 'Stats', context,
+          _buildActionItem(CupertinoIcons.graph_square, 'Analitics', context,
               const UserAnaliticsPage()),
           _buildActionItem(
             CupertinoIcons.person_2, 'Network', context,

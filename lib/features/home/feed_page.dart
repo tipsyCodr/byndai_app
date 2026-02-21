@@ -1,5 +1,3 @@
-
-
 import 'dart:convert';
 
 import 'package:flutter/cupertino.dart';
@@ -23,6 +21,7 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:gridcard/core/services/social_provider.dart';
+import '../../features/analitics/user_analitics_page.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -35,6 +34,16 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
+  int _totalViewCount = 0;
+  int _totalTimeSeconds = 0;
+  bool _isAnalyticsLoading = false;
+
+  double _averageRating = 0.0;
+  int _totalReviews = 0;
+
+  double _profileCompletionPercent = 0; // 0 to 100
+  bool _isCompletionLoading = false;
+
   // =============================
   // NEW: Latest 5 Posts
   // =============================
@@ -42,6 +51,73 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
 
   List<Map<String, dynamic>> _latestPosts = [];
   bool _isLatestLoading = false;
+
+  Future<void> _fetchProfileCompletion() async {
+    if (_isCompletionLoading) return;
+
+    setState(() => _isCompletionLoading = true);
+
+    try {
+      final userId = await UserStorageService().getUserId();
+      if (userId == null) return;
+
+      final uri = Uri.parse("$_baseUrl/profile-completion");
+      final headers = await _getHeaders();
+
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode({
+          "user_id": userId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+
+        if (jsonData["success"] == true) {
+          setState(() {
+            _profileCompletionPercent =
+                (jsonData["percentage"] ?? 0).toDouble();
+          });
+        }
+      } else {
+        debugPrint("Profile completion API failed: ${response.body}");
+      }
+    } catch (e) {
+      debugPrint("Profile completion error: $e");
+    } finally {
+      if (mounted) setState(() => _isCompletionLoading = false);
+    }
+  }
+
+  Future<void> _fetchAverageRating() async {
+    try {
+      final userId = await UserStorageService().getUserId();
+      if (userId == null) return;
+
+      final uri = Uri.parse("$_baseUrl/user-reviews/$userId/average");
+      final headers = await _getHeaders();
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+
+        if (jsonData["status"] == true) {
+          final data = jsonData["data"];
+
+          setState(() {
+            _averageRating =
+                double.tryParse(data["average_rating"].toString()) ?? 0.0;
+            _totalReviews = int.tryParse(data["total_reviews"].toString()) ?? 0;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Rating API error: $e");
+    }
+  }
 
   @override
   void initState() {
@@ -61,8 +137,11 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
 
       // NEW functionality
       _fetchLatest5Posts();
-
+      // 🔥 ADD THIS
+      _fetchUserAnalytics();
       _fadeController.forward();
+      _fetchAverageRating();
+      _fetchProfileCompletion();
     });
   }
 
@@ -70,6 +149,47 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   void dispose() {
     _fadeController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchUserAnalytics() async {
+    if (_isAnalyticsLoading) return;
+
+    setState(() => _isAnalyticsLoading = true);
+
+    try {
+      final userId = await UserStorageService().getUserId();
+      if (userId == null) return;
+
+      final uri = Uri.parse("$_baseUrl/user-analytics");
+      final headers = await _getHeaders();
+
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode({
+          "userId": userId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+
+        if (jsonData["status"] == true) {
+          final profileViews = jsonData["data"]?["profile_views"];
+
+          setState(() {
+            _totalViewCount = profileViews?["total_view_count"] ?? 0;
+            _totalTimeSeconds = profileViews?["total_time_seconds"] ?? 0;
+          });
+        }
+      } else {
+        debugPrint("Analytics API failed: ${response.body}");
+      }
+    } catch (e) {
+      debugPrint("Analytics exception: $e");
+    } finally {
+      if (mounted) setState(() => _isAnalyticsLoading = false);
+    }
   }
 
   // ===========================
@@ -120,137 +240,256 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     }
   }
 
-  // ===========================
-  // OLD: Dashboard (same)
-  // ===========================
   Widget _buildPerformanceDashboard() {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            colorScheme.primary,
-            isDark
-                ? colorScheme.surfaceContainerHighest
-                : colorScheme.primary.withOpacity(0.8),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => const UserAnaliticsPage(),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              colorScheme.primary,
+              isDark
+                  ? colorScheme.surfaceContainerHighest
+                  : colorScheme.primary.withOpacity(0.85),
+            ],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.4 : 0.25),
+              blurRadius: 18,
+              offset: const Offset(0, 8),
+            ),
           ],
         ),
-        border: Border.all(color: Colors.white.withOpacity(0.1), width: 0.5),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.5 : 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'YOUR NETWORK IMPACT',
-                style: TextStyle(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// 🔹 HEADER
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'YOUR NETWORK IMPACT',
+                  style: TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 2,
-                    fontSize: 10),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(CupertinoIcons.graph_circle,
-                        color: Colors.white, size: 14),
-                    SizedBox(width: 4),
-                    Text(
-                      '+12%',
-                      style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            '1,248',
-            style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 42,
-                letterSpacing: -1),
-          ),
-          const Text(
-            'Total Profile Interactions',
-            style: TextStyle(color: Colors.white70, fontSize: 13, height: 1.2),
-          ),
-          const SizedBox(height: 24),
-          Stack(
-            children: [
-              Container(
-                height: 6,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(seconds: 2),
-                height: 6,
-                width: 140,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Colors.white, Colors.white70],
-                  ),
-                  borderRadius: BorderRadius.circular(3),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.white.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                'Profile Completion',
-                style: TextStyle(color: Colors.white38, fontSize: 11),
-              ),
-              Text(
-                '85%',
-                style: TextStyle(
-                    color: Colors.white70,
+                    fontWeight: FontWeight.bold,
                     fontSize: 11,
-                    fontWeight: FontWeight.bold),
+                    letterSpacing: 1.5,
+                  ),
+                ),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    "LIVE",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                )
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            /// 🔹 LOADING
+            if (_isAnalyticsLoading)
+              const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              )
+            else ...[
+              /// 🔢 TOTAL PROFILE VIEWS
+              Text(
+                _totalViewCount.toString(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 36,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ],
-          ),
-        ],
+              const SizedBox(height: 4),
+              const Text(
+                "Total Profile Views",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 13,
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              /// 📊 MINI STATS ROW
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  /// ⭐ Rating Card
+                  _miniStatCard(
+                    icon: Icons.star,
+                    value: _averageRating.toStringAsFixed(1),
+                    label: "Rating",
+                  ),
+
+                  /// 📝 Reviews Card
+                  _miniStatCard(
+                    icon: Icons.rate_review,
+                    value: _totalReviews.toString(),
+                    label: "Reviews",
+                  ),
+
+                  /// ⏱ Time Spent Card
+                  _miniStatCard(
+                    icon: Icons.timer,
+                    value: "${_totalTimeSeconds}s",
+                    label: "Watch",
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              /// 📈 PROFILE COMPLETION
+              const Text(
+                "Profile Completion",
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              /// Progress Bar
+              Stack(
+                children: [
+                  Container(
+                    height: 8,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  FractionallySizedBox(
+                    // widthFactor: 0.85, // 85%
+                    widthFactor:
+                        (_profileCompletionPercent / 100).clamp(0.0, 1.0),
+                    child: Container(
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.greenAccent,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 6),
+
+              // const Align(
+              //   alignment: Alignment.centerRight,
+              //   child: Text(
+              //     "85%",
+              //     style: TextStyle(
+              //       color: Colors.white,
+              //       fontSize: 12,
+              //       fontWeight: FontWeight.bold,
+              //     ),
+              //   ),
+              // ),
+
+              Align(
+                alignment: Alignment.centerRight,
+                child: Text(
+                  "${_profileCompletionPercent.toInt()}%",
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ]
+          ],
+        ),
+      ),
+    );
+  }
+  
+
+  Widget _miniStatCard({
+    required IconData icon,
+    required String value,
+    required String label,
+  }) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 4),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            /// 🔢 VALUE TOP
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                value,
+                maxLines: 1,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 6),
+
+            /// 🔹 ICON + LABEL ROW
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: Colors.white70, size: 14),
+                const SizedBox(width: 4),
+                Flexible(
+                  child: Text(
+                    label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
