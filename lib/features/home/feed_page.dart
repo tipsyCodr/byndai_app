@@ -11,7 +11,9 @@ import 'package:provider/provider.dart';
 import '../leads/lead_scanner_2.dart';
 
 // OLD PostCard (provider model)
+//K:\amit\bynd-ai\byndai_app-main\lib\features\business_feed\home_post_card.dart
 import 'package:gridcard/widgets/post_card.dart' as old_post_card;
+import '../../features/business_feed/home_post_card.dart';
 
 // NEW PostCard (API Map model)
 import '../business_feed/post_card.dart';
@@ -435,7 +437,6 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
       ),
     );
   }
-  
 
   Widget _miniStatCard({
     required IconData icon,
@@ -633,23 +634,13 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     }
 
     return SizedBox(
-      height: 470, // thoda safe height
-      child: ListView.builder(
-        padding: const EdgeInsets.only(left: 0, right: 6),
-        scrollDirection: Axis.horizontal,
-        itemCount: _latestPosts.length,
-        itemBuilder: (context, index) {
-          final post = _latestPosts[index];
-
-          return Padding(
-            padding: EdgeInsets.only(
-              right: 14,
-              left: index == 0 ? 0 : 0,
-            ),
-            child: SizedBox(
+      height: 496, // thoda safe height
+      // height: MediaQuery.of(context).size.height * 0.65,
+      child: _latestPosts.isNotEmpty
+          ? SizedBox(
               width: MediaQuery.of(context).size.width * 0.90,
-              child: PostCard(
-                post: post,
+              child: HomePostCard(
+                post: _latestPosts[0], // Sirf first post
                 onPostUpdated: (postId, updatedPost) {
                   final i = _latestPosts.indexWhere((p) => p["id"] == postId);
                   if (i != -1) {
@@ -659,10 +650,8 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                   }
                 },
               ),
-            ),
-          );
-        },
-      ),
+            )
+          : const SizedBox(),
     );
   }
 
