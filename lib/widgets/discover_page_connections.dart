@@ -171,11 +171,13 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
         child: Stack(
           children: [
             // Gradient
+         
+
             Positioned(
               left: 0,
               right: 0,
               bottom: 0,
-              height: 180,
+              height: 200, // 👈 sirf content jitna
               child: Container(
                 decoration: const BoxDecoration(
                   borderRadius:
@@ -184,9 +186,18 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                     begin: Alignment.bottomCenter,
                     end: Alignment.topCenter,
                     colors: [
-                      Colors.black87,
-                      Colors.black54,
-                      Colors.transparent,
+                      Colors.black, // solid bottom
+                      Colors.black, // keep solid till fname
+                      Colors.black87, // slight fade
+                      Colors.black54, // soft fade
+                      Colors.transparent // completely clear
+                    ],
+                    stops: [
+                      0.0,
+                      0.55, // 👈 yaha tak full dark (fname tak)
+                      0.75,
+                      0.9,
+                      1.0,
                     ],
                   ),
                 ),
@@ -201,20 +212,17 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                 
                   Text(
                     _capitalize(fname),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color.fromARGB(255, 22, 13, 99),
+                      color: Color.fromARGB(255, 247, 247, 250),
                       fontWeight: FontWeight.bold,
                       fontSize: 24,
                     ),
                   ),
                   const SizedBox(width: 12),
-               
-
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -227,7 +235,7 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(
-                                  color: Color.fromARGB(255, 22, 13, 99),
+                                  color: Color.fromARGB(255, 249, 249, 252),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
                                 ),
@@ -241,7 +249,7 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                       Text(
                         "$friendCount Connects",
                         style: const TextStyle(
-                          color: Color.fromARGB(255, 22, 13, 99),
+                          color: Color.fromARGB(255, 249, 248, 252),
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),

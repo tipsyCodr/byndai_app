@@ -12,18 +12,18 @@
             "program": "lib/main.dart"
         },
         {
-            "name": "gridcard",
+            "name": "ByndAI",
             "request": "launch",
             "type": "dart"
         },
         {
-            "name": "gridcard (profile mode)",
+            "name": "ByndAI (profile mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "profile"
         },
         {
-            "name": "gridcard (release mode)",
+            "name": "ByndAI (release mode)",
             "request": "launch",
             "type": "dart",
             "flutterMode": "release"

@@ -1028,25 +1028,25 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          "Grid Club",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade300,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          "GRID",
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade400,
-                            letterSpacing: 1,
-                          ),
-                        ),
+                        // Text(
+                        //   "Grid Club",
+                        //   textAlign: TextAlign.center,
+                        //   style: TextStyle(
+                        //     fontSize: 14,
+                        //     color: Colors.grey.shade300,
+                        //     fontWeight: FontWeight.w500,
+                        //   ),
+                        // ),
+                        // const SizedBox(height: 4),
+                        // Text(
+                        //   "GRID",
+                        //   textAlign: TextAlign.center,
+                        //   style: TextStyle(
+                        //     fontSize: 12,
+                        //     color: Colors.grey.shade400,
+                        //     letterSpacing: 1,
+                        //   ),
+                        // ),
                         const SizedBox(height: 12),
                         Text(
                           address,
