@@ -45,30 +45,30 @@ class _ScannedLeadState extends State<ScannedLead> {
                     style: TextStyle(
                       color: colorScheme.onPrimary.withOpacity(0.8),
                     )),
-                Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.onPrimary.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: FilledButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                            builder: (context) => const CameraScreen()),
-                      );
-                    },
-                    style: FilledButton.styleFrom(
-                      backgroundColor: Colors.transparent,
-                      shadowColor: Colors.transparent,
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppConfig.roundness),
-                      ),
-                    ),
-                    child: Text('Scan',
-                        style: TextStyle(color: colorScheme.onPrimary)),
-                  ),
-                )
+                // Container(
+                //   decoration: BoxDecoration(
+                //     color: colorScheme.onPrimary.withOpacity(0.1),
+                //     borderRadius: BorderRadius.circular(12),
+                //   ),
+                //   child: FilledButton(
+                //     onPressed: () {
+                //       Navigator.of(context).push(
+                //         MaterialPageRoute(
+                //             builder: (context) => const CameraScreen()),
+                //       );
+                //     },
+                //     style: FilledButton.styleFrom(
+                //       backgroundColor: Colors.transparent,
+                //       shadowColor: Colors.transparent,
+                //       shape: RoundedRectangleBorder(
+                //         borderRadius:
+                //             BorderRadius.circular(AppConfig.roundness),
+                //       ),
+                //     ),
+                //     child: Text('Scan',
+                //         style: TextStyle(color: colorScheme.onPrimary)),
+                //   ),
+                // )
               ],
             )
           ],

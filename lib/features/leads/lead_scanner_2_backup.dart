@@ -1,3 +1,5 @@
+
+
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:cupertino_icons/cupertino_icons.dart';
@@ -12,6 +14,7 @@ import 'package:gridcard/core/services/leads_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:gridcard/routes/route_names.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/core/services/user_storage_service.dart';
 
 class LeadScanner2 extends StatefulWidget {
   final Function(Map<String, dynamic>)? onDataExtracted;
@@ -34,9 +37,6 @@ class _LeadScanner2State extends State<LeadScanner2> {
   String _errorMessage = '';
   Map<String, dynamic>? _extractedData;
 
-  // final String apiUrl = "http://byndai_server-main.test/api/ocr-extract";
-  // final String apiUrl =
-  //     "https://powderblue-jellyfish-554082.hostingersite.com/api/ocr-extract";
   static const String _baseUrl = AppConfig.apiBaseUrl;
   final String apiUrl = "$_baseUrl/gpt-ocr";
 
@@ -54,7 +54,12 @@ class _LeadScanner2State extends State<LeadScanner2> {
 
   Future<void> _requestPermissions() async {
     if (!kIsWeb) {
-      await [Permission.camera, Permission.storage].request();
+      await [
+        Permission.camera,
+        Permission.storage,
+        Permission.photos,
+        Permission.microphone,
+      ].request();
     }
   }
 
@@ -94,7 +99,7 @@ class _LeadScanner2State extends State<LeadScanner2> {
     setState(() {
       _capturedImage = file;
       _isCapturedMode = true;
-      _extractedData = null; // Reset previous data
+      _extractedData = null;
     });
   }
 
@@ -106,7 +111,7 @@ class _LeadScanner2State extends State<LeadScanner2> {
       setState(() {
         _capturedImage = img;
         _isCapturedMode = true;
-        _extractedData = null; // Reset previous data
+        _extractedData = null;
       });
     }
   }
@@ -135,7 +140,7 @@ class _LeadScanner2State extends State<LeadScanner2> {
       final bytes = await _capturedImage!.readAsBytes();
       request.files.add(
         http.MultipartFile.fromBytes(
-          'image', // 🔸 must match the API field name
+          'image',
           bytes,
           filename: _capturedImage!.name,
         ),
@@ -147,11 +152,9 @@ class _LeadScanner2State extends State<LeadScanner2> {
       if (response.statusCode == 200) {
         final json = jsonDecode(resStr);
 
-        // ✅ Check if API returned success and data
         if (json['success'] == true && json['data'] != null) {
           final apiData = json['data'] as Map<String, dynamic>;
 
-          // 🔹 Map API fields to the keys our modal understands
           final mappedData = <String, dynamic>{
             if (apiData['name'] != null) 'name': apiData['name'],
             if (apiData['company_name'] != null)
@@ -172,7 +175,6 @@ class _LeadScanner2State extends State<LeadScanner2> {
             _extractedData = mappedData;
           });
 
-          // ✅ Show the modal with prefilled data
           _showExtractedDataModal();
         } else {
           setState(() {
@@ -188,38 +190,6 @@ class _LeadScanner2State extends State<LeadScanner2> {
     } finally {
       setState(() => _isLoading = false);
     }
-  }
-
-  Map<String, dynamic> _parseFormDataFromText(String text) {
-    final Map<String, dynamic> data = {};
-
-    // Extract email patterns
-    final emailRegex =
-        RegExp(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b');
-    final emails = emailRegex.allMatches(text).map((m) => m.group(0)).toList();
-    if (emails.isNotEmpty) data['email1'] = emails[0];
-    if (emails.length > 1) data['email2'] = emails[1];
-
-    // Extract phone numbers
-    final phoneRegex = RegExp(r'\b\d{10}\b');
-    final phones = phoneRegex.allMatches(text).map((m) => m.group(0)).toList();
-    for (int i = 0; i < phones.length && i < 3; i++) {
-      data['mobile${i + 1}'] = phones[i];
-    }
-
-    // Try to extract name (first line or after common prefixes)
-    final lines = text.split('\n');
-    for (var line in lines) {
-      if (line.trim().isNotEmpty &&
-          !line.contains('@') &&
-          !RegExp(r'\d{10}').hasMatch(line) &&
-          line.length > 3) {
-        data['name'] = line.trim();
-        break;
-      }
-    }
-
-    return data;
   }
 
   void _showExtractedDataModal() {
@@ -240,7 +210,7 @@ class _LeadScanner2State extends State<LeadScanner2> {
               bottomRight: Radius.circular(24),
             ),
             child: ExtractedDataModal(
-              capturedImage: _capturedImage!, // ✅ Pass captured image
+              capturedImage: _capturedImage!,
               extractedData: _extractedData!,
               onSave: (data) {
                 if (widget.onDataExtracted != null) {
@@ -303,8 +273,6 @@ class _LeadScanner2State extends State<LeadScanner2> {
         children: [
           const SizedBox(height: 20),
           Expanded(child: Center(child: _buildPreviewBox())),
-
-          // Error Message
           if (_errorMessage.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -314,14 +282,11 @@ class _LeadScanner2State extends State<LeadScanner2> {
                 textAlign: TextAlign.center,
               ),
             ),
-
-          // Loading Indicator
           if (_isLoading)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 10),
               child: CircularProgressIndicator(),
             ),
-
           const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.only(bottom: 20),
@@ -333,7 +298,6 @@ class _LeadScanner2State extends State<LeadScanner2> {
     );
   }
 
-  // 🔹 Default 3 buttons
   Widget _buildCameraButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -345,7 +309,6 @@ class _LeadScanner2State extends State<LeadScanner2> {
     );
   }
 
-  // 🔹 Cancel | Recapture | Submit
   Widget _buildActionButtons() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -392,9 +355,10 @@ class _LeadScanner2State extends State<LeadScanner2> {
   }
 }
 
-// Modal for displaying extracted data - UPDATED to match Add Lead Modal
+// ======================= MODAL =======================
+
 class ExtractedDataModal extends StatefulWidget {
-  final XFile capturedImage; // ✅ Add captured image parameter
+  final XFile capturedImage;
   final Map<String, dynamic> extractedData;
   final Function(Map<String, dynamic>) onSave;
   final VoidCallback onCancel;
@@ -419,6 +383,10 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
   final websiteCtrl = TextEditingController();
   final addressCtrl = TextEditingController();
 
+  // ✅ NEW: Category Field
+  final categoryCtrl = TextEditingController();
+  final categoryFocus = FocusNode();
+
   final List<TextEditingController> mobileCtrls = [
     TextEditingController(),
   ];
@@ -436,6 +404,12 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
   bool isSaving = false;
   Map<String, String?> errors = {};
 
+  // ✅ NEW: Selfy Images (max 2)
+  final List<XFile> _selfyImages = [];
+
+  // ✅ NEW: Selfy Video (max 10 sec)
+  XFile? _selfyVideo;
+
   bool isValidMobile(String v) => RegExp(r'^[0-9]{10}$').hasMatch(v);
   bool isValidEmail(String v) =>
       RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(v);
@@ -443,29 +417,24 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
   @override
   void initState() {
     super.initState();
-    // Fill form with extracted data
     _fillFormFromExtractedData();
   }
 
   void _fillFormFromExtractedData() {
-    // Fill name
     if (widget.extractedData['name'] != null &&
         widget.extractedData['name'].toString().isNotEmpty) {
       nameCtrl.text = widget.extractedData['name'].toString();
     }
 
-    // Fill company
     if (widget.extractedData['company_name'] != null &&
         widget.extractedData['company_name'].toString().isNotEmpty) {
       companyCtrl.text = widget.extractedData['company_name'].toString();
     }
 
-    // Fill mobile numbers
     if (widget.extractedData['mobile1'] != null &&
         widget.extractedData['mobile1'].toString().isNotEmpty) {
       mobileCtrls[0].text = widget.extractedData['mobile1'].toString();
 
-      // Check if we need more mobile fields
       if (widget.extractedData['mobile2'] != null &&
           widget.extractedData['mobile2'].toString().isNotEmpty) {
         if (mobileCtrls.length < 2) {
@@ -485,32 +454,27 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
       }
     }
 
-    // Fill email1
     if (widget.extractedData['email1'] != null &&
         widget.extractedData['email1'].toString().isNotEmpty) {
       emailCtrl.text = widget.extractedData['email1'].toString();
     }
 
-    // Fill email2
     if (widget.extractedData['email2'] != null &&
         widget.extractedData['email2'].toString().isNotEmpty) {
       showEmail2 = true;
       email2Ctrl.text = widget.extractedData['email2'].toString();
     }
 
-    // Fill website
     if (widget.extractedData['website'] != null &&
         widget.extractedData['website'].toString().isNotEmpty) {
       websiteCtrl.text = widget.extractedData['website'].toString();
     }
 
-    // Fill address
     if (widget.extractedData['address'] != null &&
         widget.extractedData['address'].toString().isNotEmpty) {
       addressCtrl.text = widget.extractedData['address'].toString();
     }
 
-    // Trigger initial validation
     WidgetsBinding.instance.addPostFrameCallback((_) {
       validate();
     });
@@ -524,17 +488,23 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
     email2Ctrl.dispose();
     websiteCtrl.dispose();
     addressCtrl.dispose();
+    categoryCtrl.dispose();
+
     for (var ctrl in mobileCtrls) {
       ctrl.dispose();
     }
+
     nameFocus.dispose();
     emailFocus.dispose();
     email2Focus.dispose();
     websiteFocus.dispose();
     addressFocus.dispose();
+    categoryFocus.dispose();
+
     for (var focus in mobileFocusNodes) {
       focus.dispose();
     }
+
     super.dispose();
   }
 
@@ -543,6 +513,11 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
 
     if (nameCtrl.text.trim().isEmpty) {
       newErrors['name'] = "Name is required";
+    }
+
+    // ✅ Category required
+    if (categoryCtrl.text.trim().isEmpty) {
+      newErrors['category'] = "Category is required";
     }
 
     final mob1 = mobileCtrls[0].text.trim();
@@ -579,22 +554,94 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
       newErrors['address'] = "Max 120 characters";
     }
 
+    // ✅ Selfy Images max 2
+    if (_selfyImages.length > 2) {
+      newErrors['selfy_images'] = "Max 2 selfy images allowed";
+    }
+
     setState(() => errors = newErrors);
 
     if (submit && newErrors.isNotEmpty) {
-      if (newErrors.containsKey('name'))
+      if (newErrors.containsKey('name')) {
         nameFocus.requestFocus();
-      else if (newErrors.containsKey('mobile0'))
+      } else if (newErrors.containsKey('category')) {
+        categoryFocus.requestFocus();
+      } else if (newErrors.containsKey('mobile0')) {
         mobileFocusNodes[0].requestFocus();
-      else if (newErrors.containsKey('email'))
+      } else if (newErrors.containsKey('email')) {
         emailFocus.requestFocus();
-      else if (newErrors.containsKey('email2'))
+      } else if (newErrors.containsKey('email2')) {
         email2Focus.requestFocus();
-      else if (newErrors.containsKey('website'))
+      } else if (newErrors.containsKey('website')) {
         websiteFocus.requestFocus();
-      else if (newErrors.containsKey('address')) addressFocus.requestFocus();
+      } else if (newErrors.containsKey('address')) {
+        addressFocus.requestFocus();
+      }
     }
   }
+
+  // =================== SELFIE IMAGES ===================
+
+  Future<void> _pickSelfyImage(ImageSource source) async {
+    if (_selfyImages.length >= 2) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Max 2 selfy images allowed")),
+      );
+      return;
+    }
+
+    final picker = ImagePicker();
+    final XFile? img = await picker.pickImage(
+      source: source,
+      imageQuality: 75,
+    );
+
+    if (img != null) {
+      setState(() {
+        _selfyImages.add(img);
+      });
+      validate();
+    }
+  }
+
+  void _removeSelfyImage(int index) {
+    setState(() {
+      _selfyImages.removeAt(index);
+    });
+    validate();
+  }
+
+  // =================== SELFIE VIDEO ===================
+
+  Future<void> _pickSelfyVideo(ImageSource source) async {
+    final picker = ImagePicker();
+
+    final XFile? video = await picker.pickVideo(
+      source: source,
+      maxDuration: const Duration(seconds: 10),
+    );
+
+    if (video == null) return;
+
+    // Extra Safety: check duration (not always available on all devices)
+    // But maxDuration usually works properly.
+    setState(() {
+      _selfyVideo = video;
+    });
+
+    validate();
+  }
+
+  void _removeSelfyVideo() {
+    setState(() {
+      _selfyVideo = null;
+    });
+    validate();
+  }
+
+  // =================== SAVE ===================
+
+ 
 
   Future<void> _saveLead(BuildContext context) async {
     validate(submit: true);
@@ -603,17 +650,69 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
     setState(() => isSaving = true);
 
     try {
-      // Convert image to base64 for sending to API
-      String? imageBase64;
+      // Convert scanned card image to base64
+      String? cardImageBase64;
       try {
         final bytes = await widget.capturedImage.readAsBytes();
-        imageBase64 = base64Encode(bytes);
+        cardImageBase64 = base64Encode(bytes);
       } catch (e) {
-        debugPrint("Error converting image to base64: $e");
+        debugPrint("Error converting card image to base64: $e");
       }
 
+      // ✅ Convert selfy images to separate base64 fields (max 2)
+      String selfyImage1Base64 = '';
+      String selfyImage2Base64 = '';
+      String? selfyImage1Filename;
+      String? selfyImage2Filename;
+
+      for (int i = 0; i < _selfyImages.length; i++) {
+        try {
+          final bytes = await _selfyImages[i].readAsBytes();
+          final base64Str = base64Encode(bytes);
+          if (i == 0) {
+            selfyImage1Base64 = base64Str;
+            selfyImage1Filename = _selfyImages[i].name;
+          } else if (i == 1) {
+            selfyImage2Base64 = base64Str;
+            selfyImage2Filename = _selfyImages[i].name;
+          }
+        } catch (e) {
+          debugPrint("Error converting selfy image to base64: $e");
+        }
+      }
+
+      // ✅ Convert selfy video to base64 (optional)
+      String selfyVideoBase64 = '';
+      String? selfyVideoFilename;
+      if (_selfyVideo != null) {
+        try {
+          final bytes = await _selfyVideo!.readAsBytes();
+          selfyVideoBase64 = base64Encode(bytes);
+          selfyVideoFilename = _selfyVideo!.name;
+        } catch (e) {
+          debugPrint("Error converting selfy video to base64: $e");
+        }
+      }
+
+      final userStorage = UserStorageService();
+      final userId = await userStorage.getUserId();
+
+      if (userId == null) {
+        setState(() => isSaving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("❌ User session not found. Please login again."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Build data map with separate selfy fields
       final data = {
+        "user_id": userId,
         "name": nameCtrl.text.trim(),
+        "category": categoryCtrl.text.trim(),
         "mobiles": mobileCtrls
             .map((e) => e.text.trim())
             .where((e) => e.isNotEmpty)
@@ -623,25 +722,37 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
         "email2": showEmail2 ? email2Ctrl.text.trim() : null,
         "website": websiteCtrl.text.trim(),
         "address": addressCtrl.text.trim(),
-        if (imageBase64 != null)
-          "lead_image": imageBase64, // ✅ Add image to data
-        "image_filename": widget.capturedImage.name, // ✅ Add filename
+
+        // Scanned card image
+        if (cardImageBase64 != null) "lead_image": cardImageBase64,
+        "image_filename": widget.capturedImage.name,
+
+        // ✅ Selfy images (always present, even if empty)
+        "selfy_image_1": selfyImage1Base64,
+        "selfy_image_2": selfyImage2Base64,
+        if (selfyImage1Filename != null)
+          "selfy_image_1_filename": selfyImage1Filename,
+        if (selfyImage2Filename != null)
+          "selfy_image_2_filename": selfyImage2Filename,
+
+        // ✅ Selfy video (always present, even if empty)
+        "selfy_video": selfyVideoBase64,
+        if (selfyVideoFilename != null)
+          "selfy_video_filename": selfyVideoFilename,
       };
 
-      debugPrint(
-          "📤 Saving lead with image data, filename: ${widget.capturedImage.name}");
+      debugPrint("📤 Saving lead with separate selfy fields:");
+      debugPrint("selfy_image_1 length: ${selfyImage1Base64.length}");
+      debugPrint("selfy_image_2 length: ${selfyImage2Base64.length}");
+      debugPrint("selfy_video length: ${selfyVideoBase64.length}");
 
       final provider = Provider.of<LeadProviders>(context, listen: false);
       final success = await provider.addLeadRaw(data);
 
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("✅ Lead Added Successfully"),
-          ),
+          const SnackBar(content: Text("✅ Lead Added Successfully")),
         );
-
-        // 🔥 Direct go back to Home Page (clear all previous routes)
         Navigator.of(context).pushNamedAndRemoveUntil(
           RouteNames.home,
           (route) => false,
@@ -666,13 +777,18 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
     }
   }
 
+  // =================== UI HELPERS ===================
+
   Widget _buildValidatedField(
-      String label, TextEditingController controller, FocusNode focusNode,
-      {TextInputType? keyboard,
-      String? error,
-      VoidCallback? onChanged,
-      Widget? suffix,
-      int maxLines = 1}) {
+    String label,
+    TextEditingController controller,
+    FocusNode focusNode, {
+    TextInputType? keyboard,
+    String? error,
+    VoidCallback? onChanged,
+    Widget? suffix,
+    int maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -756,6 +872,180 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
     );
   }
 
+  // ✅ NEW: Selfy Images UI
+  Widget _buildSelfyImagesSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 10),
+        const Text(
+          "Selfy Images (Max 2)",
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 10,
+          runSpacing: 10,
+          children: [
+            // Existing images
+            for (int i = 0; i < _selfyImages.length; i++)
+              Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: kIsWeb
+                        ? Image.network(
+                            _selfyImages[i].path,
+                            width: 90,
+                            height: 90,
+                            fit: BoxFit.cover,
+                          )
+                        : Image.file(
+                            File(_selfyImages[i].path),
+                            width: 90,
+                            height: 90,
+                            fit: BoxFit.cover,
+                          ),
+                  ),
+                  Positioned(
+                    right: 0,
+                    top: 0,
+                    child: InkWell(
+                      onTap: () => _removeSelfyImage(i),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: const BoxDecoration(
+                          color: Colors.black54,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close,
+                            color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+            // Add buttons
+            if (_selfyImages.length < 2)
+              InkWell(
+                onTap: () async {
+                  showCupertinoModalPopup(
+                    context: context,
+                    builder: (_) => CupertinoActionSheet(
+                      title: const Text("Add Selfy Image"),
+                      actions: [
+                        CupertinoActionSheetAction(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _pickSelfyImage(ImageSource.camera);
+                          },
+                          child: const Text("Capture from Camera"),
+                        ),
+                        CupertinoActionSheetAction(
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _pickSelfyImage(ImageSource.gallery);
+                          },
+                          child: const Text("Pick from Gallery"),
+                        ),
+                      ],
+                      cancelButton: CupertinoActionSheetAction(
+                        onPressed: () => Navigator.pop(context),
+                        isDefaultAction: true,
+                        child: const Text("Cancel"),
+                      ),
+                    ),
+                  );
+                },
+                child: Container(
+                  width: 90,
+                  height: 90,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                    color: Colors.grey.shade50,
+                  ),
+                  child: const Icon(CupertinoIcons.add,
+                      size: 30, color: Colors.black54),
+                ),
+              ),
+          ],
+        ),
+        if (errors['selfy_images'] != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              errors['selfy_images']!,
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ),
+      ],
+    );
+  }
+
+  // ✅ NEW: Selfy Video UI
+  Widget _buildSelfyVideoSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 16),
+        const Text(
+          "Selfy Video (Max 10 sec)",
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 8),
+        if (_selfyVideo == null)
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.videocam),
+                  label: const Text("Record 10 sec"),
+                  onPressed: () => _pickSelfyVideo(ImageSource.camera),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: OutlinedButton.icon(
+                  icon: const Icon(Icons.video_library),
+                  label: const Text("Pick Video"),
+                  onPressed: () => _pickSelfyVideo(ImageSource.gallery),
+                ),
+              ),
+            ],
+          ),
+        if (_selfyVideo != null)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+              color: Colors.grey.shade50,
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.video_file, size: 30),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    _selfyVideo!.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 13),
+                  ),
+                ),
+                IconButton(
+                  onPressed: _removeSelfyVideo,
+                  icon: const Icon(Icons.delete, color: Colors.red),
+                ),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -798,18 +1088,30 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
 
             const SizedBox(height: 20),
 
-            // Form Fields
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ✅ Scanned Image Preview (FIRST)
                     _buildImagePreview(),
 
-                    _buildValidatedField("Name", nameCtrl, nameFocus,
-                        error: errors['name']),
+                    _buildValidatedField(
+                      "Name",
+                      nameCtrl,
+                      nameFocus,
+                      error: errors['name'],
+                    ),
 
+                    // ✅ NEW Category
+                    _buildValidatedField(
+                      "Category",
+                      categoryCtrl,
+                      categoryFocus,
+                      error: errors['category'],
+                      suffix: const Icon(Icons.category_outlined),
+                    ),
+
+                    // Mobile Fields
                     Column(
                       children: List.generate(mobileCtrls.length, (i) {
                         return _buildValidatedField(
@@ -830,8 +1132,10 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
                                 )
                               : i > 0
                                   ? IconButton(
-                                      icon: const Icon(CupertinoIcons.delete,
-                                          color: Colors.red),
+                                      icon: const Icon(
+                                        CupertinoIcons.delete,
+                                        color: Colors.red,
+                                      ),
                                       onPressed: () {
                                         setState(() {
                                           mobileCtrls.removeAt(i);
@@ -845,9 +1149,11 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
                     ),
 
                     _buildValidatedField(
-                        "Company Name", companyCtrl, FocusNode()),
+                      "Company Name",
+                      companyCtrl,
+                      FocusNode(),
+                    ),
 
-                    // Email field with add button
                     _buildValidatedField(
                       "Email",
                       emailCtrl,
@@ -864,7 +1170,6 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
                           : null,
                     ),
 
-                    // Email 2 field with delete button
                     if (showEmail2)
                       _buildValidatedField(
                         "Email 2",
@@ -884,15 +1189,27 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
                         ),
                       ),
 
-                    _buildValidatedField("Website", websiteCtrl, websiteFocus,
-                        error: errors['website']),
+                    _buildValidatedField(
+                      "Website",
+                      websiteCtrl,
+                      websiteFocus,
+                      error: errors['website'],
+                    ),
 
-                    _buildValidatedField("Address", addressCtrl, addressFocus,
-                        maxLines: 2, error: errors['address']),
+                    _buildValidatedField(
+                      "Address",
+                      addressCtrl,
+                      addressFocus,
+                      maxLines: 2,
+                      error: errors['address'],
+                    ),
+
+                    // ✅ NEW sections
+                    _buildSelfyImagesSection(),
+                    _buildSelfyVideoSection(),
 
                     const SizedBox(height: 24),
 
-                    // Buttons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [

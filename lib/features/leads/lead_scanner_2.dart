@@ -1,5 +1,3 @@
-
-
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:cupertino_icons/cupertino_icons.dart';
@@ -66,10 +64,17 @@ class _LeadScanner2State extends State<LeadScanner2> {
   Future<void> _startCamera(int index) async {
     _cameraController?.dispose();
 
+    // _cameraController = CameraController(
+    //   _cameras[index],
+    //   ResolutionPreset.high,
+    //   enableAudio: false,
+    // );
+
     _cameraController = CameraController(
       _cameras[index],
-      ResolutionPreset.high,
+      ResolutionPreset.max,
       enableAudio: false,
+      imageFormatGroup: ImageFormatGroup.jpeg,
     );
 
     await _cameraController!.initialize();
@@ -235,25 +240,76 @@ class _LeadScanner2State extends State<LeadScanner2> {
     super.dispose();
   }
 
+  // Widget _buildPreviewBox() {
+  //   return AspectRatio(
+  //     aspectRatio: 1.6,
+  //     child: Container(
+  //       decoration: BoxDecoration(
+  //         border: Border.all(color: Colors.blueAccent, width: 2),
+  //         borderRadius: BorderRadius.circular(12),
+  //       ),
+  //       child: ClipRRect(
+  //         borderRadius: BorderRadius.circular(10),
+  //         child: _isCapturedMode && _capturedImage != null
+  //             ? kIsWeb
+  //                 ? Image.network(_capturedImage!.path, fit: BoxFit.cover)
+  //                 : Image.file(File(_capturedImage!.path), fit: BoxFit.cover)
+  //             : _isCameraInitialized
+  //                 ? CameraPreview(_cameraController!)
+  //                 : const Center(
+  //                     child: CircularProgressIndicator(),
+  //                   ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildPreviewBox() {
-    return AspectRatio(
-      aspectRatio: 1.6,
-      child: Container(
+    if (_isCapturedMode && _capturedImage != null) {
+      return Container(
+        width: double.infinity,
+        height: MediaQuery.of(context).size.height * 0.45,
         decoration: BoxDecoration(
           border: Border.all(color: Colors.blueAccent, width: 2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: _isCapturedMode && _capturedImage != null
-              ? kIsWeb
-                  ? Image.network(_capturedImage!.path, fit: BoxFit.cover)
-                  : Image.file(File(_capturedImage!.path), fit: BoxFit.cover)
-              : _isCameraInitialized
-                  ? CameraPreview(_cameraController!)
-                  : const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+          child: kIsWeb
+              ? Image.network(
+                  _capturedImage!.path,
+                  fit: BoxFit.cover,
+                )
+              : Image.file(
+                  File(_capturedImage!.path),
+                  fit: BoxFit.cover,
+                ),
+        ),
+      );
+    }
+
+    if (!_isCameraInitialized || _cameraController == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final size = MediaQuery.of(context).size;
+    final deviceRatio = size.width / size.height;
+    final cameraRatio = _cameraController!.value.aspectRatio;
+
+    return Container(
+      width: double.infinity,
+      height: MediaQuery.of(context).size.height * 0.45,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.blueAccent, width: 2),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: Transform.scale(
+          scale: cameraRatio / deviceRatio,
+          child: Center(
+            child: CameraPreview(_cameraController!),
+          ),
         ),
       ),
     );
@@ -640,8 +696,6 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
   }
 
   // =================== SAVE ===================
-
- 
 
   Future<void> _saveLead(BuildContext context) async {
     validate(submit: true);
