@@ -1,11 +1,14 @@
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
+
 import 'package:gridcard/core/services/leads_provider.dart';
+
 import 'package:gridcard/models/lead_model.dart';
 import './lead_details.dart';
 import './lead_scanner.dart';
-import 'dart:ui';
 import './lead_chat_page.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 
@@ -19,20 +22,34 @@ class LeadsPage extends StatefulWidget {
 class _LeadsPageState extends State<LeadsPage> {
   final ScrollController _scrollCtrl = ScrollController();
   final TextEditingController _searchCtrl = TextEditingController();
-  // static const String _baseUrl = "http://byndai_server-main.test";
   static const String _baseUrl =
       "https://powderblue-jellyfish-554082.hostingersite.com";
-  // static const String _baseUrl = "https://powderblue-jellyfish-554082.hostingersite.com/api";
+
+  int? _currentUserId; // Store user ID after fetching
 
   @override
   void initState() {
     super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LeadProviders>().fetchLeadsAdvanced(reset: true);
-    });
-
+    _loadUserIdAndFetchLeads();
     _scrollCtrl.addListener(_onScroll);
+  }
+
+  // 🔁 New method to get user ID and fetch leads
+  Future<void> _loadUserIdAndFetchLeads() async {
+    final userId = await UserStorageService().getUserId();
+    if (userId != null) {
+      setState(() => _currentUserId = userId);
+      if (mounted) {
+        context.read<LeadProviders>().fetchLeadsByUserId(
+              userId: userId,
+              perPage: 10,
+              reset: true,
+            );
+      }
+    } else {
+      // Handle no user – maybe show error or redirect to login
+      debugPrint("No user ID found");
+    }
   }
 
   void _onScroll() {
@@ -41,7 +58,7 @@ class _LeadsPageState extends State<LeadsPage> {
     if (_scrollCtrl.position.pixels >=
             _scrollCtrl.position.maxScrollExtent - 100 &&
         !provider.isPaginating) {
-      provider.fetchLeadsAdvanced();
+      provider.loadNextPage(); // 🔁 Now uses new provider's pagination
     }
   }
 
@@ -49,6 +66,7 @@ class _LeadsPageState extends State<LeadsPage> {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
+    // 🔁 Replace Consumer<LeadProviders> with Consumer<ScannedLeadProvider>
     return Consumer<LeadProviders>(
       builder: (context, provider, _) {
         return Column(
@@ -71,9 +89,6 @@ class _LeadsPageState extends State<LeadsPage> {
   }
 
   void _showImagePreview(BuildContext context, LeadModel lead) {
-    // final imageUrl = lead.imageUrl ??
-    //     (lead.leadImage != null ? '$_baseUrl/storage/${lead.leadImage}' : null);
-
     final imageUrl = lead.imageUrl;
 
     showDialog(
@@ -83,9 +98,8 @@ class _LeadsPageState extends State<LeadsPage> {
         final screenHeight = MediaQuery.of(context).size.height;
         final screenWidth = MediaQuery.of(context).size.width;
 
-        // Dynamic height calculation
-        final maxImageHeight = screenHeight * 0.6; // 60% of screen
-        final maxImageWidth = screenWidth * 0.8; // 80% of screen
+        final maxImageHeight = screenHeight * 0.6;
+        final maxImageWidth = screenWidth * 0.8;
 
         return Dialog(
           backgroundColor: Colors.transparent,
@@ -97,7 +111,6 @@ class _LeadsPageState extends State<LeadsPage> {
             ),
             child: Stack(
               children: [
-                // Main Content
                 Container(
                   decoration: BoxDecoration(
                     color: Colors.white,
@@ -108,7 +121,6 @@ class _LeadsPageState extends State<LeadsPage> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // Header
                         Padding(
                           padding: const EdgeInsets.only(bottom: 16),
                           child: Text(
@@ -119,8 +131,6 @@ class _LeadsPageState extends State<LeadsPage> {
                             ),
                           ),
                         ),
-
-                        // Image or Placeholder
                         if (imageUrl != null)
                           ConstrainedBox(
                             constraints: BoxConstraints(
@@ -174,8 +184,6 @@ class _LeadsPageState extends State<LeadsPage> {
                             width: double.infinity,
                             child: _buildNoImagePlaceholder(),
                           ),
-
-                        // Image Info
                         if (lead.imageFilename != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 12),
@@ -191,8 +199,6 @@ class _LeadsPageState extends State<LeadsPage> {
                     ),
                   ),
                 ),
-
-                // Close Button
                 Positioned(
                   top: 8,
                   right: 8,
@@ -286,14 +292,21 @@ class _LeadsPageState extends State<LeadsPage> {
             onPressed: () async {
               Navigator.pop(context);
 
+              // 🔁 Use old LeadProviders for delete (if it supports delete)
               final provider = context.read<LeadProviders>();
-
               final success = await provider.deleteLead(leadId);
 
               if (success) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("🗑 Lead deleted successfully")),
                 );
+                // Refresh scanned leads list
+                if (_currentUserId != null) {
+                  context.read<LeadProviders>().fetchLeadsByUserId(
+                        userId: _currentUserId!,
+                        reset: true,
+                      );
+                }
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("❌ Delete failed")),
@@ -314,7 +327,7 @@ class _LeadsPageState extends State<LeadsPage> {
         children: [
           Expanded(
             child: SizedBox(
-              height: 42, // 👈 standard mobile height
+              height: 42,
               child: TextField(
                 controller: _searchCtrl,
                 decoration: InputDecoration(
@@ -327,23 +340,19 @@ class _LeadsPageState extends State<LeadsPage> {
                   ),
                 ),
                 onChanged: (val) {
-                  provider.fetchLeadsAdvanced(
-                    reset: true,
-                    search: val,
-                  );
+                  // 🔁 If search is needed, implement filter in provider
+                  // For now, we can ignore or call a search method if exists
+                  // provider.searchLeads(val);
                 },
               ),
             ),
           ),
-
           const SizedBox(width: 10),
-          // ================= ADD LEAD BUTTON =================
-
           InkWell(
             onTap: _openAddLeadModal,
             borderRadius: BorderRadius.circular(10),
             child: Container(
-              height: 42, // 👈 reduced height
+              height: 42,
               width: 42,
               decoration: BoxDecoration(
                 color: Theme.of(context).colorScheme.primary,
@@ -361,53 +370,7 @@ class _LeadsPageState extends State<LeadsPage> {
     );
   }
 
-  Widget _buildInputWithIcon(
-    String label,
-    TextEditingController controller, {
-    TextInputType keyboard = TextInputType.text,
-    int maxLines = 1,
-    Widget? suffix,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboard,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(
-            color: colorScheme.primary.withOpacity(0.8),
-            fontWeight: FontWeight.w500,
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-          suffixIcon: suffix,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: Colors.grey.shade300,
-              width: 1,
-            ),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: colorScheme.primary,
-              width: 1.6,
-            ),
-          ),
-          filled: true,
-          fillColor: colorScheme.surface,
-        ),
-      ),
-    );
-  }
-
   // ================= MOBILE VIEW =================
-
   Widget _buildMobileCards(LeadProviders provider) {
     if (provider.isLoading && provider.leads.isEmpty) {
       return const Center(child: CircularProgressIndicator());
@@ -440,7 +403,6 @@ class _LeadsPageState extends State<LeadsPage> {
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // LEFT INFO
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -491,7 +453,6 @@ class _LeadsPageState extends State<LeadsPage> {
                             ],
                           ),
                         ],
-                        // ✅ Show if lead has image
                         if (lead.leadImage != null || lead.imageUrl != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
@@ -514,12 +475,9 @@ class _LeadsPageState extends State<LeadsPage> {
                       ],
                     ),
                   ),
-
-                  // RIGHT ACTION
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // 👁️ Eye Icon for Image Preview
                       if (lead.leadImage != null || lead.imageUrl != null)
                         IconButton(
                           visualDensity: VisualDensity.compact,
@@ -532,7 +490,6 @@ class _LeadsPageState extends State<LeadsPage> {
                           ),
                           onPressed: () => _showImagePreview(context, lead),
                         ),
-
                       PopupMenuButton<String>(
                         padding: EdgeInsets.zero,
                         icon: const Icon(
@@ -543,20 +500,6 @@ class _LeadsPageState extends State<LeadsPage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        // onSelected: (value) {
-                        //   if (value == 'edit') {
-                        //     Navigator.push(
-                        //       context,
-                        //       MaterialPageRoute(
-                        //         builder: (_) => LeadDetailsPage(lead: lead),
-                        //       ),
-                        //     );
-                        //   }
-                        //   if (value == 'delete') {
-                        //     _confirmDelete(lead.id!);
-                        //   }
-                        // },
-
                         onSelected: (value) async {
                           if (value == 'edit') {
                             Navigator.push(
@@ -566,16 +509,13 @@ class _LeadsPageState extends State<LeadsPage> {
                               ),
                             );
                           }
-
                           if (value == 'delete') {
                             _confirmDelete(lead.id!);
                           }
-
                           if (value == 'chat') {
                             final session =
                                 await UserStorageService().loadSession();
                             final viewerUserId = session.user?.id;
-
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -587,30 +527,6 @@ class _LeadsPageState extends State<LeadsPage> {
                             );
                           }
                         },
-
-                        // itemBuilder: (context) => [
-                        //   const PopupMenuItem(
-                        //     value: 'edit',
-                        //     child: Row(
-                        //       children: [
-                        //         Icon(CupertinoIcons.pencil, size: 16),
-                        //         SizedBox(width: 8),
-                        //         Text("Edit"),
-                        //       ],
-                        //     ),
-                        //   ),
-                        //   const PopupMenuItem(
-                        //     value: 'delete',
-                        //     child: Row(
-                        //       children: [
-                        //         Icon(CupertinoIcons.delete,
-                        //             size: 16, color: Colors.red),
-                        //         SizedBox(width: 8),
-                        //         Text("Delete"),
-                        //       ],
-                        //     ),
-                        //   ),
-                        // ],
                         itemBuilder: (context) => [
                           const PopupMenuItem(
                             value: 'edit',
@@ -710,12 +626,10 @@ class _LeadsPageState extends State<LeadsPage> {
           labelText: label,
           errorText: error,
           suffixIcon: suffix,
-
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(color: Colors.grey.shade300),
           ),
-
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(
@@ -723,13 +637,10 @@ class _LeadsPageState extends State<LeadsPage> {
               width: 1.6,
             ),
           ),
-
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Colors.red, width: 1.4),
           ),
-
-          // 🔥 MAIN FIX
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: Colors.red, width: 1.6),
@@ -739,7 +650,7 @@ class _LeadsPageState extends State<LeadsPage> {
     );
   }
 
-  // इस function को replace करें (सिर्फ _openAddLeadModal function)
+  // 🔁 This function remains mostly unchanged; it still uses LeadProviders for saving
   void _openAddLeadModal() {
     final nameCtrl = TextEditingController();
     final companyCtrl = TextEditingController();
@@ -829,26 +740,18 @@ class _LeadsPageState extends State<LeadsPage> {
       }
     }
 
-    // Function to fill form data from scanner
     void fillFormFromScannerData(
         Map<String, dynamic> formData, StateSetter setModalState) {
-      // Fill name
       if (formData['name'] != null && formData['name'].toString().isNotEmpty) {
         nameCtrl.text = formData['name'].toString();
       }
-
-      // Fill company
       if (formData['company'] != null &&
           formData['company'].toString().isNotEmpty) {
         companyCtrl.text = formData['company'].toString();
       }
-
-      // Fill mobile numbers
       if (formData['mobile1'] != null &&
           formData['mobile1'].toString().isNotEmpty) {
         mobileCtrls[0].text = formData['mobile1'].toString();
-
-        // Check if we need more mobile fields
         if (formData['mobile2'] != null &&
             formData['mobile2'].toString().isNotEmpty) {
           if (mobileCtrls.length < 2) {
@@ -857,7 +760,6 @@ class _LeadsPageState extends State<LeadsPage> {
           }
           mobileCtrls[1].text = formData['mobile2'].toString();
         }
-
         if (formData['mobile3'] != null &&
             formData['mobile3'].toString().isNotEmpty) {
           if (mobileCtrls.length < 3) {
@@ -867,33 +769,23 @@ class _LeadsPageState extends State<LeadsPage> {
           mobileCtrls[2].text = formData['mobile3'].toString();
         }
       }
-
-      // Fill email1
       if (formData['email1'] != null &&
           formData['email1'].toString().isNotEmpty) {
         emailCtrl.text = formData['email1'].toString();
       }
-
-      // Fill email2
       if (formData['email2'] != null &&
           formData['email2'].toString().isNotEmpty) {
         showEmail2 = true;
         email2Ctrl.text = formData['email2'].toString();
       }
-
-      // Fill website
       if (formData['website'] != null &&
           formData['website'].toString().isNotEmpty) {
         websiteCtrl.text = formData['website'].toString();
       }
-
-      // Fill address
       if (formData['address'] != null &&
           formData['address'].toString().isNotEmpty) {
         addressCtrl.text = formData['address'].toString();
       }
-
-      // Trigger validation
       validate(setModalState);
     }
 
@@ -964,7 +856,6 @@ class _LeadsPageState extends State<LeadsPage> {
                     _buildValidatedField(
                         "Company Name", companyCtrl, FocusNode()),
 
-                    // 🔥 EMAIL FIELD + ICON (RESTORED UX)
                     _buildValidatedField(
                       "Email",
                       emailCtrl,
@@ -982,7 +873,6 @@ class _LeadsPageState extends State<LeadsPage> {
                           : null,
                     ),
 
-                    // 🔥 EMAIL 2 FIELD + DELETE ICON (RESTORED UX)
                     if (showEmail2)
                       _buildValidatedField(
                         "Email 2",
@@ -1021,12 +911,10 @@ class _LeadsPageState extends State<LeadsPage> {
                             onPressed: () => Navigator.pop(context),
                             child: const Text("Cancel")),
                         const SizedBox(width: 12),
-                        // 🔵 Scan (ONLY MOBILE)
                         if (!isDesktop) ...[
                           const SizedBox(width: 8),
                           OutlinedButton.icon(
                             onPressed: () {
-                              // Open scanner dialog
                               showDialog(
                                 context: context,
                                 barrierDismissible: false,
@@ -1035,14 +923,12 @@ class _LeadsPageState extends State<LeadsPage> {
                                   child: LeadsScannerPage(
                                     onDataExtracted:
                                         (Map<String, dynamic> formData) {
-                                      // When scanner returns data, fill the form
                                       fillFormFromScannerData(
                                           formData, setModalState);
                                     },
                                   ),
                                 ),
                               ).then((_) {
-                                // Scanner dialog closed
                                 setModalState(() {});
                               });
                             },
@@ -1075,6 +961,7 @@ class _LeadsPageState extends State<LeadsPage> {
                                     "address": addressCtrl.text.trim(),
                                   };
 
+                                  // 🔁 Still using old provider for adding lead
                                   final provider =
                                       context.read<LeadProviders>();
                                   final success =
@@ -1082,6 +969,15 @@ class _LeadsPageState extends State<LeadsPage> {
 
                                   if (success) {
                                     Navigator.pop(context);
+                                    // Refresh scanned leads list
+                                    if (_currentUserId != null) {
+                                      context
+                                          .read<LeadProviders>()
+                                          .fetchLeadsByUserId(
+                                            userId: _currentUserId!,
+                                            reset: true,
+                                          );
+                                    }
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(
                                         content:
@@ -1112,62 +1008,6 @@ class _LeadsPageState extends State<LeadsPage> {
           );
         });
       },
-    );
-  }
-
-  Widget _buildInput(
-    String label,
-    TextEditingController controller, {
-    TextInputType keyboard = TextInputType.text,
-    int maxLines = 1,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: TextField(
-        controller: controller,
-        keyboardType: keyboard,
-        maxLines: maxLines,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(
-            color: colorScheme.primary.withOpacity(0.8),
-            fontWeight: FontWeight.w500,
-          ),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-
-          // 🟢 NORMAL BORDER
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: Colors.grey.shade300,
-              width: 1,
-            ),
-          ),
-
-          // 🔵 FOCUSED BORDER
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: colorScheme.primary,
-              width: 1.6,
-            ),
-          ),
-
-          // 🔴 ERROR BORDER (future validation ke liye)
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red),
-          ),
-
-          filled: true,
-          fillColor: colorScheme.surface,
-
-          floatingLabelBehavior: FloatingLabelBehavior.auto,
-        ),
-      ),
     );
   }
 }
