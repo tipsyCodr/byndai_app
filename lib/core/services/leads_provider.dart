@@ -17,6 +17,8 @@ class LeadProviders extends ChangeNotifier {
   int get lastPage => _lastPage;
   int get total => _total;
 
+  String? selectedCategory;
+
   int _currentPage = 1;
   int _perPage = 10;
   int _lastPage = 1;
@@ -34,6 +36,62 @@ class LeadProviders extends ChangeNotifier {
   bool get isPaginating => _isPaginating;
 
   /// Fetch first page (or reset) for a given user_id
+  // Future<void> fetchLeadsByUserId({
+  //   required int userId,
+  //   int perPage = 10,
+  //   bool reset = false,
+  // }) async {
+  //   if (reset) {
+  //     _currentPage = 1;
+  //     _leads.clear();
+  //     _currentUserId = userId;
+  //     _perPage = perPage;
+  //   }
+
+  //   // If same user and we are already on the last page, do nothing
+  //   if (_currentUserId == userId && _currentPage > _lastPage) return;
+
+  //   _isLoading = reset ? true : false;
+  //   _isPaginating = !reset && _currentPage > 1;
+  //   _errorMessage = null;
+  //   notifyListeners();
+
+  //   try {
+  //     final result = await LeadServices.fetchLeadsByUserId(
+  //       userId: userId,
+  //       perPage: _perPage,
+  //       page: _currentPage,
+  //     );
+
+  //     if (result != null) {
+  //       final newLeads = result['leads'] as List<LeadModel>;
+  //       final meta = result['meta'] as Map<String, dynamic>;
+
+  //       _lastPage = meta['last_page'] ?? 1;
+  //       _total = meta['total'] ?? 0;
+
+  //       if (_currentPage == 1) {
+  //         _leads = newLeads;
+  //       } else {
+  //         _leads.addAll(newLeads);
+  //       }
+
+  //       _currentPage++;
+  //       notifyListeners();
+  //     } else {
+  //       _errorMessage = 'Failed to load leads.';
+  //       notifyListeners();
+  //     }
+  //   } catch (e) {
+  //     _errorMessage = 'Connection error: $e';
+  //     notifyListeners();
+  //   } finally {
+  //     _isLoading = false;
+  //     _isPaginating = false;
+  //     notifyListeners();
+  //   }
+  // }
+
   Future<void> fetchLeadsByUserId({
     required int userId,
     int perPage = 10,
@@ -46,12 +104,12 @@ class LeadProviders extends ChangeNotifier {
       _perPage = perPage;
     }
 
-    // If same user and we are already on the last page, do nothing
     if (_currentUserId == userId && _currentPage > _lastPage) return;
 
-    _isLoading = reset ? true : false;
-    _isPaginating = !reset && _currentPage > 1;
+    _isLoading = _currentPage == 1;
+    _isPaginating = _currentPage > 1;
     _errorMessage = null;
+
     notifyListeners();
 
     try {
@@ -59,10 +117,12 @@ class LeadProviders extends ChangeNotifier {
         userId: userId,
         perPage: _perPage,
         page: _currentPage,
+        category: selectedCategory, // ✅ CATEGORY ADDED HERE
       );
 
       if (result != null) {
-        final newLeads = result['leads'] as List<LeadModel>;
+        final List<LeadModel> newLeads = result['leads'] as List<LeadModel>;
+
         final meta = result['meta'] as Map<String, dynamic>;
 
         _lastPage = meta['last_page'] ?? 1;
@@ -75,27 +135,45 @@ class LeadProviders extends ChangeNotifier {
         }
 
         _currentPage++;
+
         notifyListeners();
       } else {
-        _errorMessage = 'Failed to load leads.';
+        _errorMessage = "Failed to load leads.";
         notifyListeners();
       }
     } catch (e) {
-      _errorMessage = 'Connection error: $e';
-      notifyListeners();
-    } finally {
-      _isLoading = false;
-      _isPaginating = false;
+      _errorMessage = "Connection error: $e";
       notifyListeners();
     }
+
+    _isLoading = false;
+    _isPaginating = false;
+    notifyListeners();
   }
 
   /// Load next page (if available)
+  // Future<void> loadNextPage() async {
+  //   if (_currentPage <= _lastPage && _currentUserId != null) {
+  //     await fetchLeadsByUserId(
+  //       userId: _currentUserId!,
+  //       perPage: _perPage,
+  //     );
+  //   }
+  // }
+
+  void setCategory(String? category, int userId) {
+    selectedCategory = category;
+
+    fetchLeadsByUserId(
+      userId: userId,
+      reset: true, // 🔥 RESET PAGE
+    );
+  }
+
   Future<void> loadNextPage() async {
     if (_currentPage <= _lastPage && _currentUserId != null) {
       await fetchLeadsByUserId(
         userId: _currentUserId!,
-        perPage: _perPage,
       );
     }
   }

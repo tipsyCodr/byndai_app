@@ -439,6 +439,46 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
   final websiteCtrl = TextEditingController();
   final addressCtrl = TextEditingController();
 
+  List<dynamic> _categories = [];
+  // String? _selectedCategory;
+  int? _selectedCategoryId;
+  bool _isCategoryLoading = false;
+
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await UserStorageService().getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  Future<void> _fetchCategories() async {
+    try {
+      setState(() => _isCategoryLoading = true);
+
+      final userId = await UserStorageService().getUserId();
+      if (userId == null) return;
+
+      final response = await http.get(
+        Uri.parse("${AppConfig.apiBaseUrl}/lead-category-user/$userId"),
+        headers: await _getHeaders(),
+      );
+
+      final json = jsonDecode(response.body);
+
+      if (json["status"] == true) {
+        setState(() {
+          _categories = json["data"];
+        });
+      }
+    } catch (e) {
+      debugPrint("Category Fetch Error: $e");
+    } finally {
+      setState(() => _isCategoryLoading = false);
+    }
+  }
+
   // ✅ NEW: Category Field
   final categoryCtrl = TextEditingController();
   final categoryFocus = FocusNode();
@@ -474,6 +514,7 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
   void initState() {
     super.initState();
     _fillFormFromExtractedData();
+    _fetchCategories();
   }
 
   void _fillFormFromExtractedData() {
@@ -572,9 +613,9 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
     }
 
     // ✅ Category required
-    if (categoryCtrl.text.trim().isEmpty) {
-      newErrors['category'] = "Category is required";
-    }
+    // if (categoryCtrl.text.trim().isEmpty) {
+    //   newErrors['category'] = "Category is required";
+    // }
 
     final mob1 = mobileCtrls[0].text.trim();
     if (mob1.isEmpty) {
@@ -620,8 +661,6 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
     if (submit && newErrors.isNotEmpty) {
       if (newErrors.containsKey('name')) {
         nameFocus.requestFocus();
-      } else if (newErrors.containsKey('category')) {
-        categoryFocus.requestFocus();
       } else if (newErrors.containsKey('mobile0')) {
         mobileFocusNodes[0].requestFocus();
       } else if (newErrors.containsKey('email')) {
@@ -766,7 +805,9 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
       final data = {
         "user_id": userId,
         "name": nameCtrl.text.trim(),
-        "category": categoryCtrl.text.trim(),
+        // "category": categoryCtrl.text.trim(),
+        // "category": _selectedCategory ?? "",
+        "category_id": _selectedCategoryId,
         "mobiles": mobileCtrls
             .map((e) => e.text.trim())
             .where((e) => e.isNotEmpty)
@@ -1157,13 +1198,49 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
                     ),
 
                     // ✅ NEW Category
-                    _buildValidatedField(
+                    // _buildValidatedField(
+                    //   "Category",
+                    //   categoryCtrl,
+                    //   categoryFocus,
+                    //   error: errors['category'],
+                    //   suffix: const Icon(Icons.category_outlined),
+                    // ),
+                    const SizedBox(height: 12),
+                    const Text(
                       "Category",
-                      categoryCtrl,
-                      categoryFocus,
-                      error: errors['category'],
-                      suffix: const Icon(Icons.category_outlined),
+                      style: TextStyle(fontSize: 14, color: Colors.black87),
                     ),
+                    const SizedBox(height: 6),
+
+                    _isCategoryLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.grey.shade300),
+                              color: Colors.grey.shade50,
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<int>(
+                                isExpanded: true,
+                                value: _selectedCategoryId,
+                                hint: const Text("Select Category"),
+                                items: _categories
+                                    .map<DropdownMenuItem<int>>((item) {
+                                  return DropdownMenuItem<int>(
+                                    value: item["id"] as int, // 🔥 force int
+                                    child: Text(item["category"].toString()),
+                                  );
+                                }).toList(),
+                                onChanged: (int? value) {
+                                  setState(() {
+                                    _selectedCategoryId = value;
+                                  });
+                                },
+                              ),
+                            ),
+                          ),
 
                     // Mobile Fields
                     Column(

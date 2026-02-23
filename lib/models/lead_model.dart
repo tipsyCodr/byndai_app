@@ -91,7 +91,7 @@ class LeadModel {
   final int? userId;                // ✅ NEW
   final String? name;
   final String? company_name;
-  final String? category;            // ✅ NEW
+  final int? category;            // ✅ NEW
   final String? mobile_no_1;
   final String? mobile_no_2;
   final String? mobile_no_3;

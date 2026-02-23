@@ -195,8 +195,8 @@ class LeadServices {
         // Required
         'user_id': data['user_id'],
         'name': data['name'] ?? '',
-        'category': data['category'] ?? '',
-
+        // 'category': data['category'] ?? '',
+        if (data['category_id'] != null) 'category': data['category_id'],
         // Existing
         'company_name': data['company_name'] ?? '',
         'email': data['email'] ?? '',
@@ -312,15 +312,60 @@ class LeadServices {
     }
   }
 
+  // static Future<Map<String, dynamic>?> fetchLeadsByUserId({
+  //   required int userId,
+  //   int perPage = 10,
+  //   int? page,
+  // }) async {
+  //   final queryParams = {
+  //     'user_id': userId.toString(),
+  //     'per_page': perPage.toString(),
+  //     if (page != null) 'page': page.toString(),
+  //   };
+
+  //   final uri = Uri.parse('$_baseUrl/leads-list-by-user-id')
+  //       .replace(queryParameters: queryParams);
+
+  //   try {
+  //     final response = await http.get(uri, headers: await _getHeaders());
+
+  //     debugPrint('📡 Fetch leads by user_id URL: $uri');
+  //     debugPrint('📥 Response status: ${response.statusCode}');
+
+  //     if (response.statusCode == 200) {
+  //       final json = jsonDecode(response.body);
+
+  //       if (json['success'] == true) {
+  //         final List<LeadModel> leads = (json['data'] as List)
+  //             .map((item) => LeadModel.fromJson(item))
+  //             .toList();
+
+  //         return {
+  //           'leads': leads,
+  //           'meta': json['meta'],
+  //         };
+  //       }
+  //     }
+  //     return null;
+  //   } catch (e) {
+  //     debugPrint('🚨 Error fetching scanned leads: $e');
+  //     return null;
+  //   }
+  // }
+
   static Future<Map<String, dynamic>?> fetchLeadsByUserId({
     required int userId,
     int perPage = 10,
     int? page,
+    String? category, // ✅ ADD THIS
   }) async {
     final queryParams = {
       'user_id': userId.toString(),
       'per_page': perPage.toString(),
       if (page != null) 'page': page.toString(),
+
+      // ✅ ADD CATEGORY HERE
+      if (category != null && category.isNotEmpty) 'category': category,
     };
 
     final uri = Uri.parse('$_baseUrl/leads-list-by-user-id')
@@ -329,8 +374,7 @@ class LeadServices {
     try {
       final response = await http.get(uri, headers: await _getHeaders());
 
-      debugPrint('📡 Fetch leads by user_id URL: $uri');
-      debugPrint('📥 Response status: ${response.statusCode}');
+      debugPrint('📡 Fetch leads URL: $uri');
 
       if (response.statusCode == 200) {
         final json = jsonDecode(response.body);
@@ -348,7 +392,7 @@ class LeadServices {
       }
       return null;
     } catch (e) {
-      debugPrint('🚨 Error fetching scanned leads: $e');
+      debugPrint('🚨 Error fetching leads: $e');
       return null;
     }
   }

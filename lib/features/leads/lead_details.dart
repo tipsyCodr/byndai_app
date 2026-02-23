@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'dart:typed_data';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -9,6 +10,7 @@ import 'package:gridcard/core/services/leads_provider.dart';
 import 'package:gridcard/models/lead_model.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:video_player/video_player.dart';
+import 'package:gridcard/config/app_config.dart';
 
 // ✅ ADD THIS BASE URL AT TOP
 const String baseStorageUrl =
@@ -29,6 +31,11 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
   late TextEditingController addressCtrl;
   late TextEditingController websiteCtrl;
   VideoPlayerController? _videoController;
+
+  List<dynamic> _categories = [];
+  String? _selectedCategory;
+  bool _isCategoryLoading = false;
+  static const String _baseUrl = AppConfig.apiBaseUrl;
 
   final List<TextEditingController> mobileCtrls = [];
   final List<TextEditingController> emailCtrls = [];
@@ -67,10 +74,51 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
   bool isValidEmail(String v) =>
       RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(v);
 
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await UserStorageService().getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  Future<void> _fetchCategories() async {
+    try {
+      setState(() => _isCategoryLoading = true);
+
+      final userId = await UserStorageService().getUserId();
+      if (userId == null) return;
+
+      final response = await http.get(
+        Uri.parse("$_baseUrl/lead-category-user/$userId"),
+        headers: await _getHeaders(),
+      );
+
+      final json = jsonDecode(response.body);
+
+      if (json["status"] == true) {
+        _categories = json["data"];
+
+        // ✅ Set default selected category
+        final existingCategory = widget.lead.category;
+        if (existingCategory != null) {
+          _selectedCategory = existingCategory.toString();
+        }
+
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint("Category Fetch Error: $e");
+    } finally {
+      setState(() => _isCategoryLoading = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-
+    _fetchCategories();
     final lead = widget.lead;
     print('Lead Data: ${widget.lead.toJson()}');
     // ✅ Set initial image
@@ -81,7 +129,9 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
     addressCtrl = TextEditingController(text: lead.address ?? "");
     websiteCtrl = TextEditingController(text: lead.website ?? "");
 
-    categoryCtrl = TextEditingController(text: widget.lead.category ?? "");
+    categoryCtrl = TextEditingController(
+      text: widget.lead.category?.toString() ?? "",
+    );
 
 // Selfy URLs build
     _selfyImage1Url = widget.lead.selfy_image_1 != null
@@ -774,7 +824,48 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                 _sectionCard(children: [
                   _input("Name", nameCtrl, error: errors['name']),
                   ..._buildMobiles(),
-                  _input("Category", categoryCtrl),
+                  // _input("Category", categoryCtrl),
+
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: _isCategoryLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : DropdownButtonFormField<String>(
+                            value: _selectedCategory,
+                            decoration: InputDecoration(
+                              labelText: "Category",
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 14, vertical: 14),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide:
+                                    BorderSide(color: Colors.grey.shade300),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Theme.of(context).colorScheme.primary,
+                                  width: 1.6,
+                                ),
+                              ),
+                            ),
+                            items: _categories
+                                .map<DropdownMenuItem<String>>((item) {
+                              return DropdownMenuItem<String>(
+                                value:
+                                    item["id"].toString(), // ✅ Use ID as value
+                                child: Text(item["category"]), // Show name
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              setState(() {
+                                _selectedCategory = value;
+                              });
+                            },
+                          ),
+                  ),
                 ]),
                 _sectionCard(children: [
                   _input("Company", companyCtrl),
@@ -962,12 +1053,11 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
         .where((e) => e.isNotEmpty)
         .toList();
 
-    
-
     final payload = {
       "name": nameCtrl.text.trim(),
       "company_name": companyCtrl.text.trim(),
-      "category": categoryCtrl.text.trim(),
+      // "category": categoryCtrl.text.trim(),
+      "category": _selectedCategory ?? "",
       "address": addressCtrl.text.trim(),
       "website": websiteCtrl.text.trim(),
       "mobile_no_1": mobiles.isNotEmpty ? mobiles[0] : "",
