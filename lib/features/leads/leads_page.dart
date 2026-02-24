@@ -159,7 +159,7 @@ class _LeadsPageState extends State<LeadsPage> {
 
                                       final response = await http.post(
                                         Uri.parse(
-                                            "http://byndai_server-main.test/api/lead-category-create"),
+                                            "$_baseUrl/lead-category-create"),
                                         headers: await _getHeaders(),
                                         body: jsonEncode({
                                           "user_id": userId,

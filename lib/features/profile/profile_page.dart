@@ -336,6 +336,7 @@ class _ProfilePageState extends State<ProfilePage> {
       // existing reviews/rating
       _fetchReviews();
       _fetchAverageRating();
+      debugPrint("🟢 USER DETAILS JSON 121: ${jsonEncode(_userDetails)}");
     });
   }
 
@@ -451,25 +452,50 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _socialIconClickable(
       IconData icon, Color color, String link, String name) {
-    return GestureDetector(
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
       onTap: () {
         if (link.trim().isEmpty) return;
         _openLink(link, platform: name.toLowerCase());
       },
       child: Container(
-        width: 52,
-        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Center(
-          child: FaIcon(
-            icon,
-            color:
-                icon == FontAwesomeIcons.snapchat ? Colors.black : Colors.white,
-            size: 22,
+          color: Colors.grey.shade100, // light background
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: Colors.grey.shade300, // light border
+            width: 1,
           ),
+        ),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: color.withOpacity(0.15),
+              child: FaIcon(
+                icon,
+                size: 16,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const Icon(
+              Icons.open_in_new,
+              size: 16,
+              color: Colors.grey,
+            )
+          ],
         ),
       ),
     );
@@ -488,11 +514,12 @@ class _ProfilePageState extends State<ProfilePage> {
     if (supportedLinks.isEmpty) return const SizedBox.shrink();
 
     return GridView.count(
-      crossAxisCount: 4,
+      crossAxisCount: 2, // 4 se 2 karo
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      mainAxisSpacing: 14,
-      crossAxisSpacing: 14,
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 2.8, // important for row style
       children: supportedLinks.map((item) {
         final name = (item["name"] ?? "").toString();
         final link = (item["link"] ?? "").toString();
@@ -559,24 +586,6 @@ class _ProfilePageState extends State<ProfilePage> {
       }),
     );
   }
-
-  // void _submitRating() {
-  //   if (_selectedRating == 0) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('Please select a rating')),
-  //     );
-  //     return;
-  //   }
-
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     const SnackBar(content: Text('Rating submitted!')),
-  //   );
-
-  //   setState(() {
-  //     _selectedRating = 0;
-  //     _feedbackController.clear();
-  //   });
-  // }
 
   Future<void> _submitRating() async {
     try {
@@ -771,7 +780,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // ================= REVIEW CARD =================
+// ================= REVIEW CARD (LIGHT THEME) =================
+
   Widget _reviewCardHorizontal({
     required String username,
     required int rating,
@@ -779,36 +789,50 @@ class _ProfilePageState extends State<ProfilePage> {
     required String createdAt,
   }) {
     return Container(
-      width: 260,
+      width: 240, // slightly reduced width for tighter look
       margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10), // reduced padding
       decoration: BoxDecoration(
-        color: Colors.grey.shade800,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.05),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ],
+        border: Border.all(
+          color: Colors.grey.shade200,
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min, // take minimum height
         children: [
           Row(
             children: [
               CircleAvatar(
-                radius: 16,
-                backgroundColor: Colors.blue.shade200,
+                radius: 14, // slightly smaller avatar
+                backgroundColor: Colors.blue.shade50,
                 child: Text(
                   username.isNotEmpty ? username[0].toUpperCase() : "U",
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade700,
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 6),
               Expanded(
                 child: Text(
                   username,
                   style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
+                    color: Colors.black87,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
@@ -817,21 +841,19 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ],
           ),
-          const SizedBox(height: 8),
-          _starsRow(rating),
-          const SizedBox(height: 8),
-          Expanded(
-            child: Text(
-              message.isNotEmpty ? message : "No message",
-              style: TextStyle(
-                color: Colors.grey.shade300,
-                fontSize: 12,
-              ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
+          const SizedBox(height: 6), // reduced spacing
+          _starsRow(rating, isLight: true),
+          const SizedBox(height: 6),
+          Text(
+            message.isNotEmpty ? message : "No message",
+            style: TextStyle(
+              color: Colors.grey.shade700,
+              fontSize: 12,
             ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             createdAt.isNotEmpty ? createdAt.split("T").first : "",
             style: TextStyle(
@@ -845,14 +867,20 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // ================= STAR ROW =================
-  Widget _starsRow(int rating) {
+
+  // ================= STAR ROW (with light/dark support) =================
+  Widget _starsRow(int rating, {bool isLight = false}) {
     int safeRating = rating.clamp(0, 5);
     return Row(
       children: List.generate(5, (index) {
         return Icon(
           Icons.star,
           size: 16,
-          color: index < safeRating ? Colors.amber : Colors.grey.shade600,
+          color: index < safeRating
+              ? Colors.amber
+              : isLight
+                  ? Colors.grey.shade300
+                  : Colors.grey.shade600,
         );
       }),
     );
@@ -909,7 +937,26 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  // ================= EMPTY REVIEWS (LIGHT) =================
+  Widget _buildEmptyReviewsLight() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          children: [
+            Icon(Icons.rate_review, size: 40, color: Colors.grey.shade400),
+            const SizedBox(height: 8),
+            Text(
+              "No reviews yet",
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
   // ================= NEW: REMOVE SENT REQUEST =================
+
   Future<void> _removeSentRequest() async {
     if (widget.userId == null || widget.viewerUserId == null) return;
     try {
@@ -967,98 +1014,184 @@ class _ProfilePageState extends State<ProfilePage> {
             ? "$_imgBaseUrl/$apiProfilePic"
             : null;
 
+    // ✅ Move screenHeight here, outside of children list
+    final double screenHeight = MediaQuery.of(context).size.height;
+
     debugPrint("🟦 FINAL PROFILE PIC URL = $apiProfilePicUrl");
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: colorScheme.surface,
-        centerTitle: true,
-        title: Text(
-          isViewerMode ? "Profile" : "Your Profile",
-          style: TextStyle(color: colorScheme.primary),
-        ),
-        leading: IconButton(
-          icon: Icon(CupertinoIcons.back, color: colorScheme.primary),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        actions: [
-          if (!isViewerMode)
-            IconButton(
-              icon: Icon(Icons.edit, color: colorScheme.primary),
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        EditProfilePage(userDetails: _userDetails),
-                  ),
-                );
-              },
-            ),
-        ],
-      ),
       body: profileProvider.isLoading && profile == null && _userDetails == null
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
-                  // ================= PROFILE INFO CARD =================
+                  // ================= PROFILE INFO CARD (UPDATED) =================
+
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 22,
-                      horizontal: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(18),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    height: screenHeight * 0.8,
+                    child: Stack(
                       children: [
-                        Text(
-                          _capitalize(fullName),
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                        // ======== PROFILE IMAGE ========
+                        Positioned.fill(
+                          child: (apiProfilePicUrl != null &&
+                                  apiProfilePicUrl.toString().isNotEmpty)
+                              ? Image.network(
+                                  apiProfilePicUrl,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(
+                                  color: Colors.grey.shade700,
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.person,
+                                      size: 80,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                        ),
+
+                        // ======== GRADIENT OVER IMAGE ========
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.black.withOpacity(0.6),
+                                  Colors.transparent,
+                                  Colors.black.withOpacity(0.7),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 6),
-                        // Text(
-                        //   "Grid Club",
-                        //   textAlign: TextAlign.center,
-                        //   style: TextStyle(
-                        //     fontSize: 14,
-                        //     color: Colors.grey.shade300,
-                        //     fontWeight: FontWeight.w500,
-                        //   ),
-                        // ),
-                        // const SizedBox(height: 4),
-                        // Text(
-                        //   "GRID",
-                        //   textAlign: TextAlign.center,
-                        //   style: TextStyle(
-                        //     fontSize: 12,
-                        //     color: Colors.grey.shade400,
-                        //     letterSpacing: 1,
-                        //   ),
-                        // ),
-                        const SizedBox(height: 12),
-                        Text(
-                          address,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade500,
+
+                        // ======== BACK BUTTON ========
+                        Positioned(
+                          top: 16,
+                          left: 16,
+                          child: GestureDetector(
+                            onTap: () => Navigator.of(context).pop(),
+                            child: const Icon(
+                              Icons.arrow_back_ios,
+                              color: Colors.white,
+                              size: 26,
+                            ),
+                          ),
+                        ),
+
+                        // ======== EDIT BUTTON ========
+                        if (!isViewerMode)
+                          Positioned(
+                            top: 16,
+                            right: 16,
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EditProfilePage(
+                                        userDetails: _userDetails),
+                                  ),
+                                );
+                              },
+                              child: const Icon(
+                                Icons.edit,
+                                color: Colors.white,
+                                size: 26,
+                              ),
+                            ),
+                          ),
+
+                        // ======== PROFILE INFO SECTION (LOGO + TEXT) ========
+                        Positioned(
+                          bottom: 12,
+                          left: 16,
+                          right: 16,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // ===== PROFILE LOGO =====
+                              CircleAvatar(
+                                radius: 36,
+                                backgroundColor: Colors.grey.shade300,
+                                backgroundImage: _userDetails?[
+                                                'profile_logo'] !=
+                                            null &&
+                                        _userDetails!['profile_logo']
+                                            .toString()
+                                            .isNotEmpty
+                                    ? NetworkImage(
+                                        "$_imgBaseUrl/${_userDetails!['profile_logo']}")
+                                    : null,
+                                child: (_userDetails?['profile_logo'] == null ||
+                                        _userDetails!['profile_logo']
+                                            .toString()
+                                            .isEmpty)
+                                    ? const Icon(
+                                        Icons.person,
+                                        size: 45,
+                                        color: Colors.white,
+                                      )
+                                    : null,
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              // ===== NAME =====
+                              Text(
+                                _capitalize(fullName),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+
+                              const SizedBox(height: 8),
+
+                              // ===== BUSINESS NAME =====
+                              Text(
+                                _userDetails?['business_info']?['legal_name'] ??
+                                    "",
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.white70,
+                                ),
+                              ),
+
+                              const SizedBox(height: 4),
+
+                              // ===== INDUSTRY =====
+                              Text(
+                                _userDetails?['business_info']?['industry']
+                                        ?['title'] ??
+                                    "",
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                  color: Colors.white54,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
+
+                  // ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) ==================
+                  
 
                   // ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) ==================
                   if (isViewerMode && !widget.isConnected) ...[
@@ -1067,8 +1200,20 @@ class _ProfilePageState extends State<ProfilePage> {
                       width: double.infinity,
                       padding: const EdgeInsets.all(14),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade900,
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                        border: Border.all(
+                          color: Colors.grey.shade200,
+                          width: 1,
+                        ),
                       ),
                       child: ElevatedButton(
                         onPressed: () {
@@ -1084,7 +1229,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue,
+                          backgroundColor: const Color.fromARGB(255, 28, 26, 61),
+                          foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
@@ -1096,8 +1242,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               : widget.fromConnectionTab == 'sent'
                                   ? 'Remove'
                                   : 'Connect',
-                          style: const TextStyle(
-                              fontSize: 16, color: Colors.white),
+                          style: const TextStyle(fontSize: 16),
                         ),
                       ),
                     ),
@@ -1108,18 +1253,72 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 16),
 
                     // SOCIAL ICONS
-                    _buildSocialIconsGrid(),
+                    // _buildSocialIconsGrid(),
 
+// SOCIAL LINKS SECTION (with heading)
+                    if (!_isLoadingMasterLinks && _masterLinks.isNotEmpty) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                          border: Border.all(
+                            color: Colors.grey.shade200,
+                            width: 1,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Social Links',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            _buildSocialIconsGrid(), // returns the grid with individual item styling
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24), // spacing after the section
+                    ],
                     if (!_isLoadingMasterLinks && _masterLinks.isNotEmpty)
                       const SizedBox(height: 24),
 
                     // MESSAGE SECTION
+
+                    // ================= MESSAGE SECTION (STANDARD LIGHT THEME) =================
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade900,
+                        color: Colors.white, // Light background
                         borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                        border: Border.all(
+                          color: Colors.grey.shade200,
+                          width: 1,
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1129,14 +1328,14 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 12),
                           Text(
                             fullName,
                             style: const TextStyle(
-                              color: Colors.white,
+                              color: Colors.black87,
                               fontSize: 16,
                               fontWeight: FontWeight.w500,
                             ),
@@ -1145,7 +1344,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           Text(
                             '+91    $phone',
                             style: TextStyle(
-                              color: Colors.grey.shade400,
+                              color: Colors.grey.shade600,
                               fontSize: 14,
                             ),
                           ),
@@ -1155,13 +1354,13 @@ class _ProfilePageState extends State<ProfilePage> {
                               Expanded(
                                 child: TextField(
                                   controller: _messageController,
-                                  style: const TextStyle(color: Colors.white),
+                                  style: const TextStyle(color: Colors.black87),
                                   decoration: InputDecoration(
                                     hintText: 'Message',
                                     hintStyle:
                                         TextStyle(color: Colors.grey.shade500),
                                     filled: true,
-                                    fillColor: Colors.grey.shade800,
+                                    fillColor: Colors.grey.shade50,
                                     border: OutlineInputBorder(
                                       borderRadius: BorderRadius.circular(12),
                                       borderSide: BorderSide.none,
@@ -1173,7 +1372,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     suffixIcon: IconButton(
                                       icon: Icon(
                                         Icons.camera_alt,
-                                        color: Colors.blue.shade300,
+                                        color: Colors.blue.shade400,
                                       ),
                                       onPressed: _pickImageForMessage,
                                     ),
@@ -1185,6 +1384,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 onPressed: _sendMessage,
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.blue,
+                                  foregroundColor: Colors.white,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -1193,10 +1393,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     vertical: 14,
                                   ),
                                 ),
-                                child: const Text(
-                                  'Send',
-                                  style: TextStyle(color: Colors.white),
-                                ),
+                                child: const Text('Send'),
                               ),
                             ],
                           ),
@@ -1231,12 +1428,91 @@ class _ProfilePageState extends State<ProfilePage> {
                     // const SizedBox(height: 24),
 
                     // REVIEWS
+                    // Container(
+                    //   width: double.infinity,
+                    //   padding: const EdgeInsets.all(16),
+                    //   decoration: BoxDecoration(
+                    //     color: Colors.grey.shade900,
+                    //     borderRadius: BorderRadius.circular(18),
+                    //   ),
+                    //   child: Column(
+                    //     crossAxisAlignment: CrossAxisAlignment.start,
+                    //     children: [
+                    //       const Text(
+                    //         'Reviews',
+                    //         style: TextStyle(
+                    //           fontSize: 18,
+                    //           fontWeight: FontWeight.bold,
+                    //           color: Colors.white,
+                    //         ),
+                    //       ),
+                    //       const SizedBox(height: 12),
+                    //       _isLoadingReviews
+                    //           ? const Center(
+                    //               child: CircularProgressIndicator(),
+                    //             )
+                    //           : _reviews.isEmpty
+                    //               ? _buildEmptyReviews()
+                    //               : SizedBox(
+                    //                   height: 200,
+                    //                   child: ListView.builder(
+                    //                     scrollDirection: Axis.horizontal,
+                    //                     itemCount: _reviews.length,
+                    //                     itemBuilder: (context, index) {
+                    //                       final r = _reviews[index]
+                    //                           as Map<String, dynamic>;
+
+                    //                       final fromUser = (r["from_user"] ??
+                    //                           {}) as Map<String, dynamic>;
+
+                    //                       final username =
+                    //                           (fromUser["user_name"] ??
+                    //                                   "Unknown User")
+                    //                               .toString();
+
+                    //                       final message =
+                    //                           (r["message"] ?? "").toString();
+
+                    //                       final rating = int.tryParse(
+                    //                               r["rating"].toString()) ??
+                    //                           0;
+
+                    //                       final createdAt =
+                    //                           (r["created_at"] ?? "")
+                    //                               .toString();
+
+                    //                       return _reviewCardHorizontal(
+                    //                         username: username,
+                    //                         rating: rating,
+                    //                         message: message,
+                    //                         createdAt: createdAt,
+                    //                       );
+                    //                     },
+                    //                   ),
+                    //                 ),
+                    //     ],
+                    //   ),
+                    // ),
+
+                    // REVIEWS (LIGHT THEME)
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade900,
+                        color: Colors.white,
                         borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                        border: Border.all(
+                          color: Colors.grey.shade200,
+                          width: 1,
+                        ),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1246,16 +1522,14 @@ class _ProfilePageState extends State<ProfilePage> {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Colors.black87,
                             ),
                           ),
                           const SizedBox(height: 12),
                           _isLoadingReviews
-                              ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
+                              ? const Center(child: CircularProgressIndicator())
                               : _reviews.isEmpty
-                                  ? _buildEmptyReviews()
+                                  ? _buildEmptyReviewsLight() // we'll also create a light empty state
                                   : SizedBox(
                                       height: 200,
                                       child: ListView.builder(
@@ -1264,22 +1538,17 @@ class _ProfilePageState extends State<ProfilePage> {
                                         itemBuilder: (context, index) {
                                           final r = _reviews[index]
                                               as Map<String, dynamic>;
-
                                           final fromUser = (r["from_user"] ??
                                               {}) as Map<String, dynamic>;
-
                                           final username =
                                               (fromUser["user_name"] ??
                                                       "Unknown User")
                                                   .toString();
-
                                           final message =
                                               (r["message"] ?? "").toString();
-
                                           final rating = int.tryParse(
                                                   r["rating"].toString()) ??
                                               0;
-
                                           final createdAt =
                                               (r["created_at"] ?? "")
                                                   .toString();
