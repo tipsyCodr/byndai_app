@@ -36,6 +36,38 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
 
   final List<Map<String, dynamic>> _users = [];
 
+  // ================= SEND CONNECTION REQUEST =================
+  Future<String?> _sendConnectionRequest(int receiverId) async {
+    final url = Uri.parse("$_baseUrl/connection-create");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "receiver_id": receiverId,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return null;
+      }
+
+      if (response.statusCode == 422) {
+        if (data["errors"] != null && data["errors"]["receiver_id"] != null) {
+          return data["errors"]["receiver_id"][0];
+        }
+        return data["message"] ?? "Validation error";
+      }
+
+      return data["message"] ?? "Something went wrong";
+    } catch (e) {
+      return "Server error, try again";
+    }
+  }
+
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {
     final token = await UserStorageService().getToken();
@@ -171,7 +203,6 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
         child: Stack(
           children: [
             // Gradient
-         
 
             Positioned(
               left: 0,
@@ -271,15 +302,62 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                             foregroundColor: Colors.white,
                             side: const BorderSide(color: Colors.white),
                           ),
-                          onPressed: () {},
+                          onPressed: () {
+                            if (_userId == null) return;
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ProfilePage(
+                                  userId: user["id"], // card wala user
+                                  viewerUserId: _userId, // login user
+                                  isConnected: user["is_connected"] == true,
+                                ),
+                              ),
+                            );
+                          },
                           child: const Text("View"),
                         ),
                       ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: ElevatedButton(
-                          onPressed: () {},
-                          child: const Text("Connect"),
+                          onPressed: () async {
+                            if (_userId == null) return;
+
+                            final receiverId = user["id"];
+
+                            final errorMessage =
+                                await _sendConnectionRequest(receiverId);
+
+                            if (!mounted) return;
+
+                            if (errorMessage == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("✅ Connection request sent"),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+
+                              // Optional: Button ko disable karne ke liye
+                              setState(() {
+                                user["is_connected"] = true;
+                              });
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(errorMessage),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
+                          },
+                          child: Text(
+                            user["is_connected"] == true
+                                ? "Requested"
+                                : "Connect",
+                          ),
                         ),
                       ),
                     ],

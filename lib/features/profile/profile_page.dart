@@ -365,6 +365,37 @@ class _ProfilePageState extends State<ProfilePage> {
     return "";
   }
 
+  Future<String?> _sendConnectionRequest(int receiverId) async {
+    final url = Uri.parse("$_baseUrl/connection-create");
+
+    try {
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "receiver_id": receiverId,
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return null; // success
+      }
+
+      if (response.statusCode == 422) {
+        if (data['errors'] != null && data['errors']['receiver_id'] != null) {
+          return data['errors']['receiver_id'][0];
+        }
+        return data['message'] ?? "Validation error";
+      }
+
+      return data['message'] ?? "Something went wrong";
+    } catch (e) {
+      return "Server error, please try again";
+    }
+  }
+
   // ================== SOCIAL ICONS HELPERS ==================
   IconData? _getIconForName(String name) {
     final key = name.trim().toLowerCase();
@@ -1191,7 +1222,6 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
 
                   // ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) ==================
-                  
 
                   // ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) ==================
                   if (isViewerMode && !widget.isConnected) ...[
@@ -1216,20 +1246,52 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       child: ElevatedButton(
-                        onPressed: () {
+                        // onPressed: () {
+                        //   if (widget.fromConnectionTab == 'pending') {
+                        //     _acceptPendingRequest();
+                        //   } else if (widget.fromConnectionTab == 'sent') {
+                        //     _removeSentRequest();
+                        //   } else {
+                        //     // default connect
+                        //     ScaffoldMessenger.of(context).showSnackBar(
+                        //       const SnackBar(content: Text("Connect clicked")),
+                        //     );
+                        //   }
+                        // },
+
+                        onPressed: () async {
                           if (widget.fromConnectionTab == 'pending') {
                             _acceptPendingRequest();
                           } else if (widget.fromConnectionTab == 'sent') {
                             _removeSentRequest();
                           } else {
-                            // default connect
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text("Connect clicked")),
-                            );
+                            if (widget.userId == null) return;
+
+                            final error =
+                                await _sendConnectionRequest(widget.userId!);
+
+                            if (error == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("✅ Connection request sent"),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+
+                              Navigator.pop(context, true);
+                            } else {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(error),
+                                  backgroundColor: Colors.red,
+                                ),
+                              );
+                            }
                           }
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color.fromARGB(255, 28, 26, 61),
+                          backgroundColor:
+                              const Color.fromARGB(255, 28, 26, 61),
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(vertical: 14),
                           shape: RoundedRectangleBorder(
@@ -1424,75 +1486,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       _buildRatingsSection(),
                       const SizedBox(height: 24),
                     ],
-
-                    // const SizedBox(height: 24),
-
-                    // REVIEWS
-                    // Container(
-                    //   width: double.infinity,
-                    //   padding: const EdgeInsets.all(16),
-                    //   decoration: BoxDecoration(
-                    //     color: Colors.grey.shade900,
-                    //     borderRadius: BorderRadius.circular(18),
-                    //   ),
-                    //   child: Column(
-                    //     crossAxisAlignment: CrossAxisAlignment.start,
-                    //     children: [
-                    //       const Text(
-                    //         'Reviews',
-                    //         style: TextStyle(
-                    //           fontSize: 18,
-                    //           fontWeight: FontWeight.bold,
-                    //           color: Colors.white,
-                    //         ),
-                    //       ),
-                    //       const SizedBox(height: 12),
-                    //       _isLoadingReviews
-                    //           ? const Center(
-                    //               child: CircularProgressIndicator(),
-                    //             )
-                    //           : _reviews.isEmpty
-                    //               ? _buildEmptyReviews()
-                    //               : SizedBox(
-                    //                   height: 200,
-                    //                   child: ListView.builder(
-                    //                     scrollDirection: Axis.horizontal,
-                    //                     itemCount: _reviews.length,
-                    //                     itemBuilder: (context, index) {
-                    //                       final r = _reviews[index]
-                    //                           as Map<String, dynamic>;
-
-                    //                       final fromUser = (r["from_user"] ??
-                    //                           {}) as Map<String, dynamic>;
-
-                    //                       final username =
-                    //                           (fromUser["user_name"] ??
-                    //                                   "Unknown User")
-                    //                               .toString();
-
-                    //                       final message =
-                    //                           (r["message"] ?? "").toString();
-
-                    //                       final rating = int.tryParse(
-                    //                               r["rating"].toString()) ??
-                    //                           0;
-
-                    //                       final createdAt =
-                    //                           (r["created_at"] ?? "")
-                    //                               .toString();
-
-                    //                       return _reviewCardHorizontal(
-                    //                         username: username,
-                    //                         rating: rating,
-                    //                         message: message,
-                    //                         createdAt: createdAt,
-                    //                       );
-                    //                     },
-                    //                   ),
-                    //                 ),
-                    //     ],
-                    //   ),
-                    // ),
 
                     // REVIEWS (LIGHT THEME)
                     Container(
