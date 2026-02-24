@@ -33,7 +33,9 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
   VideoPlayerController? _videoController;
 
   List<dynamic> _categories = [];
-  String? _selectedCategory;
+  // String? _selectedCategory;
+
+  int? _selectedCategory;
   bool _isCategoryLoading = false;
   static const String _baseUrl = AppConfig.apiBaseUrl;
 
@@ -103,7 +105,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
         // ✅ Set default selected category
         final existingCategory = widget.lead.category;
         if (existingCategory != null) {
-          _selectedCategory = existingCategory.toString();
+          _selectedCategory = existingCategory;
         }
 
         setState(() {});
@@ -830,7 +832,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                     padding: const EdgeInsets.only(bottom: 14),
                     child: _isCategoryLoading
                         ? const Center(child: CircularProgressIndicator())
-                        : DropdownButtonFormField<String>(
+                        : DropdownButtonFormField<int>(
                             value: _selectedCategory,
                             decoration: InputDecoration(
                               labelText: "Category",
@@ -851,17 +853,16 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                                 ),
                               ),
                             ),
-                            items: _categories
-                                .map<DropdownMenuItem<String>>((item) {
-                              return DropdownMenuItem<String>(
-                                value:
-                                    item["id"].toString(), // ✅ Use ID as value
-                                child: Text(item["category"]), // Show name
+                            items:
+                                _categories.map<DropdownMenuItem<int>>((item) {
+                              return DropdownMenuItem<int>(
+                                value: item["id"], // integer directly
+                                child: Text(item["category"]),
                               );
                             }).toList(),
                             onChanged: (value) {
                               setState(() {
-                                _selectedCategory = value;
+                                _selectedCategory = value; // integer
                               });
                             },
                           ),
@@ -1057,7 +1058,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
       "name": nameCtrl.text.trim(),
       "company_name": companyCtrl.text.trim(),
       // "category": categoryCtrl.text.trim(),
-      "category": _selectedCategory ?? "",
+      "category": _selectedCategory,
       "address": addressCtrl.text.trim(),
       "website": websiteCtrl.text.trim(),
       "mobile_no_1": mobiles.isNotEmpty ? mobiles[0] : "",
