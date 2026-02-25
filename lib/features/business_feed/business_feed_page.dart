@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:async';
 import 'post_card.dart';
 import 'post_creation_page.dart';
+import 'my_posts_page.dart';
 
 class BusinessFeedPage extends StatefulWidget {
   final String industryType;
@@ -71,15 +72,85 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
   }
 
   // ================= FETCH POSTS =================
+  // Future<void> _fetchPosts({required int page}) async {
+  //   if (_isLoading) return;
+
+  //   setState(() => _isLoading = true);
+
+  //   try {
+  //     final headers = await _getHeaders();
+
+  //     // final uri = Uri.parse("$_baseUrl/posts/list?page=$page");
+  //     Map<String, String> queryParams = {
+  //       "page": page.toString(),
+  //     };
+
+  //     if (_searchQuery.isNotEmpty) {
+  //       queryParams["search"] = _searchQuery;
+  //     }
+
+  //     if (_selectedIndustryId != null) {
+  //       queryParams["industry_id"] = _selectedIndustryId.toString();
+  //     }
+
+  //     final uri = Uri.parse("$_baseUrl/posts/list")
+  //         .replace(queryParameters: queryParams);
+
+  //     final response = await http.get(uri, headers: headers);
+
+  //     if (response.statusCode == 200) {
+  //       final jsonData = jsonDecode(response.body);
+
+  //       final List<dynamic> dataList = jsonData["data"] ?? [];
+  //       final pagination = jsonData["pagination"] ?? {};
+
+  //       final List<Map<String, dynamic>> newPosts =
+  //           dataList.map((e) => Map<String, dynamic>.from(e)).toList();
+
+  //       setState(() {
+  //         _posts.clear();
+
+  //         // 👇 If selectedPostId exists, bring it to top
+  //         if (widget.selectedPostId != null) {
+  //           final index =
+  //               newPosts.indexWhere((p) => p["id"] == widget.selectedPostId);
+
+  //           if (index != -1) {
+  //             final selectedPost = newPosts.removeAt(index);
+  //             newPosts.insert(0, selectedPost);
+  //           }
+  //         }
+
+  //         _posts.addAll(newPosts);
+
+  //         _currentPage = pagination["current_page"] ?? 1;
+  //         _lastPage = pagination["last_page"] ?? 1;
+  //       });
+  //     } else {
+  //       debugPrint("Fetch posts failed: ${response.body}");
+  //     }
+  //   } catch (e) {
+  //     debugPrint("Fetch posts exception: $e");
+  //   } finally {
+  //     setState(() => _isLoading = false);
+  //   }
+  // }
+
   Future<void> _fetchPosts({required int page}) async {
     if (_isLoading) return;
 
     setState(() => _isLoading = true);
 
+    // 🔥 Naya: Agar page 1 hai to turant posts clear kar do (loading indicator dikhane ke liye)
+    if (page == 1) {
+      setState(() {
+        _posts.clear();
+      });
+    }
+
     try {
       final headers = await _getHeaders();
 
-      // final uri = Uri.parse("$_baseUrl/posts/list?page=$page");
       Map<String, String> queryParams = {
         "page": page.toString(),
       };
@@ -99,7 +170,6 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
-
         final List<dynamic> dataList = jsonData["data"] ?? [];
         final pagination = jsonData["pagination"] ?? {};
 
@@ -107,31 +177,52 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
             dataList.map((e) => Map<String, dynamic>.from(e)).toList();
 
         setState(() {
-          _posts.clear();
+          // Ab yahan posts clear nahi karna, kyunki upar clear kar chuke hain
+          // Agar page > 1 hai to previous posts already maujood hain, unme add karo
+          if (page == 1) {
+            // Refresh case: already cleared, bas newPosts add karo
+            _posts.addAll(newPosts);
+          } else {
+            // Load more case: previous posts mein add karo
+            _posts.addAll(newPosts);
+          }
 
-          // 👇 If selectedPostId exists, bring it to top
-          if (widget.selectedPostId != null) {
+          // selectedPostId wala logic abhi bhi yahan rahega
+          if (widget.selectedPostId != null && page == 1) {
             final index =
-                newPosts.indexWhere((p) => p["id"] == widget.selectedPostId);
-
+                _posts.indexWhere((p) => p["id"] == widget.selectedPostId);
             if (index != -1) {
-              final selectedPost = newPosts.removeAt(index);
-              newPosts.insert(0, selectedPost);
+              final selectedPost = _posts.removeAt(index);
+              _posts.insert(0, selectedPost);
             }
           }
 
-          _posts.addAll(newPosts);
-
-          _currentPage = pagination["current_page"] ?? 1;
+          _currentPage = pagination["current_page"] ?? page;
           _lastPage = pagination["last_page"] ?? 1;
         });
       } else {
         debugPrint("Fetch posts failed: ${response.body}");
+        // Agar fail ho jaye to kuch error message dikha sakte ho
       }
     } catch (e) {
       debugPrint("Fetch posts exception: $e");
     } finally {
       setState(() => _isLoading = false);
+    }
+  }
+
+  // BusinessFeedPage ke andar, _BusinessFeedPageState class mein
+  void _handleBack() {
+    if (_selectedIndustryId != null || _searchQuery.isNotEmpty) {
+      // Filters clear karo
+      setState(() {
+        _selectedIndustryId = null;
+        _searchQuery = "";
+        _searchController.clear();
+      });
+      _fetchPosts(page: 1); // Unfiltered data load karo
+    } else {
+      Navigator.pop(context); // Actual back navigation
     }
   }
 
@@ -185,17 +276,12 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F6FA),
       appBar: AppBar(
-        // title:
-        //     const Text("Business Feed", style: TextStyle(color: Colors.white)),
-        // centerTitle: true,
-        // backgroundColor: Colors.black,
-        // leading: IconButton(
-        //   icon: const Icon(CupertinoIcons.back, color: Colors.white),
-        //   onPressed: () => Navigator.of(context).pop(),
-        // ),
-
         backgroundColor: Colors.white,
         elevation: 1,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          onPressed: _handleBack,
+        ),
         title: const Text(
           "Business Feed",
           style: TextStyle(
@@ -203,22 +289,28 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        leading: IconButton(
-          icon: const Icon(CupertinoIcons.back, color: Colors.black87),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        centerTitle: false,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh, color: Colors.black87),
-            onPressed: () => _fetchPosts(page: 1),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.menu, color: Colors.black87),
+            onSelected: (value) {
+              if (value == "my_posts") {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const MyPostsPage(),
+                  ),
+                );
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: "my_posts",
+                child: Text("My Posts"),
+              ),
+            ],
           ),
         ],
-        // actions: [
-        //   IconButton(
-        //     icon: const Icon(Icons.refresh, color: Colors.white),
-        //     onPressed: () => _fetchPosts(page: 1),
-        //   ),
-        // ],
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blueAccent,
