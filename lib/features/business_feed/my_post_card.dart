@@ -7,17 +7,20 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 import './post_detailed_page.dart';
 import './report_page.dart';
 import './industry_icon_mapper.dart';
+import 'edit_post_page.dart';
 
 class MyPostCard extends StatefulWidget {
   final Map<String, dynamic> post;
   final Function(int industryId)? onIndustryTap;
   final Function(int, Map<String, dynamic>) onPostUpdated;
+  final Function(int postId)? onPostDeleted;
 
   const MyPostCard({
     super.key,
     required this.post,
     this.onIndustryTap,
     required this.onPostUpdated,
+    this.onPostDeleted,
   });
 
   @override
@@ -61,6 +64,67 @@ class _MyPostCardState extends State<MyPostCard> {
   void dispose() {
     _imageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _deletePost() async {
+    // Confirmation dialog
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Post'),
+        content: const Text('Are you sure you want to delete this post?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    try {
+      final token = await UserStorageService().getToken();
+      if (token == null) return;
+
+      final headers = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': 'Bearer $token',
+      };
+
+      final postId = _postData["id"];
+      final response = await http.delete(
+        Uri.parse("$_baseUrl/api/posts/delete/$postId"),
+        headers: headers,
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body);
+        if (json["status"] == true) {
+          // Success – parent ko batao ki ye post delete ho gayi
+          widget.onPostDeleted?.call(postId);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(json["message"] ?? "Post deleted")),
+          );
+        } else {
+          throw Exception(json["message"] ?? "Delete failed");
+        }
+      } else {
+        throw Exception("Server error: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("Delete error: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to delete: $e")),
+      );
+    }
   }
 
   // =========================
@@ -502,6 +566,50 @@ class _MyPostCardState extends State<MyPostCard> {
                         color: Colors.blue.shade700,
                       ),
                     ),
+                  ),
+
+                  // PopupMenuButton<String>(
+                  //   icon: const Icon(Icons.more_vert, size: 20),
+                  //   onSelected: (value) {
+                  //     if (value == 'edit') {
+                  //       // TODO: navigate to edit page
+                  //       ScaffoldMessenger.of(context).showSnackBar(
+                  //         const SnackBar(content: Text('Edit coming soon')),
+                  //       );
+                  //     } else if (value == 'delete') {
+                  //       _deletePost();
+                  //     }
+                  //   },
+                  //   itemBuilder: (ctx) => [
+                  //     const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  //     const PopupMenuItem(
+                  //         value: 'delete', child: Text('Delete')),
+                  //   ],
+                  // ),
+
+                  PopupMenuButton<String>(
+                    icon: const Icon(Icons.more_vert, size: 20),
+                    onSelected: (value) async {
+                      if (value == 'edit') {
+                        final updatedPost =
+                            await Navigator.push<Map<String, dynamic>>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EditPostPage(post: widget.post),
+                          ),
+                        );
+                        if (updatedPost != null) {
+                          widget.onPostUpdated(widget.post['id'], updatedPost);
+                        }
+                      } else if (value == 'delete') {
+                        _deletePost();
+                      }
+                    },
+                    itemBuilder: (ctx) => [
+                      const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                      const PopupMenuItem(
+                          value: 'delete', child: Text('Delete')),
+                    ],
                   ),
                 ],
               ),

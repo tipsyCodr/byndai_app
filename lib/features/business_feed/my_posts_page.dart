@@ -260,20 +260,10 @@ class _MyPostsPageState extends State<MyPostsPage> {
       ),
       body: Column(
         children: [
-          
-
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: TextField(
               controller: _searchController,
-              // onChanged: (value) {
-              //   setState(() {
-              //     _searchQuery = value;
-              //   });
-
-              //   // API call jab user type kare
-              //   _fetchPosts(page: 1);
-              // },
               onChanged: (value) {
                 if (_debounce?.isActive ?? false) _debounce!.cancel();
 
@@ -343,6 +333,7 @@ class _MyPostsPageState extends State<MyPostsPage> {
                             }
 
                             return MyPostCard(
+                              key: ValueKey(_posts[index]["id"]),
                               post: _posts[index],
                               onPostUpdated: (postId, updatedPost) {
                                 final postIndex =
@@ -360,6 +351,20 @@ class _MyPostsPageState extends State<MyPostsPage> {
                                   _searchController.clear();
                                 });
                                 _fetchPosts(page: 1);
+                              },
+                              // onPostDeleted: (postId) {
+                              //   setState(() {
+                              //     _posts.removeWhere((p) => p["id"] == postId);
+                              //   });
+                              // },
+                              onPostDeleted: (postId) {
+                                setState(() {
+                                  _posts.removeWhere((p) => p["id"] == postId);
+                                });
+
+                                if (_posts.isEmpty) {
+                                  _fetchPosts(page: 1);
+                                }
                               },
                             );
                           },
