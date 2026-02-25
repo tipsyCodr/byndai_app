@@ -17,6 +17,108 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   final _phoneController = TextEditingController();
   String _selectedCode = "🇮🇳 +91";
 
+  // void _showTopRightMessage(String message, {bool isSuccess = false}) {
+  //   if (!mounted) return;
+
+  //   final overlay = Overlay.of(context);
+  //   if (overlay == null) return;
+
+  //   final overlayEntry = OverlayEntry(
+  //     builder: (context) => Positioned(
+  //       top: 8,
+  //       right: 4,
+  //       child: Material(
+  //         color: Colors.transparent,
+  //         child: Container(
+  //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+  //           decoration: BoxDecoration(
+  //             color: isSuccess
+  //                 ? Colors.green.shade600 // ✅ success green
+  //                 : Colors.red.shade600, // ❌ error red
+  //             borderRadius: BorderRadius.circular(12),
+  //             boxShadow: [
+  //               BoxShadow(
+  //                 color: Colors.black.withOpacity(0.2),
+  //                 blurRadius: 8,
+  //               ),
+  //             ],
+  //           ),
+  //           child: Text(
+  //             message,
+  //             style: const TextStyle(
+  //               color: Colors.white,
+  //               fontWeight: FontWeight.w500,
+  //             ),
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+
+  //   overlay.insert(overlayEntry);
+
+  //   Future.delayed(const Duration(seconds: 2), () {
+  //     overlayEntry.remove();
+  //   });
+  // }
+
+  void _showTopRightMessage(
+    String message, {
+    bool isSuccess = false,
+    bool isError = false,
+  }) {
+    if (!mounted) return;
+
+    final overlay = Overlay.of(context);
+    if (overlay == null) return;
+
+    Color bgColor;
+
+    if (isSuccess) {
+      bgColor = Colors.green.shade600;
+    } else if (isError) {
+      bgColor = Colors.red.shade600;
+    } else {
+      bgColor = Colors.orange.shade600; // 🟠 default = info
+    }
+
+    final overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 8,
+        right: 4,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: bgColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 8,
+                ),
+              ],
+            ),
+            child: Text(
+              message,
+              style: const TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+
+    Future.delayed(const Duration(seconds: 2), () {
+      overlayEntry.remove();
+    });
+  }
+
   @override
   void dispose() {
     _phoneController.dispose();
@@ -46,7 +148,11 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     } else {
       debugPrint("🆕 New user detected, sending OTP for verification.");
       final success = await auth.getOTP(mobile, isNewUser: true);
+      // if (success) {
+      //   await _promptOtpEntry(mobile);
+      // }
       if (success) {
+        _showTopRightMessage("OTP sent successfully"); // 🟠 orange
         await _promptOtpEntry(mobile);
       }
     }
@@ -63,11 +169,19 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     _showLoaderDialog();
     final auth = context.read<AuthProvider>();
     final success = await auth.verifyOTP(mobile, otp);
+
     if (!mounted) return false;
     Navigator.pop(context); // Dismiss loader
 
+    Navigator.pop(context); // 👈 Loader pehle close karo
+
+    if (success && !auth.isAuthenticated) {
+      _showTopRightMessage("OTP verified successfully");
+    }
+
     if (!success) {
-      _showSnackBar("OTP verification failed. Try again.");
+      // _showSnackBar("OTP verification failed. Try again.");
+      _showTopRightMessage("OTP verification failed", isError: true);
       return false;
     }
 
@@ -110,18 +224,45 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   /// Shows a dialog for the user to enter their existing PIN to log in.
   Future<void> _handleExistingPinLogin(String mobile) async {
     final auth = context.read<AuthProvider>();
+    // final loggedIn = await showDialog<bool>(
+    //   context: context,
+    //   builder: (_) => SecureInputDialog(
+    //     type: SecureInputType.loginPin,
+    //     title: "Enter your PIN",
+    //     description: "Enter your 4-digit PIN to login.",
+    //     onSubmit: (pin) => auth.loginWithPin(mobile, pin),
+    //     onForgotPin: () => _handleForgotPassword(mobile),
+    //   ),
+    // );
+
     final loggedIn = await showDialog<bool>(
       context: context,
       builder: (_) => SecureInputDialog(
         type: SecureInputType.loginPin,
         title: "Enter your PIN",
         description: "Enter your 4-digit PIN to login.",
-        onSubmit: (pin) => auth.loginWithPin(mobile, pin),
+        onSubmit: (pin) async {
+          final success = await auth.loginWithPin(mobile, pin);
+
+          if (!success) {
+            _showTopRightMessage("Invalid PIN", isError: true);
+          }
+
+          return success;
+        },
         onForgotPin: () => _handleForgotPassword(mobile),
       ),
     );
 
+    // if (loggedIn == true && mounted) {
+    //   Navigator.pushReplacementNamed(context, RouteNames.home);
+    // }
+
     if (loggedIn == true && mounted) {
+      // _showTopRightMessage("Login Successful");
+      _showTopRightMessage("Login Successful", isSuccess: true);
+      await Future.delayed(const Duration(milliseconds: 800));
+
       Navigator.pushReplacementNamed(context, RouteNames.home);
     }
   }

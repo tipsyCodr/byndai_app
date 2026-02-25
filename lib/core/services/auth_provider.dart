@@ -301,7 +301,7 @@ class AuthProvider extends ChangeNotifier {
     _isAuthenticated = true;
     await _storageService.saveSession(response);
     await _clearPendingState();
-    Fluttertoast.showToast(msg: message);
+    // Fluttertoast.showToast(msg: message);
   }
 
   Future<void> _prepareForRegistration(
