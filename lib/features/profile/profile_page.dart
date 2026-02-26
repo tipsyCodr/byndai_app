@@ -533,6 +533,36 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // ✅ MAIN DYNAMIC GRID
+  // Widget _buildSocialIconsGrid() {
+  //   if (_isLoadingMasterLinks) return const SizedBox.shrink();
+  //   if (_masterLinks.isEmpty) return const SizedBox.shrink();
+
+  //   final supportedLinks = _masterLinks.where((item) {
+  //     final name = (item["name"] ?? "").toString();
+  //     return _getIconForName(name) != null;
+  //   }).toList();
+
+  //   if (supportedLinks.isEmpty) return const SizedBox.shrink();
+
+  //   return GridView.count(
+  //     crossAxisCount: 2, // 4 se 2 karo
+  //     shrinkWrap: true,
+  //     physics: const NeverScrollableScrollPhysics(),
+  //     mainAxisSpacing: 12,
+  //     crossAxisSpacing: 12,
+  //     childAspectRatio: 2.8, // important for row style
+  //     children: supportedLinks.map((item) {
+  //       final name = (item["name"] ?? "").toString();
+  //       final link = (item["link"] ?? "").toString();
+
+  //       final icon = _getIconForName(name)!;
+  //       final color = _getColorForName(name);
+
+  //       return _socialIconClickable(icon, color, link, name);
+  //     }).toList(),
+  //   );
+  // }
+
   Widget _buildSocialIconsGrid() {
     if (_isLoadingMasterLinks) return const SizedBox.shrink();
     if (_masterLinks.isEmpty) return const SizedBox.shrink();
@@ -545,12 +575,12 @@ class _ProfilePageState extends State<ProfilePage> {
     if (supportedLinks.isEmpty) return const SizedBox.shrink();
 
     return GridView.count(
-      crossAxisCount: 2, // 4 se 2 karo
+      crossAxisCount: 4,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      childAspectRatio: 2.8, // important for row style
+      childAspectRatio: 1,
       children: supportedLinks.map((item) {
         final name = (item["name"] ?? "").toString();
         final link = (item["link"] ?? "").toString();
@@ -558,8 +588,36 @@ class _ProfilePageState extends State<ProfilePage> {
         final icon = _getIconForName(name)!;
         final color = _getColorForName(name);
 
-        return _socialIconClickable(icon, color, link, name);
+        return _socialIconOnly(icon, color, link, name);
       }).toList(),
+    );
+  }
+
+  Widget _socialIconOnly(IconData icon, Color color, String link, String name) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(30),
+      onTap: () {
+        if (link.trim().isEmpty) return;
+        _openLink(link, platform: name.toLowerCase());
+      },
+      child: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: Colors.grey.shade100,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: Colors.grey.shade300,
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: FaIcon(
+            icon,
+            size: 24,
+            color: color,
+          ),
+        ),
+      ),
     );
   }
 
@@ -1039,10 +1097,8 @@ class _ProfilePageState extends State<ProfilePage> {
     final String phone = apiMasterUser?['mobile']?.toString() ?? "9406037478";
 
     final String? apiProfilePic = apiMasterUser?['profile_pic'];
-    
 
     final String? apiProfileLogo = apiMasterUser?['profile_logo'];
-    
 
     final String? apiProfilePicUrl =
         (apiProfilePic != null && apiProfilePic.toString().isNotEmpty)
@@ -1065,12 +1121,10 @@ class _ProfilePageState extends State<ProfilePage> {
       body: profileProvider.isLoading && profile == null && _userDetails == null
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
+              // padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   // ================= PROFILE INFO CARD (UPDATED) =================
-
-                 
 
                   Container(
                     width: double.infinity,
@@ -1241,327 +1295,397 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
 
-                  // ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) ==================
+                  /// ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) ==================
+                  if (isViewerMode && !widget.isConnected)
+                    Padding(
+                      padding:
+                          const EdgeInsets.all(16), // ✅ 16 padding applied here
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 14),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  spreadRadius: 1,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: Colors.grey.shade200,
+                                width: 1,
+                              ),
+                            ),
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                if (widget.fromConnectionTab == 'pending') {
+                                  _acceptPendingRequest();
+                                } else if (widget.fromConnectionTab == 'sent') {
+                                  _removeSentRequest();
+                                } else {
+                                  if (widget.userId == null) return;
 
-                  // ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) ==================
-                  if (isViewerMode && !widget.isConnected) ...[
-                    const SizedBox(height: 14),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
+                                  final error = await _sendConnectionRequest(
+                                      widget.userId!);
+
+                                  if (error == null) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content:
+                                            Text("✅ Connection request sent"),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+
+                                    Navigator.pop(context, true);
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(error),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    const Color.fromARGB(255, 28, 26, 61),
+                                foregroundColor: Colors.white,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                              child: Text(
+                                widget.fromConnectionTab == 'pending'
+                                    ? 'Accept'
+                                    : widget.fromConnectionTab == 'sent'
+                                        ? 'Remove'
+                                        : 'Connect',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                            ),
                           ),
                         ],
-                        border: Border.all(
-                          color: Colors.grey.shade200,
-                          width: 1,
-                        ),
-                      ),
-                      child: ElevatedButton(
-                        onPressed: () async {
-                          if (widget.fromConnectionTab == 'pending') {
-                            _acceptPendingRequest();
-                          } else if (widget.fromConnectionTab == 'sent') {
-                            _removeSentRequest();
-                          } else {
-                            if (widget.userId == null) return;
-
-                            final error =
-                                await _sendConnectionRequest(widget.userId!);
-
-                            if (error == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("✅ Connection request sent"),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
-
-                              Navigator.pop(context, true);
-                            } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(error),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
-                            }
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                              const Color.fromARGB(255, 28, 26, 61),
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: Text(
-                          widget.fromConnectionTab == 'pending'
-                              ? 'Accept'
-                              : widget.fromConnectionTab == 'sent'
-                                  ? 'Remove'
-                                  : 'Connect',
-                          style: const TextStyle(fontSize: 16),
-                        ),
                       ),
                     ),
-                  ],
 
                   // ================= REST UI (ONLY FOR SELF OR CONNECTED USERS) =================
                   if (!isViewerMode || widget.isConnected) ...[
-                    const SizedBox(height: 16),
-
-                    // SOCIAL ICONS
-                    // _buildSocialIconsGrid(),
-
-                    // SOCIAL LINKS SECTION (with heading)
-                    if (!_isLoadingMasterLinks && _masterLinks.isNotEmpty) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
-                              spreadRadius: 1,
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                          border: Border.all(
-                            color: Colors.grey.shade200,
-                            width: 1,
-                          ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Social Links',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            _buildSocialIconsGrid(), // returns the grid with individual item styling
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24), // spacing after the section
-                    ],
+                    /// ================= SOCIAL LINKS SECTION ==================
                     if (!_isLoadingMasterLinks && _masterLinks.isNotEmpty)
-                      const SizedBox(height: 24),
+                      Padding(
+                        padding:
+                            const EdgeInsets.all(16), // ✅ 16 padding outside
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 16),
 
-                    // MESSAGE SECTION
-
-                    // ================= MESSAGE SECTION (STANDARD LIGHT THEME) =================
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white, // Light background
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                        border: Border.all(
-                          color: Colors.grey.shade200,
-                          width: 1,
-                        ),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Have a question?',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            fullName,
-                            style: const TextStyle(
-                              color: Colors.black87,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '+91    $phone',
-                            style: TextStyle(
-                              color: Colors.grey.shade600,
-                              fontSize: 14,
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _messageController,
-                                  style: const TextStyle(color: Colors.black87),
-                                  decoration: InputDecoration(
-                                    hintText: 'Message',
-                                    hintStyle:
-                                        TextStyle(color: Colors.grey.shade500),
-                                    filled: true,
-                                    fillColor: Colors.grey.shade50,
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    contentPadding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 12,
-                                    ),
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        Icons.camera_alt,
-                                        color: Colors.blue.shade400,
-                                      ),
-                                      onPressed: _pickImageForMessage,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              ElevatedButton(
-                                onPressed: _sendMessage,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.blue,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 20,
-                                    vertical: 14,
-                                  ),
-                                ),
-                                child: const Text('Send'),
-                              ),
-                            ],
-                          ),
-                          if (_selectedImage != null) ...[
-                            const SizedBox(height: 8),
                             Container(
-                              height: 60,
-                              width: 60,
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                image: DecorationImage(
-                                  image: FileImage(_selectedImage!),
-                                  fit: BoxFit.cover,
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.1),
+                                    spreadRadius: 1,
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                                border: Border.all(
+                                  color: Colors.grey.shade200,
+                                  width: 1,
                                 ),
                               ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  /// SECTION TITLE
+                                  const Text(
+                                    'Social Links',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  /// SOCIAL ICONS GRID
+                                  _buildSocialIconsGrid(),
+                                ],
+                              ),
                             ),
+
+                            const SizedBox(height: 12), // spacing after section
                           ],
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // RATINGS
-                    // _buildRatingsSection(),
-
-                    if (isViewerMode) ...[
-                      _buildRatingsSection(),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // REVIEWS (LIGHT THEME)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(18),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                        border: Border.all(
-                          color: Colors.grey.shade200,
-                          width: 1,
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Reviews',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          _isLoadingReviews
-                              ? const Center(child: CircularProgressIndicator())
-                              : _reviews.isEmpty
-                                  ? _buildEmptyReviewsLight() // we'll also create a light empty state
-                                  : SizedBox(
-                                      height: 200,
-                                      child: ListView.builder(
-                                        scrollDirection: Axis.horizontal,
-                                        itemCount: _reviews.length,
-                                        itemBuilder: (context, index) {
-                                          final r = _reviews[index]
-                                              as Map<String, dynamic>;
-                                          final fromUser = (r["from_user"] ??
-                                              {}) as Map<String, dynamic>;
-                                          final username =
-                                              (fromUser["user_name"] ??
-                                                      "Unknown User")
-                                                  .toString();
-                                          final message =
-                                              (r["message"] ?? "").toString();
-                                          final rating = int.tryParse(
-                                                  r["rating"].toString()) ??
-                                              0;
-                                          final createdAt =
-                                              (r["created_at"] ?? "")
-                                                  .toString();
 
-                                          return _reviewCardHorizontal(
-                                            username: username,
-                                            rating: rating,
-                                            message: message,
-                                            createdAt: createdAt,
-                                          );
-                                        },
+                    if (!_isLoadingMasterLinks && _masterLinks.isNotEmpty)
+
+                      /// ================= HAVE A QUESTION SECTION ==================
+                      Padding(
+                        padding:
+                            const EdgeInsets.all(16), // ✅ 16 padding outside
+                        child: Column(
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.grey.withOpacity(0.1),
+                                    spreadRadius: 1,
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                                border: Border.all(
+                                  color: Colors.grey.shade200,
+                                  width: 1,
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  /// TITLE
+                                  const Text(
+                                    'Have a question?',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  /// NAME
+                                  Text(
+                                    fullName,
+                                    style: const TextStyle(
+                                      color: Colors.black87,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 4),
+
+                                  /// PHONE
+                                  Text(
+                                    '+91 $phone',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  /// MESSAGE FIELD + SEND BUTTON
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: TextField(
+                                          controller: _messageController,
+                                          style: const TextStyle(
+                                              color: Colors.black87),
+                                          decoration: InputDecoration(
+                                            hintText: 'Message',
+                                            hintStyle: TextStyle(
+                                                color: Colors.grey.shade500),
+                                            filled: true,
+                                            fillColor: Colors.grey.shade50,
+                                            border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            contentPadding:
+                                                const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 12,
+                                            ),
+                                            suffixIcon: IconButton(
+                                              icon: Icon(
+                                                Icons.camera_alt,
+                                                color: Colors.blue.shade400,
+                                              ),
+                                              onPressed: _pickImageForMessage,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      ElevatedButton(
+                                        onPressed: _sendMessage,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.blue,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                          ),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 14,
+                                          ),
+                                        ),
+                                        child: const Text('Send'),
+                                      ),
+                                    ],
+                                  ),
+
+                                  /// IMAGE PREVIEW
+                                  if (_selectedImage != null) ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      height: 60,
+                                      width: 60,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        image: DecorationImage(
+                                          image: FileImage(_selectedImage!),
+                                          fit: BoxFit.cover,
+                                        ),
                                       ),
                                     ),
+                                  ],
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 12), // spacing after section
+                          ],
+                        ),
+                      ),
+
+                    if (isViewerMode)
+                      Padding(
+                        padding:
+                            const EdgeInsets.all(16), // ✅ 16 padding applied
+                        child: Column(
+                          children: [
+                            _buildRatingsSection(),
+
+                            // const SizedBox(height: 12), // spacing after section
+                          ],
+                        ),
+                      ),
+
+                    /// ================= REVIEWS SECTION ==================
+                    Padding(
+                      padding: const EdgeInsets.all(16), // ✅ OUTER 16 PADDING
+                      child: Column(
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(
+                                16), // ✅ INNER CARD PADDING
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.grey.withOpacity(0.1),
+                                  spreadRadius: 1,
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                              border: Border.all(
+                                color: Colors.grey.shade200,
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                /// TITLE
+                                const Text(
+                                  'Reviews',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                /// LOADING / EMPTY / LIST
+                                _isLoadingReviews
+                                    ? const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 20),
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      )
+                                    : _reviews.isEmpty
+                                        ? _buildEmptyReviewsLight()
+                                        : SizedBox(
+                                            height: 200,
+                                            child: ListView.builder(
+                                              scrollDirection: Axis.horizontal,
+                                              itemCount: _reviews.length,
+                                              itemBuilder: (context, index) {
+                                                final r = _reviews[index]
+                                                    as Map<String, dynamic>;
+
+                                                final fromUser =
+                                                    (r["from_user"] ?? {})
+                                                        as Map<String, dynamic>;
+
+                                                final username =
+                                                    (fromUser["user_name"] ??
+                                                            "Unknown User")
+                                                        .toString();
+
+                                                final message =
+                                                    (r["message"] ?? "")
+                                                        .toString();
+
+                                                final rating = int.tryParse(
+                                                      r["rating"].toString(),
+                                                    ) ??
+                                                    0;
+
+                                                final createdAt =
+                                                    (r["created_at"] ?? "")
+                                                        .toString();
+
+                                                return _reviewCardHorizontal(
+                                                  username: username,
+                                                  rating: rating,
+                                                  message: message,
+                                                  createdAt: createdAt,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24), // spacing after section
                         ],
                       ),
                     ),
