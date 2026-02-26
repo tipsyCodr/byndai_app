@@ -1039,36 +1039,48 @@ class _ProfilePageState extends State<ProfilePage> {
     final String phone = apiMasterUser?['mobile']?.toString() ?? "9406037478";
 
     final String? apiProfilePic = apiMasterUser?['profile_pic'];
+    
+
+    final String? apiProfileLogo = apiMasterUser?['profile_logo'];
+    
 
     final String? apiProfilePicUrl =
         (apiProfilePic != null && apiProfilePic.toString().isNotEmpty)
             ? "$_imgBaseUrl/$apiProfilePic"
             : null;
 
+    final String? apiProfileLogoUrl =
+        (apiProfileLogo != null && apiProfileLogo.toString().isNotEmpty)
+            ? "$_imgBaseUrl/$apiProfileLogo"
+            : null;
+
     // ✅ Move screenHeight here, outside of children list
     final double screenHeight = MediaQuery.of(context).size.height;
 
     debugPrint("🟦 FINAL PROFILE PIC URL = $apiProfilePicUrl");
+    debugPrint("🟦 FINAL PROFILE Logo URL = $apiProfileLogoUrl");
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: profileProvider.isLoading && profile == null && _userDetails == null
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   // ================= PROFILE INFO CARD (UPDATED) =================
 
+                 
+
                   Container(
                     width: double.infinity,
-                    height: screenHeight * 0.8,
+                    height: MediaQuery.of(context).size.height * 0.75,
                     child: Stack(
                       children: [
-                        // ======== PROFILE IMAGE ========
+                        /// FULL WIDTH PROFILE COVER IMAGE
                         Positioned.fill(
                           child: (apiProfilePicUrl != null &&
-                                  apiProfilePicUrl.toString().isNotEmpty)
+                                  apiProfilePicUrl.isNotEmpty)
                               ? Image.network(
                                   apiProfilePicUrl,
                                   fit: BoxFit.cover,
@@ -1085,7 +1097,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                         ),
 
-                        // ======== GRADIENT OVER IMAGE ========
+                        /// DARK GRADIENT OVERLAY
                         Positioned.fill(
                           child: Container(
                             decoration: BoxDecoration(
@@ -1102,24 +1114,24 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
 
-                        // ======== BACK BUTTON ========
+                        /// BACK BUTTON
                         Positioned(
-                          top: 16,
+                          top: 12,
                           left: 16,
                           child: GestureDetector(
-                            onTap: () => Navigator.of(context).pop(),
+                            onTap: () => Navigator.pop(context),
                             child: const Icon(
                               Icons.arrow_back_ios,
                               color: Colors.white,
-                              size: 26,
+                              size: 24,
                             ),
                           ),
                         ),
 
-                        // ======== EDIT BUTTON ========
+                        /// EDIT BUTTON (ONLY OWNER)
                         if (!isViewerMode)
                           Positioned(
-                            top: 16,
+                            top: 12,
                             right: 16,
                             child: GestureDetector(
                               onTap: () {
@@ -1134,48 +1146,58 @@ class _ProfilePageState extends State<ProfilePage> {
                               child: const Icon(
                                 Icons.edit,
                                 color: Colors.white,
-                                size: 26,
+                                size: 24,
                               ),
                             ),
                           ),
 
-                        // ======== PROFILE INFO SECTION (LOGO + TEXT) ========
+                        /// PROFILE INFO BOTTOM CENTER
                         Positioned(
-                          bottom: 12,
+                          bottom: 24,
                           left: 16,
                           right: 16,
                           child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              // ===== PROFILE LOGO =====
+                              /// PROFILE LOGO
+                              // CircleAvatar(
+                              //   radius: 40,
+                              //   backgroundColor: Colors.grey.shade300,
+                              //   backgroundImage: (_userDetails?[
+                              //                   'profile_logo'] !=
+                              //               null &&
+                              //           _userDetails!['profile_logo']
+                              //               .toString()
+                              //               .isNotEmpty)
+                              //       ? NetworkImage(
+                              //           "$_imgBaseUrl/${_userDetails!['profile_logo']}")
+                              //       : null,
+                              //   child: (_userDetails?['profile_logo'] == null ||
+                              //           _userDetails!['profile_logo']
+                              //               .toString()
+                              //               .isEmpty)
+                              //       ? const Icon(
+                              //           Icons.person,
+                              //           size: 42,
+                              //           color: Colors.white,
+                              //         )
+                              //       : null,
+                              // ),
+
                               CircleAvatar(
-                                radius: 36,
+                                radius: 40,
                                 backgroundColor: Colors.grey.shade300,
-                                backgroundImage: _userDetails?[
-                                                'profile_logo'] !=
-                                            null &&
-                                        _userDetails!['profile_logo']
-                                            .toString()
-                                            .isNotEmpty
-                                    ? NetworkImage(
-                                        "$_imgBaseUrl/${_userDetails!['profile_logo']}")
+                                backgroundImage: apiProfileLogoUrl != null
+                                    ? NetworkImage(apiProfileLogoUrl)
                                     : null,
-                                child: (_userDetails?['profile_logo'] == null ||
-                                        _userDetails!['profile_logo']
-                                            .toString()
-                                            .isEmpty)
-                                    ? const Icon(
-                                        Icons.person,
-                                        size: 45,
-                                        color: Colors.white,
-                                      )
+                                child: apiProfileLogoUrl == null
+                                    ? const Icon(Icons.person,
+                                        size: 42, color: Colors.white)
                                     : null,
                               ),
 
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 14),
 
-                              // ===== NAME =====
+                              /// FULL NAME
                               Text(
                                 _capitalize(fullName),
                                 textAlign: TextAlign.center,
@@ -1186,23 +1208,22 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                               ),
 
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 6),
 
-                              // ===== BUSINESS NAME =====
+                              /// BUSINESS NAME
                               Text(
                                 _userDetails?['business_info']?['legal_name'] ??
                                     "",
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontSize: 16,
-                                  fontWeight: FontWeight.w500,
                                   color: Colors.white70,
                                 ),
                               ),
 
                               const SizedBox(height: 4),
 
-                              // ===== INDUSTRY =====
+                              /// INDUSTRY
                               Text(
                                 _userDetails?['business_info']?['industry']
                                         ?['title'] ??
@@ -1210,7 +1231,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                 textAlign: TextAlign.center,
                                 style: const TextStyle(
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w400,
                                   color: Colors.white54,
                                 ),
                               ),
@@ -1246,19 +1266,6 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
                       child: ElevatedButton(
-                        // onPressed: () {
-                        //   if (widget.fromConnectionTab == 'pending') {
-                        //     _acceptPendingRequest();
-                        //   } else if (widget.fromConnectionTab == 'sent') {
-                        //     _removeSentRequest();
-                        //   } else {
-                        //     // default connect
-                        //     ScaffoldMessenger.of(context).showSnackBar(
-                        //       const SnackBar(content: Text("Connect clicked")),
-                        //     );
-                        //   }
-                        // },
-
                         onPressed: () async {
                           if (widget.fromConnectionTab == 'pending') {
                             _acceptPendingRequest();
@@ -1317,7 +1324,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     // SOCIAL ICONS
                     // _buildSocialIconsGrid(),
 
-// SOCIAL LINKS SECTION (with heading)
+                    // SOCIAL LINKS SECTION (with heading)
                     if (!_isLoadingMasterLinks && _masterLinks.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       Container(

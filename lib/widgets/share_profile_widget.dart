@@ -14,20 +14,23 @@ class ShareProfileWidget extends StatefulWidget {
 class _ShareProfileWidgetState extends State<ShareProfileWidget> {
   final TextEditingController _phoneController = TextEditingController();
 
+ 
+
   Future<void> _sendToWhatsApp() async {
     final phone = _phoneController.text.trim();
     if (phone.isEmpty) return;
 
     final profileData = context.read<ProfileProvider>().profileData;
-
     final profileId = profileData?['id'] ?? 'me';
     final profileUrl = "https://gridcard.in/profile/$profileId";
 
     final message =
         "Hi, check out my GridCard digital business card here: $profileUrl";
+
     final encodedMessage = Uri.encodeComponent(message);
 
     String formattedPhone = phone;
+
     if (RegExp(r'^\d{10}$').hasMatch(phone)) {
       formattedPhone = "91$phone";
     }
@@ -35,18 +38,7 @@ class _ShareProfileWidgetState extends State<ShareProfileWidget> {
     final whatsappUrl =
         Uri.parse("https://wa.me/$formattedPhone?text=$encodedMessage");
 
-    try {
-      // By using externalApplication, Android will look for apps handling the URI.
-      // If both handle it, it SHOULD show a chooser if no default is set.
-      await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
-      if (mounted) Navigator.pop(context);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Could not launch WhatsApp")),
-        );
-      }
-    }
+    await launchUrl(whatsappUrl, mode: LaunchMode.externalApplication);
   }
 
   Future<void> _shareNative() async {
@@ -55,7 +47,7 @@ class _ShareProfileWidgetState extends State<ShareProfileWidget> {
     final profileUrl = "https://gridcard.in/profile/$profileId";
 
     final message =
-        "Hi, check out my GridCard digital business card here: $profileUrl";
+        "Hi, check out my bynd AI digital business card here: $profileUrl";
 
     await Share.share(message);
     if (mounted) Navigator.pop(context);
@@ -139,24 +131,8 @@ class _ShareProfileWidgetState extends State<ShareProfileWidget> {
               ],
             ),
             const SizedBox(height: 24),
-            // FilledButton(
-            //   onPressed: () => _sendToWhatsApp(),
-            //   style: FilledButton.styleFrom(
-            //     backgroundColor: colors.primary,
-            //     foregroundColor: colors.onPrimary,
-            //     padding: const EdgeInsets.symmetric(vertical: 16),
-            //     shape: RoundedRectangleBorder(
-            //       borderRadius: BorderRadius.circular(12),
-            //     ),
-            //   ),
-            //   child: const Text(
-            //     "Send via WhatsApp",
-            //     style: TextStyle(fontWeight: FontWeight.bold),
-            //   ),
-            // ),
-            // const SizedBox(height: 12),
             OutlinedButton.icon(
-              onPressed: _shareNative,
+              onPressed: _sendToWhatsApp,
               icon: const Icon(Icons.share, size: 18),
               label: const Text("Share Your Profile Card"),
               style: OutlinedButton.styleFrom(

@@ -17,50 +17,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   final _phoneController = TextEditingController();
   String _selectedCode = "🇮🇳 +91";
 
-  // void _showTopRightMessage(String message, {bool isSuccess = false}) {
-  //   if (!mounted) return;
-
-  //   final overlay = Overlay.of(context);
-  //   if (overlay == null) return;
-
-  //   final overlayEntry = OverlayEntry(
-  //     builder: (context) => Positioned(
-  //       top: 8,
-  //       right: 4,
-  //       child: Material(
-  //         color: Colors.transparent,
-  //         child: Container(
-  //           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-  //           decoration: BoxDecoration(
-  //             color: isSuccess
-  //                 ? Colors.green.shade600 // ✅ success green
-  //                 : Colors.red.shade600, // ❌ error red
-  //             borderRadius: BorderRadius.circular(12),
-  //             boxShadow: [
-  //               BoxShadow(
-  //                 color: Colors.black.withOpacity(0.2),
-  //                 blurRadius: 8,
-  //               ),
-  //             ],
-  //           ),
-  //           child: Text(
-  //             message,
-  //             style: const TextStyle(
-  //               color: Colors.white,
-  //               fontWeight: FontWeight.w500,
-  //             ),
-  //           ),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-
-  //   overlay.insert(overlayEntry);
-
-  //   Future.delayed(const Duration(seconds: 2), () {
-  //     overlayEntry.remove();
-  //   });
-  // }
+  
 
   void _showTopRightMessage(
     String message, {
@@ -224,16 +181,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   /// Shows a dialog for the user to enter their existing PIN to log in.
   Future<void> _handleExistingPinLogin(String mobile) async {
     final auth = context.read<AuthProvider>();
-    // final loggedIn = await showDialog<bool>(
-    //   context: context,
-    //   builder: (_) => SecureInputDialog(
-    //     type: SecureInputType.loginPin,
-    //     title: "Enter your PIN",
-    //     description: "Enter your 4-digit PIN to login.",
-    //     onSubmit: (pin) => auth.loginWithPin(mobile, pin),
-    //     onForgotPin: () => _handleForgotPassword(mobile),
-    //   ),
-    // );
+   
 
     final loggedIn = await showDialog<bool>(
       context: context,
