@@ -62,4 +62,5 @@ flutter:
 
   assets:
     - assets/app-logo.jpg
-    - assets/phone_hero.png
+    - assets/phone_hero.png    
+    - assets/byndAi.png
