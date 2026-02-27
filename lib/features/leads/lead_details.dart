@@ -11,6 +11,9 @@ import 'package:gridcard/models/lead_model.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 // ✅ ADD THIS BASE URL AT TOP
 const String baseStorageUrl =
@@ -634,6 +637,315 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
     );
   }
 
+  // ✅ Helper function: Show mobile selection for call, sms, whatsapp
+  void _showMobileDialog(List<String> mobiles, String type) {
+    if (mobiles.isEmpty) return;
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  type == "call"
+                      ? "Select Number to Call"
+                      : type == "sms"
+                          ? "Select Number to SMS"
+                          : "Select Number for WhatsApp",
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              ...mobiles.map((mobile) => ListTile(
+                    leading: Icon(
+                      type == "call"
+                          ? Icons.call
+                          : type == "sms"
+                              ? Icons.message
+                              : FontAwesomeIcons
+                                  .whatsapp, // ✅ use FontAwesomeIcons
+                      color: type == "call"
+                          ? Colors.green
+                          : type == "sms"
+                              ? Colors.orange
+                              : Colors.green,
+                    ),
+                    title: Text(mobile),
+                    onTap: () {
+                      Navigator.pop(context);
+                      if (type == "call") {
+                        launchUrl(Uri.parse("tel:$mobile"));
+                      } else if (type == "sms") {
+                        launchUrl(Uri.parse("sms:$mobile"));
+                      } else if (type == "whatsapp") {
+                        launchUrl(Uri.parse("https://wa.me/$mobile"));
+                      }
+                    },
+                  )),
+              const SizedBox(height: 8),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Widget _buildActionRow() {
+  //   final lead = widget.lead;
+
+  //   // Collect all mobiles
+  //   final mobiles = [
+  //     if (lead.mobile_no_1 != null && lead.mobile_no_1!.isNotEmpty)
+  //       lead.mobile_no_1!,
+  //     if (lead.mobile_no_2 != null && lead.mobile_no_2!.isNotEmpty)
+  //       lead.mobile_no_2!,
+  //     if (lead.mobile_no_3 != null && lead.mobile_no_3!.isNotEmpty)
+  //       lead.mobile_no_3!,
+  //   ];
+
+  //   String? website = lead.website;
+  //   if (website != null && website.isNotEmpty) {
+  //     if (!website.startsWith("http://") && !website.startsWith("https://")) {
+  //       website = "https://$website";
+  //     }
+  //   }
+
+  //   final email = lead.email ?? "";
+
+  //   return Card(
+  //     margin: const EdgeInsets.only(bottom: 16),
+  //     elevation: 0.5,
+  //     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+  //     child: Padding(
+  //       padding: const EdgeInsets.symmetric(vertical: 12),
+  //       child: Row(
+  //         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  //         mainAxisSize: MainAxisSize.max,
+  //         children: [
+  //           // Call
+  //           IconButton(
+  //             icon: const Icon(Icons.call, color: Colors.green, size: 28),
+  //             onPressed: mobiles.isNotEmpty
+  //                 ? () => _showMobileDialog(mobiles, "call")
+  //                 : null,
+  //             tooltip: "Call",
+  //           ),
+
+  //           // SMS
+  //           IconButton(
+  //             icon: const Icon(Icons.message, color: Colors.orange, size: 28),
+  //             onPressed: mobiles.isNotEmpty
+  //                 ? () => _showMobileDialog(mobiles, "sms")
+  //                 : null,
+  //             tooltip: "SMS",
+  //           ),
+
+  //           // Email
+  //           IconButton(
+  //             icon: const Icon(Icons.email, color: Colors.blue, size: 28),
+  //             onPressed: email.isNotEmpty
+  //                 ? () {
+  //                     final subject = Uri.encodeComponent(
+  //                         "Regarding Lead: ${lead.name ?? ''} (${lead.company_name ?? ''})");
+
+  //                     final mobilesList = [
+  //                       if (lead.mobile_no_1 != null) lead.mobile_no_1,
+  //                       if (lead.mobile_no_2 != null) lead.mobile_no_2,
+  //                       if (lead.mobile_no_3 != null) lead.mobile_no_3,
+  //                     ].where((e) => e != null && e.isNotEmpty).join(", ");
+
+  //                     final body = Uri.encodeComponent(
+  //                         "Hi ${lead.name ?? ''},\n\n"
+  //                         "I wanted to discuss with you regarding your company (${lead.company_name ?? ''}).\n\n"
+  //                         "Contact Details:\n"
+  //                         "Mobile(s): $mobilesList\n"
+  //                         "Website: ${lead.website ?? ''}\n\n"
+  //                         "Regards,");
+
+  //                     final mailUrl = Uri.parse(
+  //                         "mailto:$email?subject=$subject&body=$body");
+
+  //                     launchUrl(mailUrl);
+  //                   }
+  //                 : null,
+  //             tooltip: "Email",
+  //           ),
+
+  //           // Website
+  //           IconButton(
+  //             icon: const Icon(Icons.language, color: Colors.purple, size: 28),
+  //             onPressed: website != null
+  //                 ? () async {
+  //                     final uri = Uri.parse(website!);
+  //                     if (await canLaunchUrl(uri)) {
+  //                       await launchUrl(uri,
+  //                           mode: LaunchMode.externalApplication);
+  //                     } else {
+  //                       ScaffoldMessenger.of(context).showSnackBar(
+  //                         const SnackBar(content: Text("Cannot open website")),
+  //                       );
+  //                     }
+  //                   }
+  //                 : null,
+  //             tooltip: "Website",
+  //           ),
+
+  //           // WhatsApp
+  //           IconButton(
+  //             icon: FaIcon(FontAwesomeIcons.whatsapp,
+  //                 color: Colors.green, size: 28),
+  //             onPressed: mobiles.isNotEmpty
+  //                 ? () => _showMobileDialog(mobiles, "whatsapp")
+  //                 : null,
+  //             tooltip: "WhatsApp",
+  //           ),
+  //         ],
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildActionRow() {
+    final lead = widget.lead;
+
+    // Collect all mobiles
+    final mobiles = [
+      if (lead.mobile_no_1 != null && lead.mobile_no_1!.isNotEmpty)
+        lead.mobile_no_1!,
+      if (lead.mobile_no_2 != null && lead.mobile_no_2!.isNotEmpty)
+        lead.mobile_no_2!,
+      if (lead.mobile_no_3 != null && lead.mobile_no_3!.isNotEmpty)
+        lead.mobile_no_3!,
+    ];
+
+    String? website = lead.website;
+    if (website != null && website.isNotEmpty) {
+      if (!website.startsWith("http://") && !website.startsWith("https://")) {
+        website = "https://$website";
+      }
+    }
+
+    final email = lead.email ?? "";
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 0.5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            // Call
+            IconButton(
+              icon: Icon(
+                Icons.call,
+                color: mobiles.isNotEmpty ? Colors.green : Colors.grey,
+                size: 28,
+              ),
+              onPressed: mobiles.isNotEmpty
+                  ? () => _showMobileDialog(mobiles, "call")
+                  : null,
+              tooltip: "Call",
+            ),
+
+            // SMS
+            IconButton(
+              icon: Icon(
+                Icons.message,
+                color: mobiles.isNotEmpty ? Colors.orange : Colors.grey,
+                size: 28,
+              ),
+              onPressed: mobiles.isNotEmpty
+                  ? () => _showMobileDialog(mobiles, "sms")
+                  : null,
+              tooltip: "SMS",
+            ),
+
+            // Email
+            IconButton(
+              icon: Icon(
+                Icons.email,
+                color: email.isNotEmpty ? Colors.blue : Colors.grey,
+                size: 28,
+              ),
+              onPressed: email.isNotEmpty
+                  ? () {
+                      final subject = Uri.encodeComponent(
+                          "Regarding Lead: ${lead.name ?? ''} (${lead.company_name ?? ''})");
+
+                      final mobilesList = [
+                        if (lead.mobile_no_1 != null) lead.mobile_no_1,
+                        if (lead.mobile_no_2 != null) lead.mobile_no_2,
+                        if (lead.mobile_no_3 != null) lead.mobile_no_3,
+                      ].where((e) => e != null && e.isNotEmpty).join(", ");
+
+                      final body = Uri.encodeComponent(
+                          "Hi ${lead.name ?? ''},\n\n"
+                          "I wanted to discuss with you regarding your company (${lead.company_name ?? ''}).\n\n"
+                          "Contact Details:\n"
+                          "Mobile(s): $mobilesList\n"
+                          "Website: ${lead.website ?? ''}\n\n"
+                          "Regards,");
+
+                      final mailUrl = Uri.parse(
+                          "mailto:$email?subject=$subject&body=$body");
+
+                      launchUrl(mailUrl);
+                    }
+                  : null,
+              tooltip: "Email",
+            ),
+
+            // Website
+            IconButton(
+              icon: Icon(
+                Icons.language,
+                color: website != null ? Colors.purple : Colors.grey,
+                size: 28,
+              ),
+              onPressed: website != null
+                  ? () async {
+                      final uri = Uri.parse(website!);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri,
+                            mode: LaunchMode.externalApplication);
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("Cannot open website")),
+                        );
+                      }
+                    }
+                  : null,
+              tooltip: "Website",
+            ),
+
+            // WhatsApp
+            IconButton(
+              icon: FaIcon(
+                FontAwesomeIcons.whatsapp,
+                color: mobiles.isNotEmpty ? Colors.green : Colors.grey,
+                size: 28,
+              ),
+              onPressed: mobiles.isNotEmpty
+                  ? () => _showMobileDialog(mobiles, "whatsapp")
+                  : null,
+              tooltip: "WhatsApp",
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   // ✅ Widget to show image section
   Widget _buildImageSection() {
     return Card(
@@ -798,36 +1110,15 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ✅ Add image section at the top
+                /// ✅ Lead Image Top par rehne do (agar chahte ho)
                 _buildImageSection(),
 
-                _buildMediaSection(
-                  "Selfy Image 1",
-                  _selfyImage1Url,
-                  _selfyImage1Base64,
-                  () => _pickSelfyImage(1),
-                ),
+                _buildActionRow(),
 
-                _buildMediaSection(
-                  "Selfy Image 2",
-                  _selfyImage2Url,
-                  _selfyImage2Base64,
-                  () => _pickSelfyImage(2),
-                ),
-
-                _buildMediaSection(
-                  "Selfy Video",
-                  _selfyVideoUrl,
-                  _selfyVideoBase64,
-                  _pickVideo,
-                  isVideo: true,
-                ),
-
+                /// 🔹 BASIC DETAILS
                 _sectionCard(children: [
                   _input("Name", nameCtrl, error: errors['name']),
                   ..._buildMobiles(),
-                  // _input("Category", categoryCtrl),
-
                   Padding(
                     padding: const EdgeInsets.only(bottom: 14),
                     child: _isCategoryLoading
@@ -856,26 +1147,55 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                             items:
                                 _categories.map<DropdownMenuItem<int>>((item) {
                               return DropdownMenuItem<int>(
-                                value: item["id"], // integer directly
+                                value: item["id"],
                                 child: Text(item["category"]),
                               );
                             }).toList(),
                             onChanged: (value) {
                               setState(() {
-                                _selectedCategory = value; // integer
+                                _selectedCategory = value;
                               });
                             },
                           ),
                   ),
                 ]),
+
+                /// 🔹 COMPANY & EMAIL
                 _sectionCard(children: [
                   _input("Company", companyCtrl),
                   ..._buildEmails(),
                 ]),
+
+                /// 🔹 WEBSITE & ADDRESS
                 _sectionCard(children: [
                   _input("Website", websiteCtrl),
                   _input("Address", addressCtrl, maxLines: 3),
                 ]),
+
+                /// 🔥🔥🔥 SELFY SECTIONS — NOW AT LAST
+
+                _buildMediaSection(
+                  "Selfy Image 1",
+                  _selfyImage1Url,
+                  _selfyImage1Base64,
+                  () => _pickSelfyImage(1),
+                ),
+
+                _buildMediaSection(
+                  "Selfy Image 2",
+                  _selfyImage2Url,
+                  _selfyImage2Base64,
+                  () => _pickSelfyImage(2),
+                ),
+
+                _buildMediaSection(
+                  "Selfy Video",
+                  _selfyVideoUrl,
+                  _selfyVideoBase64,
+                  _pickVideo,
+                  isVideo: true,
+                ),
+
                 if (isDesktop)
                   Padding(
                     padding: const EdgeInsets.only(top: 20),
