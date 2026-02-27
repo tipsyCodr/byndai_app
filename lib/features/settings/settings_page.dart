@@ -8,9 +8,37 @@ import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:gridcard/features/settings/change_pin_page.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/routes/route_names.dart';
+import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import './about_dynamic_page.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  static const String _baseUrl = AppConfig.apiBaseUrl;
+
+  Future<Map<String, dynamic>?> _fetchAboutPage() async {
+    try {
+      final response = await http.get(
+        Uri.parse("$_baseUrl/page/about"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['data'];
+      }
+    } catch (e) {
+      debugPrint("Error fetching about page: $e");
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,13 +132,30 @@ class SettingsPage extends StatelessWidget {
               Divider(
                   color: colorScheme.onSurface.withOpacity(0.05), height: 40),
               _buildSettingsHeader(context, "Support & Info"),
+              // _buildSettingsTile(
+              //   context: context,
+              //   icon: CupertinoIcons.info_circle,
+              //   title: "About ByndAI",
+              //   onTap: () {
+              //     _showInfoPage(context, "About ByndAI",
+              //         "ByndAI is your ultimate digital networking companion. Scan business cards, manage leads, and grow your professional presence with ease.\n\nVersion 1.0.0");
+              //   },
+              // ),
               _buildSettingsTile(
                 context: context,
                 icon: CupertinoIcons.info_circle,
                 title: "About ByndAI",
-                onTap: () {
-                  _showInfoPage(context, "About ByndAI",
-                      "ByndAI is your ultimate digital networking companion. Scan business cards, manage leads, and grow your professional presence with ease.\n\nVersion 1.0.0");
+                onTap: () async {
+                  final pageData = await _fetchAboutPage();
+
+                  if (pageData != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AboutDynamicPage(pageData: pageData),
+                      ),
+                    );
+                  }
                 },
               ),
               _buildSettingsTile(
