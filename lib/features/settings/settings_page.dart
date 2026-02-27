@@ -5,6 +5,7 @@ import 'package:gridcard/core/services/theme_provider.dart';
 import 'package:gridcard/features/profile/business_info_page.dart';
 import 'package:gridcard/features/profile/links_management_page.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
+import 'package:gridcard/features/profile/edit_profile_page.dart';
 import 'package:gridcard/features/settings/change_pin_page.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/routes/route_names.dart';
@@ -14,6 +15,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import './about_dynamic_page.dart';
 import './privacy_dynamic_page.dart';
+import 'package:provider/provider.dart';
+import 'package:gridcard/core/services/profile_provider.dart';
 import './support_dynamic_page.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -25,6 +28,50 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   static const String _baseUrl = AppConfig.apiBaseUrl;
+  Map<String, dynamic>? _userDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserDetails(); // 👈 Yaha call hoga
+  }
+
+  // ================= HEADERS =================
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await UserStorageService().getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  Future<void> _fetchUserDetails() async {
+    try {
+      final int? targetUserId = await UserStorageService().getUserId();
+
+      if (targetUserId == null) return;
+
+      final headers = await _getHeaders();
+      final url = Uri.parse("$_baseUrl/user-details/$targetUserId");
+
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded["status"] == true) {
+          if (mounted) {
+            setState(() {
+              _userDetails = decoded["data"];
+            });
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("🔴 EXCEPTION in _fetchUserDetails(): $e");
+    }
+  }
 
   Future<Map<String, dynamic>?> _fetchAboutPage() async {
     try {
@@ -91,11 +138,17 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: CupertinoIcons.person_circle,
                 title: "Edit Personal Profile",
                 subtitle: "Update name, email, and bio",
-                onTap: () {
+                onTap: () async {
+                  final userId = await UserStorageService().getUserId();
+
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const ProfilePage()));
+                        builder: (context) => ProfilePage(
+                          userId: userId,
+                          viewerUserId: userId, // self view
+                        ),
+                      ));
                 },
               ),
               _buildSettingsTile(
@@ -103,11 +156,44 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: CupertinoIcons.briefcase,
                 title: "Business Information",
                 subtitle: "Company name, designation, etc.",
-                onTap: () {
+                // onTap: () {
+                //   Navigator.push(
+                //       context,
+                //       MaterialPageRoute(
+                //           builder: (context) => const BusinessInfoPage()));
+                // },
+                // onTap: () async {
+                //   final userId = await UserStorageService().getUserId();
+
+                //   Navigator.push(
+                //     context,
+                //     MaterialPageRoute(
+                //       builder: (context) => EditProfilePage(
+                //         userDetails: _userDetails,
+                //         initialTabIndex: 3, // 👈 Business Info tab index
+                //       ),
+                //     ),
+                //   );
+                // },
+
+                onTap: () async {
+                  if (_userDetails == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Please wait, loading profile...")),
+                    );
+                    return;
+                  }
+
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const BusinessInfoPage()));
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditProfilePage(
+                        userDetails: _userDetails,
+                        initialTabIndex: 3,
+                      ),
+                    ),
+                  );
                 },
               ),
               _buildSettingsTile(
@@ -116,10 +202,23 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: "Social Links",
                 subtitle: "Manage your digital presence",
                 onTap: () {
+                  if (_userDetails == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Please wait, loading profile...")),
+                    );
+                    return;
+                  }
+
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const LinksManagementPage()));
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditProfilePage(
+                        userDetails: _userDetails,
+                        initialTabIndex: 1, // 👈 Links tab ka index
+                      ),
+                    ),
+                  );
                 },
               ),
               Divider(

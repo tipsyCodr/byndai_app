@@ -860,6 +860,9 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                   _buildPerformanceDashboard(),
                   const SizedBox(height: 24),
                   _buildMainActions(context),
+                  const SizedBox(height: 24),
+                  _buildGeneratedQrHeader(context),
+
                   const SizedBox(height: 32),
                   Text(
                     'Suggested Connections',
@@ -880,11 +883,11 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                   _buildNewBusinessHeader(context),
                   _buildLatestBusinessCarousel(),
 
-                  const SizedBox(height: 32),
+                  // const SizedBox(height: 32),
 
-                  _buildGeneratedQrHeader(context),
+                  // _buildGeneratedQrHeader(context),
 
-                  const SizedBox(height: 16),
+                  // const SizedBox(height: 16),
                 ],
               ),
             ),
