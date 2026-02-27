@@ -18,35 +18,63 @@ class AboutDynamicPage extends StatelessWidget {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // 🔥 HEADER
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 60, horizontal: 20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Color(int.parse("0xff${gradient[0].substring(1)}")),
-                    Color(int.parse("0xff${gradient[1].substring(1)}")),
-                  ],
+            // 🔥 HEADER WITH BACK BUTTON
+            Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 70, horizontal: 20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        Color(int.parse("0xff${gradient[0].substring(1)}")),
+                        Color(int.parse("0xff${gradient[1].substring(1)}")),
+                      ],
+                    ),
+                  ),
+                  child: SafeArea(
+                    bottom: false,
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 30),
+                        Text(
+                          hero['heading'],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 15),
+                        Text(
+                          hero['subheading'],
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    hero['heading'],
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold),
+                SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 10, top: 10),
+                    child: CircleAvatar(
+                      backgroundColor: Colors.white24,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () {
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ),
                   ),
-                  const SizedBox(height: 15),
-                  Text(
-                    hero['subheading'],
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
 
             // 🔥 CONTENT

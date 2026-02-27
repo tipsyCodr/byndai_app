@@ -13,6 +13,8 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import './about_dynamic_page.dart';
+import './privacy_dynamic_page.dart';
+import './support_dynamic_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -36,6 +38,38 @@ class _SettingsPageState extends State<SettingsPage> {
       }
     } catch (e) {
       debugPrint("Error fetching about page: $e");
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> _fetchPrivacyPage() async {
+    try {
+      final response = await http.get(
+        Uri.parse("$_baseUrl/page/privacy-policy"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['data'];
+      }
+    } catch (e) {
+      debugPrint("Error fetching privacy page: $e");
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> _fetchSupportPage() async {
+    try {
+      final response = await http.get(
+        Uri.parse("$_baseUrl/page/support"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['data'];
+      }
+    } catch (e) {
+      debugPrint("Error fetching support page: $e");
     }
     return null;
   }
@@ -158,25 +192,62 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
               ),
+              // _buildSettingsTile(
+              //   context: context,
+              //   icon: CupertinoIcons.doc_text,
+              //   title: "Privacy Policy",
+              //   onTap: () {
+              //     _showInfoPage(context, "Privacy Policy",
+              //         "Your privacy is important to us. We never share your data with third parties without your explicit consent. All business card data is stored securely.\n\nRead more on our website.");
+              //   },
+              // ),
+
               _buildSettingsTile(
                 context: context,
                 icon: CupertinoIcons.doc_text,
                 title: "Privacy Policy",
-                onTap: () {
-                  _showInfoPage(context, "Privacy Policy",
-                      "Your privacy is important to us. We never share your data with third parties without your explicit consent. All business card data is stored securely.\n\nRead more on our website.");
+                onTap: () async {
+                  final pageData = await _fetchPrivacyPage();
+
+                  if (pageData != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PrivacyDynamicPage(pageData: pageData),
+                      ),
+                    );
+                  }
                 },
               ),
+
+              // _buildSettingsTile(
+              //   context: context,
+              //   icon: CupertinoIcons.question_circle,
+              //   title: "Support",
+              //   onTap: () {
+              //     _showInfoPage(context, "Support",
+              //         "Need help? Contact us at support@byndai.com or visit our help center in the app.");
+              //   },
+              // ),
+
               _buildSettingsTile(
                 context: context,
                 icon: CupertinoIcons.question_circle,
                 title: "Support",
-                onTap: () {
-                  _showInfoPage(context, "Support",
-                      "Need help? Contact us at support@byndai.com or visit our help center in the app.");
+                onTap: () async {
+                  final pageData = await _fetchSupportPage();
+
+                  if (pageData != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SupportDynamicPage(pageData: pageData),
+                      ),
+                    );
+                  }
                 },
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 80),
             ],
           ),
         ),
