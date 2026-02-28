@@ -10,11 +10,13 @@ import './industry_icon_mapper.dart';
 
 class PostCard extends StatefulWidget {
   final Map<String, dynamic> post;
+  final Function(int industryId)? onIndustryTap;
   final Function(int, Map<String, dynamic>) onPostUpdated;
 
   const PostCard({
     super.key,
     required this.post,
+    this.onIndustryTap,
     required this.onPostUpdated,
   });
 
@@ -475,13 +477,30 @@ class _PostCardState extends State<PostCard> {
                       ],
                     ),
                   ),
-                  CircleAvatar(
-                    radius: 14,
-                    backgroundColor: Colors.grey.shade200,
-                    child: Icon(
-                      IndustryIconMapper.getIcon(_postData["industry_icon"]),
-                      size: 16,
-                      color: Colors.blue.shade700,
+                  // CircleAvatar(
+                  //   radius: 14,
+                  //   backgroundColor: Colors.grey.shade200,
+                  //   child: Icon(
+                  //     IndustryIconMapper.getIcon(_postData["industry_icon"]),
+                  //     size: 16,
+                  //     color: Colors.blue.shade700,
+                  //   ),
+                  // ),
+                  GestureDetector(
+                    onTap: () {
+                      final industryId = _postData["industry_id"];
+                      if (industryId != null && widget.onIndustryTap != null) {
+                        widget.onIndustryTap!(industryId);
+                      }
+                    },
+                    child: CircleAvatar(
+                      radius: 14,
+                      backgroundColor: Colors.grey.shade200,
+                      child: Icon(
+                        IndustryIconMapper.getIcon(_postData["industry_icon"]),
+                        size: 16,
+                        color: Colors.blue.shade700,
+                      ),
                     ),
                   ),
                 ],

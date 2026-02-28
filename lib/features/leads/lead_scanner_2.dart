@@ -241,24 +241,51 @@ class _LeadScanner2State extends State<LeadScanner2> {
   }
 
   // Widget _buildPreviewBox() {
-  //   return AspectRatio(
-  //     aspectRatio: 1.6,
-  //     child: Container(
+  //   if (_isCapturedMode && _capturedImage != null) {
+  //     return Container(
+  //       width: double.infinity,
+  //       height: MediaQuery.of(context).size.height * 0.45,
   //       decoration: BoxDecoration(
   //         border: Border.all(color: Colors.blueAccent, width: 2),
   //         borderRadius: BorderRadius.circular(12),
   //       ),
   //       child: ClipRRect(
   //         borderRadius: BorderRadius.circular(10),
-  //         child: _isCapturedMode && _capturedImage != null
-  //             ? kIsWeb
-  //                 ? Image.network(_capturedImage!.path, fit: BoxFit.cover)
-  //                 : Image.file(File(_capturedImage!.path), fit: BoxFit.cover)
-  //             : _isCameraInitialized
-  //                 ? CameraPreview(_cameraController!)
-  //                 : const Center(
-  //                     child: CircularProgressIndicator(),
-  //                   ),
+  //         child: kIsWeb
+  //             ? Image.network(
+  //                 _capturedImage!.path,
+  //                 fit: BoxFit.cover,
+  //               )
+  //             : Image.file(
+  //                 File(_capturedImage!.path),
+  //                 fit: BoxFit.cover,
+  //               ),
+  //       ),
+  //     );
+  //   }
+
+  //   if (!_isCameraInitialized || _cameraController == null) {
+  //     return const Center(child: CircularProgressIndicator());
+  //   }
+
+  //   final size = MediaQuery.of(context).size;
+  //   final deviceRatio = size.width / size.height;
+  //   final cameraRatio = _cameraController!.value.aspectRatio;
+
+  //   return Container(
+  //     width: double.infinity,
+  //     height: MediaQuery.of(context).size.height * 0.45,
+  //     decoration: BoxDecoration(
+  //       border: Border.all(color: Colors.blueAccent, width: 2),
+  //       borderRadius: BorderRadius.circular(12),
+  //     ),
+  //     child: ClipRRect(
+  //       borderRadius: BorderRadius.circular(10),
+  //       child: Transform.scale(
+  //         scale: cameraRatio / deviceRatio,
+  //         child: Center(
+  //           child: CameraPreview(_cameraController!),
+  //         ),
   //       ),
   //     ),
   //   );
@@ -275,15 +302,12 @@ class _LeadScanner2State extends State<LeadScanner2> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: kIsWeb
-              ? Image.network(
-                  _capturedImage!.path,
-                  fit: BoxFit.cover,
-                )
-              : Image.file(
-                  File(_capturedImage!.path),
-                  fit: BoxFit.cover,
-                ),
+          child: FittedBox(
+            fit: BoxFit.contain, // पूरी इमेज दिखाने के लिए
+            child: kIsWeb
+                ? Image.network(_capturedImage!.path)
+                : Image.file(File(_capturedImage!.path)),
+          ),
         ),
       );
     }
@@ -292,22 +316,19 @@ class _LeadScanner2State extends State<LeadScanner2> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    final size = MediaQuery.of(context).size;
-    final deviceRatio = size.width / size.height;
-    final cameraRatio = _cameraController!.value.aspectRatio;
-
     return Container(
       width: double.infinity,
       height: MediaQuery.of(context).size.height * 0.45,
       decoration: BoxDecoration(
         border: Border.all(color: Colors.blueAccent, width: 2),
         borderRadius: BorderRadius.circular(12),
+        color: Colors.black, // ब्लैक बार के लिए
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
-        child: Transform.scale(
-          scale: cameraRatio / deviceRatio,
-          child: Center(
+        child: Center(
+          child: AspectRatio(
+            aspectRatio: _cameraController!.value.aspectRatio,
             child: CameraPreview(_cameraController!),
           ),
         ),

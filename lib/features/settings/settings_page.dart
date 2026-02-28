@@ -5,12 +5,121 @@ import 'package:gridcard/core/services/theme_provider.dart';
 import 'package:gridcard/features/profile/business_info_page.dart';
 import 'package:gridcard/features/profile/links_management_page.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
+import 'package:gridcard/features/profile/edit_profile_page.dart';
 import 'package:gridcard/features/settings/change_pin_page.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/routes/route_names.dart';
+import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import './about_dynamic_page.dart';
+import './privacy_dynamic_page.dart';
+import 'package:provider/provider.dart';
+import 'package:gridcard/core/services/profile_provider.dart';
+import './support_dynamic_page.dart';
 
-class SettingsPage extends StatelessWidget {
+class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
+
+  @override
+  State<SettingsPage> createState() => _SettingsPageState();
+}
+
+class _SettingsPageState extends State<SettingsPage> {
+  static const String _baseUrl = AppConfig.apiBaseUrl;
+  Map<String, dynamic>? _userDetails;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUserDetails(); // 👈 Yaha call hoga
+  }
+
+  // ================= HEADERS =================
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await UserStorageService().getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  Future<void> _fetchUserDetails() async {
+    try {
+      final int? targetUserId = await UserStorageService().getUserId();
+
+      if (targetUserId == null) return;
+
+      final headers = await _getHeaders();
+      final url = Uri.parse("$_baseUrl/user-details/$targetUserId");
+
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded["status"] == true) {
+          if (mounted) {
+            setState(() {
+              _userDetails = decoded["data"];
+            });
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("🔴 EXCEPTION in _fetchUserDetails(): $e");
+    }
+  }
+
+  Future<Map<String, dynamic>?> _fetchAboutPage() async {
+    try {
+      final response = await http.get(
+        Uri.parse("$_baseUrl/page/about"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['data'];
+      }
+    } catch (e) {
+      debugPrint("Error fetching about page: $e");
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> _fetchPrivacyPage() async {
+    try {
+      final response = await http.get(
+        Uri.parse("$_baseUrl/page/privacy-policy"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['data'];
+      }
+    } catch (e) {
+      debugPrint("Error fetching privacy page: $e");
+    }
+    return null;
+  }
+
+  Future<Map<String, dynamic>?> _fetchSupportPage() async {
+    try {
+      final response = await http.get(
+        Uri.parse("$_baseUrl/page/support"),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['data'];
+      }
+    } catch (e) {
+      debugPrint("Error fetching support page: $e");
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,11 +138,17 @@ class SettingsPage extends StatelessWidget {
                 icon: CupertinoIcons.person_circle,
                 title: "Edit Personal Profile",
                 subtitle: "Update name, email, and bio",
-                onTap: () {
+                onTap: () async {
+                  final userId = await UserStorageService().getUserId();
+
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const ProfilePage()));
+                        builder: (context) => ProfilePage(
+                          userId: userId,
+                          viewerUserId: userId, // self view
+                        ),
+                      ));
                 },
               ),
               _buildSettingsTile(
@@ -41,11 +156,44 @@ class SettingsPage extends StatelessWidget {
                 icon: CupertinoIcons.briefcase,
                 title: "Business Information",
                 subtitle: "Company name, designation, etc.",
-                onTap: () {
+                // onTap: () {
+                //   Navigator.push(
+                //       context,
+                //       MaterialPageRoute(
+                //           builder: (context) => const BusinessInfoPage()));
+                // },
+                // onTap: () async {
+                //   final userId = await UserStorageService().getUserId();
+
+                //   Navigator.push(
+                //     context,
+                //     MaterialPageRoute(
+                //       builder: (context) => EditProfilePage(
+                //         userDetails: _userDetails,
+                //         initialTabIndex: 3, // 👈 Business Info tab index
+                //       ),
+                //     ),
+                //   );
+                // },
+
+                onTap: () async {
+                  if (_userDetails == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Please wait, loading profile...")),
+                    );
+                    return;
+                  }
+
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const BusinessInfoPage()));
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditProfilePage(
+                        userDetails: _userDetails,
+                        initialTabIndex: 3,
+                      ),
+                    ),
+                  );
                 },
               ),
               _buildSettingsTile(
@@ -54,10 +202,23 @@ class SettingsPage extends StatelessWidget {
                 title: "Social Links",
                 subtitle: "Manage your digital presence",
                 onTap: () {
+                  if (_userDetails == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                          content: Text("Please wait, loading profile...")),
+                    );
+                    return;
+                  }
+
                   Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => const LinksManagementPage()));
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditProfilePage(
+                        userDetails: _userDetails,
+                        initialTabIndex: 1, // 👈 Links tab ka index
+                      ),
+                    ),
+                  );
                 },
               ),
               Divider(
@@ -104,34 +265,88 @@ class SettingsPage extends StatelessWidget {
               Divider(
                   color: colorScheme.onSurface.withOpacity(0.05), height: 40),
               _buildSettingsHeader(context, "Support & Info"),
+              // _buildSettingsTile(
+              //   context: context,
+              //   icon: CupertinoIcons.info_circle,
+              //   title: "About ByndAI",
+              //   onTap: () {
+              //     _showInfoPage(context, "About ByndAI",
+              //         "ByndAI is your ultimate digital networking companion. Scan business cards, manage leads, and grow your professional presence with ease.\n\nVersion 1.0.0");
+              //   },
+              // ),
               _buildSettingsTile(
                 context: context,
                 icon: CupertinoIcons.info_circle,
                 title: "About ByndAI",
-                onTap: () {
-                  _showInfoPage(context, "About ByndAI",
-                      "ByndAI is your ultimate digital networking companion. Scan business cards, manage leads, and grow your professional presence with ease.\n\nVersion 1.0.0");
+                onTap: () async {
+                  final pageData = await _fetchAboutPage();
+
+                  if (pageData != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => AboutDynamicPage(pageData: pageData),
+                      ),
+                    );
+                  }
                 },
               ),
+              // _buildSettingsTile(
+              //   context: context,
+              //   icon: CupertinoIcons.doc_text,
+              //   title: "Privacy Policy",
+              //   onTap: () {
+              //     _showInfoPage(context, "Privacy Policy",
+              //         "Your privacy is important to us. We never share your data with third parties without your explicit consent. All business card data is stored securely.\n\nRead more on our website.");
+              //   },
+              // ),
+
               _buildSettingsTile(
                 context: context,
                 icon: CupertinoIcons.doc_text,
                 title: "Privacy Policy",
-                onTap: () {
-                  _showInfoPage(context, "Privacy Policy",
-                      "Your privacy is important to us. We never share your data with third parties without your explicit consent. All business card data is stored securely.\n\nRead more on our website.");
+                onTap: () async {
+                  final pageData = await _fetchPrivacyPage();
+
+                  if (pageData != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PrivacyDynamicPage(pageData: pageData),
+                      ),
+                    );
+                  }
                 },
               ),
+
+              // _buildSettingsTile(
+              //   context: context,
+              //   icon: CupertinoIcons.question_circle,
+              //   title: "Support",
+              //   onTap: () {
+              //     _showInfoPage(context, "Support",
+              //         "Need help? Contact us at support@byndai.com or visit our help center in the app.");
+              //   },
+              // ),
+
               _buildSettingsTile(
                 context: context,
                 icon: CupertinoIcons.question_circle,
                 title: "Support",
-                onTap: () {
-                  _showInfoPage(context, "Support",
-                      "Need help? Contact us at support@byndai.com or visit our help center in the app.");
+                onTap: () async {
+                  final pageData = await _fetchSupportPage();
+
+                  if (pageData != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => SupportDynamicPage(pageData: pageData),
+                      ),
+                    );
+                  }
                 },
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 80),
             ],
           ),
         ),

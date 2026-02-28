@@ -8,7 +8,9 @@ import './review/review_tab.dart';
 
 class EditProfilePage extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
-  const EditProfilePage({super.key, this.userDetails});
+  final int initialTabIndex;
+  const EditProfilePage(
+      {super.key, this.userDetails, this.initialTabIndex = 0});
 
   @override
   State<EditProfilePage> createState() => _EditProfilePageState();
@@ -21,7 +23,12 @@ class _EditProfilePageState extends State<EditProfilePage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+     debugPrint("🟢 EDIT PAGE DATA: ${widget.userDetails}");
+    _tabController = TabController(
+      length: 6,
+      vsync: this,
+      initialIndex: widget.initialTabIndex,
+    );
   }
 
   @override
@@ -60,7 +67,6 @@ class _EditProfilePageState extends State<EditProfilePage>
           BusinessInfoTab(userDetails: widget.userDetails),
           ProductsTab(userDetails: widget.userDetails),
           ReviewTab(userDetails: widget.userDetails),
-          
         ],
       ),
     );
