@@ -375,7 +375,7 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
         children: [
           // ========== COVER SECTION (60% height) ==========
           SizedBox(
-            height: screenHeight * 0.6,
+            height: screenHeight * 0.8,
             width: double.infinity,
             child: Stack(
               fit: StackFit.expand,
@@ -478,11 +478,11 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
           // ========== BOTTOM SECTION WITH BUTTON ==========
           Expanded(
             child: Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               alignment: Alignment.bottomCenter,
               child: SizedBox(
                 width: double.infinity,
-                height: 55,
+                height: 40,
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _handleConnect,
                   style: ElevatedButton.styleFrom(
@@ -496,8 +496,9 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
                       : const Text(
                           'Connect',
                           style: TextStyle(
-                            fontSize: 16,
+                            fontSize: 20,
                             fontWeight: FontWeight.w600,
+                            color: Colors.white,
                           ),
                         ),
                 ),
