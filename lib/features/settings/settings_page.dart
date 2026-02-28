@@ -235,7 +235,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 trailing: CupertinoSwitch(
                   value: themeProvider.isDarkMode,
                   onChanged: (val) => themeProvider.toggleTheme(),
-                  activeColor: colorScheme.primary,
+                  activeTrackColor: colorScheme.primary,
                 ),
               ),
               Divider(

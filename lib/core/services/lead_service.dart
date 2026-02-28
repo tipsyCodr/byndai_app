@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/models/customer_master_model.dart';
-import 'package:gridcard/models/lead_model.dart';
 import 'package:http/http.dart' as http;
 
 class LeadService {

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
-import 'package:gridcard/features/scanner/camera.dart';
 
 class ScannedLead extends StatefulWidget {
   const ScannedLead({super.key});

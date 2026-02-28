@@ -1098,7 +1098,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 children: [
                   // ================= PROFILE INFO CARD (UPDATED) =================
 
-                  Container(
+                  SizedBox(
                     width: double.infinity,
                     height: MediaQuery.of(context).size.height * 0.75,
                     child: Stack(

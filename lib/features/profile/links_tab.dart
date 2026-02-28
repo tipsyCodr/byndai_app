@@ -274,7 +274,7 @@ class _LinksTabState extends State<LinksTab> {
 
           // Dropdown
           DropdownButtonFormField<String>(
-            value: selectedPlatform,
+            initialValue: selectedPlatform,
             decoration: InputDecoration(
               labelText: "Select Platform",
               border: OutlineInputBorder(

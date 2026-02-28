@@ -62,7 +62,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
   // Lists for dropdowns
   List<Map<String, dynamic>> _states = [];
 
-  bool _isIndustryLoading = false;
+  final bool _isIndustryLoading = false;
 
   // Validation Keys
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -761,7 +761,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<int>(
-              value: selectedIndustryId,
+              initialValue: selectedIndustryId,
               isExpanded: true,
               dropdownColor: Colors.grey[900],
               decoration: InputDecoration(
@@ -806,7 +806,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<int>(
-              value: _selectedState,
+              initialValue: _selectedState,
               isExpanded: true,
               dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -855,7 +855,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _selectedDistrict,
+              initialValue: _selectedDistrict,
               dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white),
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
@@ -975,7 +975,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _selectedIsAudience,
+              initialValue: _selectedIsAudience,
               dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white),
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
@@ -1012,7 +1012,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _selectedIsOnline,
+              initialValue: _selectedIsOnline,
               dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white),
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
@@ -1049,7 +1049,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _selectedStatus,
+              initialValue: _selectedStatus,
               style: const TextStyle(color: Colors.white),
               dropdownColor: Colors.grey[900],
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
@@ -1856,7 +1856,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
                     controlsBuilder: (context, details) {
                       return const SizedBox.shrink();
                     },
-                    connectorColor: const MaterialStatePropertyAll(Colors.grey),
+                    connectorColor: const WidgetStatePropertyAll(Colors.grey),
                   ),
                 ),
               ),

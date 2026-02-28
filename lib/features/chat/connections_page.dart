@@ -46,7 +46,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
   String _pendingSearchQuery = "";
 
-  int _pendingPerPage = 10;
+  final int _pendingPerPage = 10;
   final List<int> _pendingPerPageOptions = [5, 10, 15, 20];
 
   // ================== ACCEPTED (Connections) ==================
@@ -68,7 +68,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
   String _searchQuery = "";
 
-  int _perPage = 10;
+  final int _perPage = 10;
   final List<int> _perPageOptions = [5, 10, 15, 20];
 
   // ================== SENT (UPDATED) ==================
@@ -88,7 +88,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
   String _sentSearchQuery = "";
 
-  int _sentPerPage = 10;
+  final int _sentPerPage = 10;
   final List<int> _sentPerPageOptions = [5, 10, 15, 20];
 
   // ================= HEADERS =================

@@ -1,12 +1,10 @@
 import 'dart:convert';
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import './event_card.dart';
 import 'package:http/http.dart' as http;
-import 'package:cached_network_image/cached_network_image.dart';
 import 'create_event_screen.dart';
 import 'my_event.dart';
 

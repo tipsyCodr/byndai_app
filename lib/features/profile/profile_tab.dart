@@ -691,7 +691,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
           // ✅ GENDER DROPDOWN – Only Male & Female
           DropdownButtonFormField<String>(
-            value: _selectedGender,
+            initialValue: _selectedGender,
             decoration: const InputDecoration(
               labelText: 'Gender',
               border: OutlineInputBorder(),
@@ -804,7 +804,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
           // Country Dropdown - India only with value 1
           DropdownButtonFormField<String>(
-            value: _selectedCountry,
+            initialValue: _selectedCountry,
             decoration: const InputDecoration(
               labelText: 'Country',
               border: OutlineInputBorder(),
@@ -827,7 +827,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
           // State Dropdown
           DropdownButtonFormField<int>(
-            value: _selectedStateId,
+            initialValue: _selectedStateId,
             isExpanded: true,
             dropdownColor: Colors.white,
             style: const TextStyle(color: Colors.black, fontSize: 14),
@@ -904,7 +904,7 @@ class _ProfileTabState extends State<ProfileTab> {
           // District Dropdown
           DropdownButtonFormField<int>(
             // value: _selectedDistrictId,
-            value: _filteredDistricts.any((d) => d['id'] == _selectedDistrictId)
+            initialValue: _filteredDistricts.any((d) => d['id'] == _selectedDistrictId)
                 ? _selectedDistrictId
                 : null,
             isExpanded: true,

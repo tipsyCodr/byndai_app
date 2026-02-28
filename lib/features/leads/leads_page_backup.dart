@@ -168,7 +168,7 @@ class _LeadsPageState extends State<LeadsPage> {
                                   },
                                   errorBuilder: (context, error, stackTrace) {
                                     print('Image Error: $error');
-                                    return Container(
+                                    return SizedBox(
                                       height: 300,
                                       width: double.infinity,
                                       child: _buildNoImagePlaceholder(),
@@ -179,7 +179,7 @@ class _LeadsPageState extends State<LeadsPage> {
                             ),
                           )
                         else
-                          Container(
+                          SizedBox(
                             height: 300,
                             width: double.infinity,
                             child: _buildNoImagePlaceholder(),
@@ -726,9 +726,9 @@ class _LeadsPageState extends State<LeadsPage> {
       setModalState(() => errors = newErrors);
 
       if (submit && newErrors.isNotEmpty) {
-        if (newErrors.containsKey('name'))
+        if (newErrors.containsKey('name')) {
           nameFocus.requestFocus();
-        else if (newErrors.containsKey('mobile0'))
+        } else if (newErrors.containsKey('mobile0'))
           mobileFocusNodes[0].requestFocus();
         else if (newErrors.containsKey('email'))
           emailFocus.requestFocus();

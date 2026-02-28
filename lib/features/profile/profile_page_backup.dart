@@ -1568,7 +1568,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Column(
                   children: [
                     /// ================= HEADER SECTION =================
-                    Container(
+                    SizedBox(
                       width: double.infinity,
                       height: MediaQuery.of(context).size.height * 0.75,
                       child: Stack(

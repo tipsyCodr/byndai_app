@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // ✅ Add this import for Clipboard
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter_contacts/flutter_contacts.dart' as fc;
 import '../../core/services/profile_provider.dart';
 import '../../core/services/auth_provider.dart';

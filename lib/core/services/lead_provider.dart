@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gridcard/core/services/lead_service.dart';
 import 'package:gridcard/models/customer_master_model.dart';
-import 'package:gridcard/models/lead_model.dart';
 
 class LeadProvider extends ChangeNotifier {
   List<CustomerMasterModel> _leads = [];
