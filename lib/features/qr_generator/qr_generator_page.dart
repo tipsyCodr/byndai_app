@@ -1,4 +1,3 @@
-
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -10,7 +9,9 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 // ignore: avoid_web_libraries_in_flutter
-import 'dart:html' as html;
+// import 'dart:html' as html;
+
+import 'package:universal_html/html.dart' as html;
 
 class QrGeneratorPage extends StatefulWidget {
   const QrGeneratorPage({super.key});
@@ -239,7 +240,6 @@ class _QrGeneratorPageState extends State<QrGeneratorPage> {
                             size: 260,
                             backgroundColor: Colors.white,
                           ),
-                          
                           Align(
                             alignment: Alignment.centerRight,
                             child: Image(

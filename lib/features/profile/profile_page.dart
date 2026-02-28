@@ -533,35 +533,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // ✅ MAIN DYNAMIC GRID
-  // Widget _buildSocialIconsGrid() {
-  //   if (_isLoadingMasterLinks) return const SizedBox.shrink();
-  //   if (_masterLinks.isEmpty) return const SizedBox.shrink();
-
-  //   final supportedLinks = _masterLinks.where((item) {
-  //     final name = (item["name"] ?? "").toString();
-  //     return _getIconForName(name) != null;
-  //   }).toList();
-
-  //   if (supportedLinks.isEmpty) return const SizedBox.shrink();
-
-  //   return GridView.count(
-  //     crossAxisCount: 2, // 4 se 2 karo
-  //     shrinkWrap: true,
-  //     physics: const NeverScrollableScrollPhysics(),
-  //     mainAxisSpacing: 12,
-  //     crossAxisSpacing: 12,
-  //     childAspectRatio: 2.8, // important for row style
-  //     children: supportedLinks.map((item) {
-  //       final name = (item["name"] ?? "").toString();
-  //       final link = (item["link"] ?? "").toString();
-
-  //       final icon = _getIconForName(name)!;
-  //       final color = _getColorForName(name);
-
-  //       return _socialIconClickable(icon, color, link, name);
-  //     }).toList(),
-  //   );
-  // }
+ 
 
   Widget _buildSocialIconsGrid() {
     if (_isLoadingMasterLinks) return const SizedBox.shrink();
@@ -1212,30 +1184,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           right: 16,
                           child: Column(
                             children: [
-                              /// PROFILE LOGO
-                              // CircleAvatar(
-                              //   radius: 40,
-                              //   backgroundColor: Colors.grey.shade300,
-                              //   backgroundImage: (_userDetails?[
-                              //                   'profile_logo'] !=
-                              //               null &&
-                              //           _userDetails!['profile_logo']
-                              //               .toString()
-                              //               .isNotEmpty)
-                              //       ? NetworkImage(
-                              //           "$_imgBaseUrl/${_userDetails!['profile_logo']}")
-                              //       : null,
-                              //   child: (_userDetails?['profile_logo'] == null ||
-                              //           _userDetails!['profile_logo']
-                              //               .toString()
-                              //               .isEmpty)
-                              //       ? const Icon(
-                              //           Icons.person,
-                              //           size: 42,
-                              //           color: Colors.white,
-                              //         )
-                              //       : null,
-                              // ),
+                              
 
                               CircleAvatar(
                                 radius: 40,

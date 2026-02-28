@@ -402,23 +402,7 @@ class _QRScannerPageState extends State<QRScannerPage> {
           final authUser =
               Provider.of<AuthProvider>(context, listen: false).user;
 
-          // Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //       builder: (_) => QRScanViewProfile(
-          //             receiverId: profileData['user_id']?.toString() ?? '',
-          //             name: profileData['fname'] ?? 'N/A',
-          //             mobile: profileData['mobile_one'] ??
-          //                 profileData['user']?['user_mobile'] ??
-          //                 'N/A',
-          //             email: profileData['email_one'] ??
-          //                 profileData['user']?['email'] ??
-          //                 'N/A',
-          //             senderId: authUser?.id?.toString() ?? '',
-          //             senderName: authUser?.masterUser?.fname ?? '',
-          //           )
-          //       ),
-          // );
+          
 
           final result = await Navigator.push(
             context,
