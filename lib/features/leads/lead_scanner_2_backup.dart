@@ -1681,7 +1681,7 @@ class _LeadScanner2State extends State<LeadScanner2> {
         final previewWidth = previewSize.width;
         final previewHeightPx = previewSize.height;
 
-        // 'cover' effect के लिए scale factor निकालें – पूरा container भरे
+        // 'cover' effect के लिए scale factor निकालें – पूरा container भरे...
         final scaleW = containerWidth / previewWidth;
         final scaleH = containerHeight / previewHeightPx;
         final scale = scaleW > scaleH ? scaleW : scaleH; // max scale (cover)
