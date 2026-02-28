@@ -424,13 +424,27 @@ class _HomePostCardState extends State<HomePostCard> {
 
     final updatedAt = _formatTime(_postData["updated_at"]?.toString());
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
     return SizedBox(
       height: 520, // 👈 Adjust if needed
-      child: Card(
-        color: const Color(0xFFDCDEF7),
-        elevation: 2,
-        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        decoration: BoxDecoration(
+          color: isDark
+              ? colorScheme.surfaceVariant.withOpacity(0.3)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(

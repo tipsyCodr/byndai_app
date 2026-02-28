@@ -633,36 +633,92 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   // ===========================
   Widget _buildNewBusinessHeader(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 24.0),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Business Updates',
-            style: TextStyle(
-              color: colorScheme.primary,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const BusinessFeedPage()),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: isDark
+              ? colorScheme.surfaceVariant.withOpacity(0.3)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
             ),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BusinessFeedPage()),
-              );
-            },
-            child: Text(
-              'View all',
-              style: TextStyle(
+          ],
+        ),
+        child: Row(
+          children: [
+            // 🔹 Left Side: Icon with Background
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(
+                Icons.business_center_rounded,
                 color: colorScheme.primary,
-                decoration: TextDecoration.underline,
+                size: 30,
               ),
             ),
-          )
-        ],
+            const SizedBox(width: 16),
+
+            // 🔹 Middle: Text Labels
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Business Updates',
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Stay updated with recent activities',
+                    style: TextStyle(
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 🔹 Right Side: View All Button
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                'View all',
+                style: TextStyle(
+                  color: colorScheme.primary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -821,7 +877,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
       // height: MediaQuery.of(context).size.height * 0.65,
       child: _latestPosts.isNotEmpty
           ? SizedBox(
-              width: MediaQuery.of(context).size.width * 0.90,
+              width: double.infinity,
               child: HomePostCard(
                 post: _latestPosts[0], // Sirf first post
                 onPostUpdated: (postId, updatedPost) {
@@ -880,7 +936,9 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                   const SizedBox(height: 32),
 
                   // NEW SECTION
+                  // NEW SECTION
                   _buildNewBusinessHeader(context),
+                  const SizedBox(height: 16),
                   _buildLatestBusinessCarousel(),
 
                   // const SizedBox(height: 32),
