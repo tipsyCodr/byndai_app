@@ -239,7 +239,7 @@ class _LeadScanner2State extends State<LeadScanner2> {
     _cameraController?.dispose();
     super.dispose();
   }
-
+//old
   // Widget _buildPreviewBox() {
   //   if (_isCapturedMode && _capturedImage != null) {
   //     return Container(
