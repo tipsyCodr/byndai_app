@@ -440,7 +440,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'GridCard ID: GC-${user.id?.toString().padLeft(6, '0') ?? '000000'}',
+                              'ByndAI ID: BY-${user.id?.toString().padLeft(6, '0') ?? '000000'}',
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 fontSize: 12,

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:gridcard/core/services/profile_provider.dart';
+import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:gridcard/config/app_config.dart';
 
 class ShareProfileWidget extends StatefulWidget {
   const ShareProfileWidget({super.key});
@@ -14,18 +15,17 @@ class ShareProfileWidget extends StatefulWidget {
 class _ShareProfileWidgetState extends State<ShareProfileWidget> {
   final TextEditingController _phoneController = TextEditingController();
 
- 
-
   Future<void> _sendToWhatsApp() async {
     final phone = _phoneController.text.trim();
     if (phone.isEmpty) return;
 
-    final profileData = context.read<ProfileProvider>().profileData;
-    final profileId = profileData?['id'] ?? 'me';
-    final profileUrl = "https://gridcard.in/profile/$profileId";
+    final user = context.read<AuthProvider>().user;
+    final profileId = user?.userName ?? user?.id?.toString() ?? 'me';
+    final baseUrl = AppConfig.apiBaseUrl.replaceAll(RegExp(r'/api$'), '');
+    final profileUrl = "$baseUrl/u/$profileId";
 
     final message =
-        "Hi, check out my GridCard digital business card here: $profileUrl";
+        "Hi, check out my Bynd AI digital business card here: $profileUrl";
 
     final encodedMessage = Uri.encodeComponent(message);
 
@@ -42,9 +42,10 @@ class _ShareProfileWidgetState extends State<ShareProfileWidget> {
   }
 
   Future<void> _shareNative() async {
-    final profileData = context.read<ProfileProvider>().profileData;
-    final profileId = profileData?['id'] ?? 'me';
-    final profileUrl = "https://gridcard.in/profile/$profileId";
+    final user = context.read<AuthProvider>().user;
+    final profileId = user?.userName ?? user?.id?.toString() ?? 'me';
+    final baseUrl = AppConfig.apiBaseUrl.replaceAll(RegExp(r'/api$'), '');
+    final profileUrl = "$baseUrl/profile/$profileId";
 
     final message =
         "Hi, check out my bynd AI digital business card here: $profileUrl";
