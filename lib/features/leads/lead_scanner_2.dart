@@ -239,82 +239,32 @@ class _LeadScanner2State extends State<LeadScanner2> {
     super.dispose();
   }
 
-  // Widget _buildPreviewBox() {
-  //   if (_isCapturedMode && _capturedImage != null) {
-  //     return Container(
-  //       width: double.infinity,
-  //       decoration: BoxDecoration(
-  //         border: Border.all(color: Colors.blueAccent, width: 2),
-  //         borderRadius: BorderRadius.circular(12),
-  //       ),
-  //       child: ClipRRect(
-  //         borderRadius: BorderRadius.circular(10),
-  //         child: AspectRatio(
-  //           aspectRatio: 1.6, // approx business card ratio (adjust if needed)
-  //           child: kIsWeb
-  //               ? Image.network(
-  //                   _capturedImage!.path,
-  //                   fit: BoxFit.contain,
-  //                 )
-  //               : Image.file(
-  //                   File(_capturedImage!.path),
-  //                   fit: BoxFit.contain,
-  //                 ),
-  //         ),
-  //       ),
-  //     );
-  //   }
-
-  //   if (!_isCameraInitialized || _cameraController == null) {
-  //     return const Center(child: CircularProgressIndicator());
-  //   }
-
-  //   return Container(
-  //     width: double.infinity,
-  //     decoration: BoxDecoration(
-  //       border: Border.all(color: Colors.blueAccent, width: 2),
-  //       borderRadius: BorderRadius.circular(12),
-  //       color: Colors.black,
-  //     ),
-  //     child: ClipRRect(
-  //       borderRadius: BorderRadius.circular(10),
-  //       child: AspectRatio(
-  //         aspectRatio: _cameraController!.value.aspectRatio,
-  //         child: CameraPreview(_cameraController!),
-  //       ),
-  //     ),
-  //   );
-  // }
-
   Widget _buildPreviewBox() {
-    // ================= CAPTURED MODE =================
     if (_isCapturedMode && _capturedImage != null) {
       return Container(
         width: double.infinity,
         decoration: BoxDecoration(
           border: Border.all(color: Colors.blueAccent, width: 2),
           borderRadius: BorderRadius.circular(12),
-          color: Colors.black,
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(10),
           child: AspectRatio(
-            aspectRatio: _cameraController?.value.aspectRatio ?? 1.0,
+            aspectRatio: 1.6, // approx business card ratio (adjust if needed)
             child: kIsWeb
                 ? Image.network(
                     _capturedImage!.path,
-                    fit: BoxFit.cover, // 🔥 IMPORTANT
+                    fit: BoxFit.contain,
                   )
                 : Image.file(
                     File(_capturedImage!.path),
-                    fit: BoxFit.cover, // 🔥 IMPORTANT
+                    fit: BoxFit.contain,
                   ),
           ),
         ),
       );
     }
 
-    // ================= CAMERA PREVIEW =================
     if (!_isCameraInitialized || _cameraController == null) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -956,38 +906,6 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
     );
   }
 
-  // Widget _buildImagePreview() {
-  //   return Container(
-  //     width: double.infinity,
-  //     margin: const EdgeInsets.only(bottom: 20),
-  //     child: Column(
-  //       crossAxisAlignment: CrossAxisAlignment.start,
-  //       children: [
-  //         const Text(
-  //           "Scanned Image",
-  //           style: TextStyle(fontSize: 14, color: Colors.black87),
-  //         ),
-  //         const SizedBox(height: 8),
-  //         Container(
-  //           height: 150,
-  //           width: double.infinity,
-  //           decoration: BoxDecoration(
-  //             borderRadius: BorderRadius.circular(12),
-  //             border: Border.all(color: Colors.grey.shade300),
-  //           ),
-  //           child: ClipRRect(
-  //             borderRadius: BorderRadius.circular(10),
-  //             child: kIsWeb
-  //                 ? Image.network(widget.capturedImage.path, fit: BoxFit.cover)
-  //                 : Image.file(File(widget.capturedImage.path),
-  //                     fit: BoxFit.cover),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   Widget _buildImagePreview() {
     return Container(
       width: double.infinity,
@@ -1000,19 +918,19 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
             style: TextStyle(fontSize: 14, color: Colors.black87),
           ),
           const SizedBox(height: 8),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: AspectRatio(
-              aspectRatio: 1.777, // 🔥 16:9 ratio fix
+          Container(
+            height: 150,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
               child: kIsWeb
-                  ? Image.network(
-                      widget.capturedImage.path,
-                      fit: BoxFit.cover,
-                    )
-                  : Image.file(
-                      File(widget.capturedImage.path),
-                      fit: BoxFit.cover,
-                    ),
+                  ? Image.network(widget.capturedImage.path, fit: BoxFit.cover)
+                  : Image.file(File(widget.capturedImage.path),
+                      fit: BoxFit.cover),
             ),
           ),
         ],
