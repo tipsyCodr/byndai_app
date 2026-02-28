@@ -60,8 +60,9 @@ class _LinksManagementPageState extends State<LinksManagementPage> {
               child: const Text('Cancel')),
           TextButton(
             onPressed: () async {
-              if (titleController.text.isEmpty || urlController.text.isEmpty)
+              if (titleController.text.isEmpty || urlController.text.isEmpty) {
                 return;
+              }
 
               final provider = context.read<ProfileProvider>();
               bool success;

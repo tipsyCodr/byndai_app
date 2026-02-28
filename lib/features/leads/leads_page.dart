@@ -87,7 +87,7 @@ class _LeadsPageState extends State<LeadsPage> {
   }
 
   void _showAddCategoryModal() {
-    final TextEditingController _categoryCtrl = TextEditingController();
+    final TextEditingController categoryCtrl = TextEditingController();
     bool isLoading = false;
 
     showDialog(
@@ -115,7 +115,7 @@ class _LeadsPageState extends State<LeadsPage> {
                     ),
                     const SizedBox(height: 16),
                     TextField(
-                      controller: _categoryCtrl,
+                      controller: categoryCtrl,
                       decoration: const InputDecoration(
                         labelText: "Category",
                         border: OutlineInputBorder(),
@@ -136,7 +136,7 @@ class _LeadsPageState extends State<LeadsPage> {
                         const SizedBox(width: 10),
                         Expanded(
                           child: ElevatedButton(
-                            onPressed: _categoryCtrl.text.trim().isEmpty ||
+                            onPressed: categoryCtrl.text.trim().isEmpty ||
                                     isLoading
                                 ? null
                                 : () async {
@@ -163,7 +163,7 @@ class _LeadsPageState extends State<LeadsPage> {
                                         headers: await _getHeaders(),
                                         body: jsonEncode({
                                           "user_id": userId,
-                                          "category": _categoryCtrl.text.trim(),
+                                          "category": categoryCtrl.text.trim(),
                                         }),
                                       );
 
@@ -345,7 +345,7 @@ class _LeadsPageState extends State<LeadsPage> {
                                   },
                                   errorBuilder: (context, error, stackTrace) {
                                     print('Image Error: $error');
-                                    return Container(
+                                    return SizedBox(
                                       height: 300,
                                       width: double.infinity,
                                       child: _buildNoImagePlaceholder(),
@@ -356,7 +356,7 @@ class _LeadsPageState extends State<LeadsPage> {
                             ),
                           )
                         else
-                          Container(
+                          SizedBox(
                             height: 300,
                             width: double.infinity,
                             child: _buildNoImagePlaceholder(),

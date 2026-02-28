@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/core/services/social_provider.dart';
-import 'package:gridcard/features/events/events_page.dart';
-import 'package:gridcard/widgets/connection_suggest.dart';
 import 'package:gridcard/widgets/post_card.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';

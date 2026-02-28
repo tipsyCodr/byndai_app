@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:camera/camera.dart';
-import 'package:cupertino_icons/cupertino_icons.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -239,52 +238,7 @@ class _LeadScanner2State extends State<LeadScanner2> {
     _cameraController?.dispose();
     super.dispose();
   }
-//old
-  // Widget _buildPreviewBox() {
-  //   if (_isCapturedMode && _capturedImage != null) {
-  //     return Container(
-  //       width: double.infinity,
-  //       height: MediaQuery.of(context).size.height * 0.45,
-  //       decoration: BoxDecoration(
-  //         border: Border.all(color: Colors.blueAccent, width: 2),
-  //         borderRadius: BorderRadius.circular(12),
-  //       ),
-  //       child: ClipRRect(
-  //         borderRadius: BorderRadius.circular(10),
-  //         child: FittedBox(
-  //           fit: BoxFit.contain, // पूरी इमेज दिखाने के लिए
-  //           child: kIsWeb
-  //               ? Image.network(_capturedImage!.path)
-  //               : Image.file(File(_capturedImage!.path)),
-  //         ),
-  //       ),
-  //     );
-  //   }
 
-  //   if (!_isCameraInitialized || _cameraController == null) {
-  //     return const Center(child: CircularProgressIndicator());
-  //   }
-
-  //   return Container(
-  //     width: double.infinity,
-  //     height: MediaQuery.of(context).size.height * 0.45,
-  //     decoration: BoxDecoration(
-  //       border: Border.all(color: Colors.blueAccent, width: 2),
-  //       borderRadius: BorderRadius.circular(12),
-  //       color: Colors.black, // ब्लैक बार के लिए
-  //     ),
-  //     child: ClipRRect(
-  //       borderRadius: BorderRadius.circular(10),
-  //       child: Center(
-  //         child: AspectRatio(
-  //           aspectRatio: _cameraController!.value.aspectRatio,
-  //           child: CameraPreview(_cameraController!),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-
-  // }
 
   Widget _buildPreviewBox() {
     if (_isCapturedMode && _capturedImage != null) {

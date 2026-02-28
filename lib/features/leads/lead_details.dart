@@ -1124,7 +1124,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                     child: _isCategoryLoading
                         ? const Center(child: CircularProgressIndicator())
                         : DropdownButtonFormField<int>(
-                            value: _selectedCategory,
+                            initialValue: _selectedCategory,
                             decoration: InputDecoration(
                               labelText: "Category",
                               filled: true,

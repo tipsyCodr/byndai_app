@@ -22,7 +22,7 @@ class _EditPostPageState extends State<EditPostPage> {
   late final TextEditingController _descriptionController;
 
   // Existing images from the post (with id and url)
-  List<Map<String, dynamic>> _existingImages = [];
+  final List<Map<String, dynamic>> _existingImages = [];
 
   // New images picked by user
   final List<XFile?> _newImages = [];
@@ -632,7 +632,7 @@ class _EditPostPageState extends State<EditPostPage> {
     if (path.startsWith('/')) {
       return base + path;
     } else {
-      return base + '/' + path;
+      return '$base/$path';
     }
   }
 }

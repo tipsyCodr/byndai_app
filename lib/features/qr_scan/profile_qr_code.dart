@@ -206,7 +206,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                 shape: BoxShape.circle,
                                 color: Colors.blue[100],
                                 image:
-                                    user.masterUser?.toJson()?['profile_pic'] !=
+                                    user.masterUser?.toJson()['profile_pic'] !=
                                             null
                                         ? DecorationImage(
                                             image: NetworkImage(user.masterUser!
@@ -220,7 +220,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                           ),
                               ),
                               child:
-                                  user.masterUser?.toJson()?['profile_pic'] ==
+                                  user.masterUser?.toJson()['profile_pic'] ==
                                           null
                                       ? const Icon(
                                           Icons.person,
@@ -242,7 +242,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  if (user.masterUser?.toJson()?['desg'] !=
+                                  if (user.masterUser?.toJson()['desg'] !=
                                       null)
                                     Text(
                                       user.masterUser!.toJson()['desg']!,
@@ -413,7 +413,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                     color: Colors.black,
                                   ),
                                   embeddedImage: user.masterUser
-                                              ?.toJson()?['profile_pic'] !=
+                                              ?.toJson()['profile_pic'] !=
                                           null
                                       ? NetworkImage(user.masterUser!
                                           .toJson()['profile_pic']!)

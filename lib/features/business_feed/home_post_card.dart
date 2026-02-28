@@ -27,8 +27,8 @@ class _HomePostCardState extends State<HomePostCard> {
   static const String _baseUrl =
       "https://powderblue-jellyfish-554082.hostingersite.com";
 
-  bool _expandedDescription = false;
-  bool _showDebugInfo = false;
+  final bool _expandedDescription = false;
+  final bool _showDebugInfo = false;
   bool _isLikeAnimating = false;
   bool _isDislikeAnimating = false;
   bool _isSaveAnimating = false;
@@ -399,7 +399,7 @@ class _HomePostCardState extends State<HomePostCard> {
 
     final int charLimit = _images.isEmpty ? 550 : 25;
     if (desc.length <= charLimit) return desc;
-    return desc.substring(0, charLimit) + '...';
+    return '${desc.substring(0, charLimit)}...';
   }
 
   bool _shouldShowReadMore(String desc) {

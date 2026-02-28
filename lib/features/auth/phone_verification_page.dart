@@ -27,7 +27,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     if (!mounted) return;
 
     final overlay = Overlay.of(context);
-    if (overlay == null) return;
 
     Color bgColor;
 

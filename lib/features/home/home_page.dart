@@ -8,7 +8,6 @@ import 'package:gridcard/features/settings/settings_page.dart';
 import 'package:gridcard/features/home/feed_page.dart';
 import 'package:gridcard/core/services/auth_provider.dart'; // ✅ Your AuthProvider
 import 'package:gridcard/features/chat/connections_page.dart';
-import 'package:gridcard/core/services/lead_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/routes/route_names.dart';

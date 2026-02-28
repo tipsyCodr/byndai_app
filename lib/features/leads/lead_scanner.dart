@@ -17,7 +17,7 @@ class LeadsScannerPage extends StatefulWidget {
 }
 
 class _LeadsScannerPageState extends State<LeadsScannerPage> {
-  List<XFile> _capturedImages = [];
+  final List<XFile> _capturedImages = [];
   bool _isLoading = false;
   String _errorMessage = '';
   String _ocrText = '';

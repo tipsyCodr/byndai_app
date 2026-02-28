@@ -5,7 +5,7 @@ import 'package:gridcard/models/feed_item.dart';
 
 class SocialProvider extends ChangeNotifier {
   List<FeedItem> _posts = [];
-  Map<int, List<dynamic>> _comments = {};
+  final Map<int, List<dynamic>> _comments = {};
   bool _isLoading = false;
 
   List<FeedItem> get posts => _posts;

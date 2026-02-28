@@ -76,7 +76,6 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
       request.fields['title'] = title;
       request.fields['link'] = link;
       request.fields['user_id'] = userId.toString();
-      ;
 
       request.files.add(
         http.MultipartFile.fromBytes(
@@ -774,7 +773,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: isDark
-              ? colorScheme.surfaceVariant.withOpacity(0.3)
+              ? colorScheme.surfaceContainerHighest.withOpacity(0.3)
               : Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: colorScheme.primary.withOpacity(0.1)),

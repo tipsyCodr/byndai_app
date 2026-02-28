@@ -395,7 +395,7 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
                   final index = entry.key;
                   final item = entry.value;
                   return _buildCard(item, index);
-                }).toList(),
+                }),
             ],
           ),
         ),

@@ -55,11 +55,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   String? _selectedStatus;
 
   // Lists for dropdowns
-  List<Map<String, dynamic>> _industries = [];
-  List<Map<String, dynamic>> _countries = [];
+  final List<Map<String, dynamic>> _industries = [];
+  final List<Map<String, dynamic>> _countries = [];
   List<Map<String, dynamic>> _states = [];
 
-  bool _isIndustryLoading = false;
+  final bool _isIndustryLoading = false;
 
   // Validation Keys
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
@@ -707,7 +707,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<int>(
-              value: selectedIndustryId,
+              initialValue: selectedIndustryId,
               isExpanded: true, // ✅ ADD THIS
               dropdownColor: Colors.grey[900],
               decoration: InputDecoration(
@@ -754,7 +754,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _selectedCountry,
+              initialValue: _selectedCountry,
               dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white),
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
@@ -800,7 +800,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<int>(
-              value: _selectedState,
+              initialValue: _selectedState,
               isExpanded: true,
               dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white, fontSize: 14),
@@ -859,7 +859,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _selectedDistrict,
+              initialValue: _selectedDistrict,
               dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white),
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
@@ -982,7 +982,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _selectedIsAudience,
+              initialValue: _selectedIsAudience,
               dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white),
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
@@ -1019,7 +1019,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _selectedIsOnline,
+              initialValue: _selectedIsOnline,
               dropdownColor: Colors.grey[900],
               style: const TextStyle(color: Colors.white),
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
@@ -1056,7 +1056,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButtonFormField<String>(
-              value: _selectedStatus,
+              initialValue: _selectedStatus,
               style: const TextStyle(color: Colors.white),
               dropdownColor: Colors.grey[900],
               icon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
@@ -1303,7 +1303,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                     controlsBuilder: (context, details) {
                       return const SizedBox.shrink();
                     },
-                    connectorColor: const MaterialStatePropertyAll(Colors.grey),
+                    connectorColor: const WidgetStatePropertyAll(Colors.grey),
                   ),
                 ),
               ),

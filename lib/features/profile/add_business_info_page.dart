@@ -328,7 +328,7 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
               Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: DropdownButtonFormField<int>(
-                  value: industries.any((e) => e["id"] == selectedIndustryId)
+                  initialValue: industries.any((e) => e["id"] == selectedIndustryId)
                       ? selectedIndustryId
                       : null,
                   decoration: InputDecoration(
