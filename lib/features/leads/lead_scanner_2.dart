@@ -251,15 +251,12 @@ class _LeadScanner2State extends State<LeadScanner2> {
   //       ),
   //       child: ClipRRect(
   //         borderRadius: BorderRadius.circular(10),
-  //         child: kIsWeb
-  //             ? Image.network(
-  //                 _capturedImage!.path,
-  //                 fit: BoxFit.cover,
-  //               )
-  //             : Image.file(
-  //                 File(_capturedImage!.path),
-  //                 fit: BoxFit.cover,
-  //               ),
+  //         child: FittedBox(
+  //           fit: BoxFit.contain, // पूरी इमेज दिखाने के लिए
+  //           child: kIsWeb
+  //               ? Image.network(_capturedImage!.path)
+  //               : Image.file(File(_capturedImage!.path)),
+  //         ),
   //       ),
   //     );
   //   }
@@ -268,45 +265,48 @@ class _LeadScanner2State extends State<LeadScanner2> {
   //     return const Center(child: CircularProgressIndicator());
   //   }
 
-  //   final size = MediaQuery.of(context).size;
-  //   final deviceRatio = size.width / size.height;
-  //   final cameraRatio = _cameraController!.value.aspectRatio;
-
   //   return Container(
   //     width: double.infinity,
   //     height: MediaQuery.of(context).size.height * 0.45,
   //     decoration: BoxDecoration(
   //       border: Border.all(color: Colors.blueAccent, width: 2),
   //       borderRadius: BorderRadius.circular(12),
+  //       color: Colors.black, // ब्लैक बार के लिए
   //     ),
   //     child: ClipRRect(
   //       borderRadius: BorderRadius.circular(10),
-  //       child: Transform.scale(
-  //         scale: cameraRatio / deviceRatio,
-  //         child: Center(
+  //       child: Center(
+  //         child: AspectRatio(
+  //           aspectRatio: _cameraController!.value.aspectRatio,
   //           child: CameraPreview(_cameraController!),
   //         ),
   //       ),
   //     ),
   //   );
+
   // }
 
   Widget _buildPreviewBox() {
     if (_isCapturedMode && _capturedImage != null) {
       return Container(
         width: double.infinity,
-        height: MediaQuery.of(context).size.height * 0.45,
         decoration: BoxDecoration(
           border: Border.all(color: Colors.blueAccent, width: 2),
           borderRadius: BorderRadius.circular(12),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(10),
-          child: FittedBox(
-            fit: BoxFit.contain, // पूरी इमेज दिखाने के लिए
+          child: AspectRatio(
+            aspectRatio: 1.6, // approx business card ratio (adjust if needed)
             child: kIsWeb
-                ? Image.network(_capturedImage!.path)
-                : Image.file(File(_capturedImage!.path)),
+                ? Image.network(
+                    _capturedImage!.path,
+                    fit: BoxFit.contain,
+                  )
+                : Image.file(
+                    File(_capturedImage!.path),
+                    fit: BoxFit.contain,
+                  ),
           ),
         ),
       );
@@ -318,19 +318,16 @@ class _LeadScanner2State extends State<LeadScanner2> {
 
     return Container(
       width: double.infinity,
-      height: MediaQuery.of(context).size.height * 0.45,
       decoration: BoxDecoration(
         border: Border.all(color: Colors.blueAccent, width: 2),
         borderRadius: BorderRadius.circular(12),
-        color: Colors.black, // ब्लैक बार के लिए
+        color: Colors.black,
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
-        child: Center(
-          child: AspectRatio(
-            aspectRatio: _cameraController!.value.aspectRatio,
-            child: CameraPreview(_cameraController!),
-          ),
+        child: AspectRatio(
+          aspectRatio: _cameraController!.value.aspectRatio,
+          child: CameraPreview(_cameraController!),
         ),
       ),
     );
@@ -1218,14 +1215,6 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
                       error: errors['name'],
                     ),
 
-                    // ✅ NEW Category
-                    // _buildValidatedField(
-                    //   "Category",
-                    //   categoryCtrl,
-                    //   categoryFocus,
-                    //   error: errors['category'],
-                    //   suffix: const Icon(Icons.category_outlined),
-                    // ),
                     const SizedBox(height: 12),
                     const Text(
                       "Category",

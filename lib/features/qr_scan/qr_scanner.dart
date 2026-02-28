@@ -399,10 +399,17 @@ class _QRScannerPageState extends State<QRScannerPage> {
         if (success && profileProvider.profileData != null) {
           final profileData = profileProvider.profileData!;
 
+          final profilePic = profileData['profile_pic'] ?? '';
+          final profileLogo = profileData['profile_logo'] ?? '';
+
+          final legalName =
+              profileData['user']?['business_info']?['legal_name'] ?? '';
+
+          final industryTitle = profileData['user']?['business_info']
+                  ?['industry']?['title'] ??
+              '';
           final authUser =
               Provider.of<AuthProvider>(context, listen: false).user;
-
-          
 
           final result = await Navigator.push(
             context,
@@ -418,6 +425,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
                     'N/A',
                 senderId: authUser?.id?.toString() ?? '',
                 senderName: authUser?.masterUser?.fname ?? '',
+                profilePic: profilePic,
+                profileLogo: profileLogo,
+                legalName: legalName,
+                industryTitle: industryTitle,
               ),
             ),
           );
