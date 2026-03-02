@@ -29,7 +29,7 @@ class _HomePostCardState extends State<HomePostCard> {
   //     "https://byndai.in/";
 
   static const String _baseUrl = AppConfig.imageBaseUrl;
-  static const String _baseUrl = AppConfig.imageBaseUrl;
+  // static const String _baseUrl = AppConfig.imageBaseUrl;
 
   final bool _expandedDescription = false;
   final bool _showDebugInfo = false;
@@ -802,7 +802,7 @@ class _HomePostCardState extends State<HomePostCard> {
     required VoidCallback onTap,
     bool active = false,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    // final colorScheme = Theme.of(context).colorScheme;
     final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
@@ -842,7 +842,7 @@ class _HomePostCardState extends State<HomePostCard> {
     required bool isAnimating,
     required VoidCallback onTap,
   }) {
-    final colorScheme = Theme.of(context).colorScheme;
+    // final colorScheme = Theme.of(context).colorScheme;
     final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
@@ -853,9 +853,9 @@ class _HomePostCardState extends State<HomePostCard> {
           color: isAnimating
               ? colorScheme.primary.withOpacity(0.1)
               : Colors.transparent,
-          color: isAnimating
-              ? colorScheme.primary.withOpacity(0.1)
-              : Colors.transparent,
+          // color: isAnimating
+          //     ? colorScheme.primary.withOpacity(0.1)
+          //     : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -896,7 +896,7 @@ class _HomePostCardState extends State<HomePostCard> {
     required VoidCallback onTap,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    final colorScheme = Theme.of(context).colorScheme;
+    // final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
