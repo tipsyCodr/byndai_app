@@ -42,7 +42,7 @@ class AppConfig {
 
   static const String apiProfileImg2 = "https://byndai.in/storage/";
 
-  static const String imageBaseUrl = "https://byndai.in/";
+  static const String imageBaseUrl = "https://byndai.in";
 
   static const double roundness = 6;
 }
