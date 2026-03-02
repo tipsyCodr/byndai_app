@@ -18,7 +18,7 @@ class ReportPage extends StatefulWidget {
 
 class _ReportPageState extends State<ReportPage> {
   // static const String _baseUrl =
-  //     "https://byndai.in//api";
+  //     "https://byndai.in/api";
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
 

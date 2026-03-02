@@ -20,7 +20,7 @@ class _ConnectionSuggestState extends State<ConnectionSuggest> {
 
   // Image base url (as you said)
   // static const String _storageBaseUrl =
-  //     "https://byndai.in//storage";
+  //     "https://byndai.in/storage";
 
   static const String _storageBaseUrl = AppConfig.apiProfileImg;
 

@@ -18,7 +18,7 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
   static const String _baseUrl = AppConfig.apiBaseUrl;
 
   // static const String _storageBaseUrl =
-  //     "https://byndai.in//storage";
+  //     "https://byndai.in/storage";
 
   static const String _storageBaseUrl = AppConfig.apiProfileImg;
 
