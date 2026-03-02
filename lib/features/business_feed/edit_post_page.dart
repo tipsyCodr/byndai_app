@@ -623,7 +623,7 @@ class _EditPostPageState extends State<EditPostPage> {
     );
   }
 
-  // Helper to build full URL for existing images
+  // Helper to build full URL for existing images...
   String _fullUrl(String? path) {
     if (path == null || path.isEmpty) return '';
     if (path.startsWith('http')) return path;
