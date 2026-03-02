@@ -26,10 +26,9 @@ class HomePostCard extends StatefulWidget {
 
 class _HomePostCardState extends State<HomePostCard> {
   // static const String _baseUrl =
-  //     "https://powderblue-jellyfish-554082.hostingersite.com";
+  //     "https://byndai.in/";
 
-  static const String _baseUrl =  AppConfig.imageBaseUrl;
-      
+  static const String _baseUrl = AppConfig.imageBaseUrl;
 
   final bool _expandedDescription = false;
   final bool _showDebugInfo = false;

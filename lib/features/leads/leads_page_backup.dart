@@ -1,8 +1,6 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 
 import 'package:gridcard/core/services/leads_provider.dart';
 
@@ -24,10 +22,9 @@ class _LeadsPageState extends State<LeadsPage> {
   final ScrollController _scrollCtrl = ScrollController();
   final TextEditingController _searchCtrl = TextEditingController();
   // static const String _baseUrl =
-  //     "https://powderblue-jellyfish-554082.hostingersite.com";
+  //     "https://byndai.in/";
 
-   static const String _baseUrl =  AppConfig.imageBaseUrl;
-     
+  static const String _baseUrl = AppConfig.imageBaseUrl;
 
   int? _currentUserId; // Store user ID after fetching
 
@@ -817,11 +814,9 @@ class _LeadsPageState extends State<LeadsPage> {
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 20),
-
                     _buildValidatedField("Name", nameCtrl, nameFocus,
                         error: errors['name'],
                         onChanged: (_) => validate(setModalState)),
-
                     Column(
                       children: List.generate(mobileCtrls.length, (i) {
                         return _buildValidatedField(
@@ -856,10 +851,8 @@ class _LeadsPageState extends State<LeadsPage> {
                         );
                       }),
                     ),
-
                     _buildValidatedField(
                         "Company Name", companyCtrl, FocusNode()),
-
                     _buildValidatedField(
                       "Email",
                       emailCtrl,
@@ -876,7 +869,6 @@ class _LeadsPageState extends State<LeadsPage> {
                             )
                           : null,
                     ),
-
                     if (showEmail2)
                       _buildValidatedField(
                         "Email 2",
@@ -896,18 +888,14 @@ class _LeadsPageState extends State<LeadsPage> {
                           },
                         ),
                       ),
-
                     _buildValidatedField("Website", websiteCtrl, websiteFocus,
                         error: errors['website'],
                         onChanged: (_) => validate(setModalState)),
-
                     _buildValidatedField("Address", addressCtrl, addressFocus,
                         maxLines: 2,
                         error: errors['address'],
                         onChanged: (_) => validate(setModalState)),
-
                     const SizedBox(height: 24),
-
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [

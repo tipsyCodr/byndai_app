@@ -25,7 +25,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
   // static const String _imageBaseUrl =
-  //     "https://powderblue-jellyfish-554082.hostingersite.com";
+  //     "https://byndai.in/";
 
   static const String _imageBaseUrl = AppConfig.imageBaseUrl;
 
@@ -482,8 +482,6 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                                           const EdgeInsets.only(bottom: 80),
                                       itemCount: filteredEvents.length,
                                       itemBuilder: (context, index) {
-                                      
-
                                         return EventCard(
                                           event: filteredEvents[index],
                                           baseImageUrl: _imageBaseUrl,

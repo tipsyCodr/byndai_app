@@ -20,10 +20,9 @@ class _ConnectionSuggestState extends State<ConnectionSuggest> {
 
   // Image base url (as you said)
   // static const String _storageBaseUrl =
-  //     "https://powderblue-jellyfish-554082.hostingersite.com/storage";
+  //     "https://byndai.in//storage";
 
   static const String _storageBaseUrl = AppConfig.apiProfileImg;
-      
 
   int? _userId;
 

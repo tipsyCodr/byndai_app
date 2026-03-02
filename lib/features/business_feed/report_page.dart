@@ -18,10 +18,9 @@ class ReportPage extends StatefulWidget {
 
 class _ReportPageState extends State<ReportPage> {
   // static const String _baseUrl =
-  //     "https://powderblue-jellyfish-554082.hostingersite.com/api";
+  //     "https://byndai.in//api";
 
-    static const String _baseUrl =  AppConfig.apiBaseUrl;
-      
+  static const String _baseUrl = AppConfig.apiBaseUrl;
 
   // =========================
   // STATE VARIABLES

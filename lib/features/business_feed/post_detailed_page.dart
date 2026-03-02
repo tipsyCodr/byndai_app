@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -23,10 +22,9 @@ class PostDetailsPage extends StatefulWidget {
 
 class _PostDetailsPageState extends State<PostDetailsPage> {
   // static const String _baseUrl =
-  //     "https://powderblue-jellyfish-554082.hostingersite.com";
+  //     "https://byndai.in/";
 
-    static const String _baseUrl = AppConfig.imageBaseUrl;
-    
+  static const String _baseUrl = AppConfig.imageBaseUrl;
 
   // =========================
   // STATE VARIABLES
@@ -628,8 +626,6 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
 
                     // const Spacer(),
                     const SizedBox(height: 12),
-
-                   
                   ],
                 ),
               ),

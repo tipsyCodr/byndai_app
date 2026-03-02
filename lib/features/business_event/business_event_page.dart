@@ -26,10 +26,9 @@ class _BusinessEventPageState extends State<BusinessEventPage> {
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
   // static const String _imageBaseUrl =
-  //     "https://powderblue-jellyfish-554082.hostingersite.com";
+  //     "https://byndai.in/";
 
-   static const String _imageBaseUrl = AppConfig.imageBaseUrl;
-      
+  static const String _imageBaseUrl = AppConfig.imageBaseUrl;
 
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {
@@ -65,8 +64,6 @@ class _BusinessEventPageState extends State<BusinessEventPage> {
         final jsonData = jsonDecode(response.body);
 
         if (jsonData['status'] == true) {
-          
-
           setState(() {
             allEvents = jsonData['data'] ?? [];
             filteredEvents = List.from(allEvents);
