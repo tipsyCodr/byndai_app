@@ -28,8 +28,7 @@ class _HomePostCardState extends State<HomePostCard> {
   // static const String _baseUrl =
   //     "https://powderblue-jellyfish-554082.hostingersite.com";
 
-  static const String _baseUrl =  AppConfig.imageBaseUrl;
-      
+  static const String _baseUrl = AppConfig.imageBaseUrl;
 
   final bool _expandedDescription = false;
   final bool _showDebugInfo = false;
@@ -416,6 +415,9 @@ class _HomePostCardState extends State<HomePostCard> {
   // =========================
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final user = _postData["user"] ?? {};
     final fname = (user["fname"] ?? "User").toString();
 
@@ -428,17 +430,18 @@ class _HomePostCardState extends State<HomePostCard> {
 
     final updatedAt = _formatTime(_postData["updated_at"]?.toString());
 
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final colorScheme = Theme.of(context).colorScheme;
+    final readMoreColor = isDark
+        ? colorScheme.primary
+        : const Color.fromARGB(255, 45, 47, 190); // original
 
     return SizedBox(
-      height: 520, // 👈 Adjust if needed
+      height: 520,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
           color: isDark
-              ? colorScheme.surfaceVariant.withOpacity(0.3)
-              : Colors.white,
+              ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
+              : const Color.fromARGB(255, 170, 169, 248),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
           boxShadow: [
@@ -454,9 +457,6 @@ class _HomePostCardState extends State<HomePostCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // =========================
-              // SCROLLABLE CONTENT
-              // =========================
               Expanded(
                 child: SingleChildScrollView(
                   child: Column(
@@ -467,7 +467,7 @@ class _HomePostCardState extends State<HomePostCard> {
                         children: [
                           CircleAvatar(
                             radius: 18,
-                            backgroundColor: Colors.grey.shade200,
+                            backgroundColor: colorScheme.surfaceVariant,
                             child: ClipOval(
                               child: (profilePicUrl != null &&
                                       profilePicUrl.isNotEmpty)
@@ -478,17 +478,19 @@ class _HomePostCardState extends State<HomePostCard> {
                                       fit: BoxFit.cover,
                                       errorBuilder:
                                           (context, error, stackTrace) {
-                                        return const Icon(
+                                        return Icon(
                                           Icons.person,
                                           size: 22,
-                                          color: Colors.grey,
+                                          color: colorScheme.onSurface
+                                              .withOpacity(0.6),
                                         );
                                       },
                                     )
-                                  : const Icon(
+                                  : Icon(
                                       Icons.person,
                                       size: 22,
-                                      color: Colors.grey,
+                                      color: colorScheme.onSurface
+                                          .withOpacity(0.6),
                                     ),
                             ),
                           ),
@@ -499,9 +501,10 @@ class _HomePostCardState extends State<HomePostCard> {
                               children: [
                                 Text(
                                   fname,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
+                                    color: colorScheme.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -509,7 +512,8 @@ class _HomePostCardState extends State<HomePostCard> {
                                   updatedAt,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey.shade600,
+                                    color:
+                                        colorScheme.onSurface.withOpacity(0.6),
                                   ),
                                 ),
                               ],
@@ -517,37 +521,38 @@ class _HomePostCardState extends State<HomePostCard> {
                           ),
                           CircleAvatar(
                             radius: 14,
-                            backgroundColor: Colors.grey.shade200,
+                            backgroundColor: colorScheme.surfaceVariant,
                             child: Icon(
                               IndustryIconMapper.getIcon(
                                   _postData["industry_icon"]),
                               size: 16,
-                              color: Colors.blue.shade700,
+                              color: colorScheme.primary,
                             ),
                           ),
                         ],
                       ),
-
                       const SizedBox(height: 12),
 
                       // TITLE
                       if (title.isNotEmpty)
                         Text(
                           title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w800,
+                            color: colorScheme.onSurface,
                           ),
                         ),
 
                       const SizedBox(height: 8),
 
-                      // DESCRIPTION (modified section)
+                      // DESCRIPTION
                       if (description.isNotEmpty)
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.star, size: 18),
+                            Icon(Icons.star,
+                                size: 18, color: colorScheme.primary),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Column(
@@ -555,9 +560,36 @@ class _HomePostCardState extends State<HomePostCard> {
                                 children: [
                                   Text(
                                     _getDisplayDescription(description),
-                                    style: const TextStyle(
-                                        fontSize: 14, height: 1.35),
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        height: 1.35,
+                                        color: colorScheme.onSurface),
                                   ),
+                                  // if (_shouldShowReadMore(description))
+                                  //   GestureDetector(
+                                  //     onTap: () {
+                                  //       Navigator.push(
+                                  //         context,
+                                  //         MaterialPageRoute(
+                                  //           builder: (_) => BusinessFeedPage(
+                                  //             selectedPostId: _postData["id"],
+                                  //           ),
+                                  //         ),
+                                  //       );
+                                  //     },
+                                  //     child: const Padding(
+                                  //       padding: EdgeInsets.only(top: 4),
+                                  //       child: Text(
+                                  //         "...Read more",
+                                  //         style: TextStyle(
+                                  //           fontSize: 13,
+                                  //           fontWeight: FontWeight.w700,
+                                  //           color: readMoreColor, // 👈 will be replaced below
+                                  //         ),
+                                  //       ),
+                                  //     ),
+                                  //   ),
+
                                   if (_shouldShowReadMore(description))
                                     GestureDetector(
                                       onTap: () {
@@ -570,14 +602,17 @@ class _HomePostCardState extends State<HomePostCard> {
                                           ),
                                         );
                                       },
-                                      child: const Padding(
-                                        padding: EdgeInsets.only(top: 4),
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(
+                                            top:
+                                                4), // EdgeInsets can remain const
                                         child: Text(
                                           "...Read more",
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
-                                            color: Colors.blue,
+                                            color:
+                                                readMoreColor, // now valid because Padding is not const
                                           ),
                                         ),
                                       ),
@@ -588,9 +623,7 @@ class _HomePostCardState extends State<HomePostCard> {
                           ],
                         ),
 
-                      // ===============================
-                      // IMAGE SECTION (AUTO HIDE)
-                      // ===============================
+                      // IMAGES
                       if (_images.isNotEmpty) ...[
                         const SizedBox(height: 14),
                         _buildImageCarousel(),
@@ -599,12 +632,7 @@ class _HomePostCardState extends State<HomePostCard> {
                   ),
                 ),
               ),
-
               const Divider(),
-
-              // =========================
-              // FIXED FOOTER
-              // =========================
               _buildFooter(),
             ],
           ),
@@ -616,7 +644,9 @@ class _HomePostCardState extends State<HomePostCard> {
   // =========================
   // IMAGE CAROUSEL
   // =========================
+
   Widget _buildImageCarousel() {
+    final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
       height: 210,
       child: PageView.builder(
@@ -635,17 +665,20 @@ class _HomePostCardState extends State<HomePostCard> {
                 fit: BoxFit.cover,
                 width: double.infinity,
                 placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
+                  color: colorScheme.surfaceVariant,
                   child: const Center(child: CircularProgressIndicator()),
                 ),
                 errorWidget: (context, url, error) {
                   debugPrint("IMAGE ERROR: $error");
                   debugPrint("URL: $url");
-
                   return Container(
-                    color: Colors.grey.shade200,
+                    color: colorScheme.surfaceVariant,
                     alignment: Alignment.center,
-                    child: const Text("Image load failed"),
+                    child: Text(
+                      "Image load failed",
+                      style: TextStyle(
+                          color: colorScheme.onSurface.withOpacity(0.6)),
+                    ),
                   );
                 },
               ),
@@ -695,13 +728,15 @@ class _HomePostCardState extends State<HomePostCard> {
   // =========================
   // FOOTER
   // =========================
+
   Widget _buildFooter() {
+    final colorScheme = Theme.of(context).colorScheme;
     final comments = _postData["counts"]?["comments"] ?? 0;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // LIKE BUTTON WITH ANIMATION
+        // LIKE
         _footerReactionBtn(
           icon: Icons.thumb_up_alt_outlined,
           label: _likesCount.toString(),
@@ -710,7 +745,7 @@ class _HomePostCardState extends State<HomePostCard> {
           onTap: () => _sendReaction("like"),
         ),
 
-        // DISLIKE BUTTON WITH ANIMATION
+        // DISLIKE
         _footerReactionBtn(
           icon: Icons.thumb_down_alt_outlined,
           label: _dislikesCount.toString(),
@@ -719,7 +754,7 @@ class _HomePostCardState extends State<HomePostCard> {
           onTap: () => _sendReaction("dislike"),
         ),
 
-        // COMMENT BUTTON
+        // COMMENT
         _footerBtn(
           icon: Icons.mode_comment_outlined,
           label: comments.toString(),
@@ -736,7 +771,7 @@ class _HomePostCardState extends State<HomePostCard> {
           },
         ),
 
-        // SAVE BUTTON
+        // SAVE
         _footerSaveBtn(
           icon: _isSaved ? Icons.bookmark : Icons.bookmark_border,
           label: "",
@@ -745,7 +780,7 @@ class _HomePostCardState extends State<HomePostCard> {
           onTap: _toggleSave,
         ),
 
-        // REPORT BUTTON
+        // REPORT
         _footerBtn(
           icon: Icons.flag_outlined,
           label: "",
@@ -761,6 +796,7 @@ class _HomePostCardState extends State<HomePostCard> {
     required VoidCallback onTap,
     bool active = false,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -771,7 +807,9 @@ class _HomePostCardState extends State<HomePostCard> {
             Icon(
               icon,
               size: 18,
-              color: active ? Colors.blue : Colors.grey.shade700,
+              color: active
+                  ? colorScheme.primary
+                  : colorScheme.onSurface.withOpacity(0.6),
             ),
             const SizedBox(width: 4),
             Text(
@@ -779,7 +817,9 @@ class _HomePostCardState extends State<HomePostCard> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: active ? Colors.blue : Colors.grey.shade800,
+                color: active
+                    ? colorScheme.primary
+                    : colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
           ],
@@ -795,14 +835,16 @@ class _HomePostCardState extends State<HomePostCard> {
     required bool isAnimating,
     required VoidCallback onTap,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color:
-              isAnimating ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+          color: isAnimating
+              ? colorScheme.primary.withOpacity(0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -813,7 +855,9 @@ class _HomePostCardState extends State<HomePostCard> {
                 icon,
                 key: ValueKey<bool>(active),
                 size: 18,
-                color: active ? Colors.blue : Colors.grey.shade700,
+                color: active
+                    ? colorScheme.primary
+                    : colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
             const SizedBox(width: 4),
@@ -822,7 +866,9 @@ class _HomePostCardState extends State<HomePostCard> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: active ? Colors.blue : Colors.grey.shade800,
+                color: active
+                    ? colorScheme.primary
+                    : colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
           ],
@@ -838,14 +884,16 @@ class _HomePostCardState extends State<HomePostCard> {
     required bool isAnimating,
     required VoidCallback onTap,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color:
-              isAnimating ? Colors.orange.withOpacity(0.1) : Colors.transparent,
+          color: isAnimating
+              ? colorScheme.secondary.withOpacity(0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -856,7 +904,9 @@ class _HomePostCardState extends State<HomePostCard> {
                 icon,
                 key: ValueKey<bool>(active),
                 size: 18,
-                color: active ? Colors.orange : Colors.grey.shade700,
+                color: active
+                    ? colorScheme.secondary
+                    : colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
             const SizedBox(width: 4),
@@ -865,7 +915,9 @@ class _HomePostCardState extends State<HomePostCard> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: active ? Colors.orange : Colors.grey.shade800,
+                color: active
+                    ? colorScheme.secondary
+                    : colorScheme.onSurface.withOpacity(0.6),
               ),
             ),
           ],

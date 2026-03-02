@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -25,8 +24,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   // static const String _baseUrl =
   //     "https://powderblue-jellyfish-554082.hostingersite.com";
 
-    static const String _baseUrl = AppConfig.imageBaseUrl;
-    
+  static const String _baseUrl = AppConfig.imageBaseUrl;
 
   // =========================
   // STATE VARIABLES
@@ -398,6 +396,14 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   // =========================
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+
+    final readMoreColor = isDark
+        ? colorScheme.primary
+        : const Color.fromARGB(255, 45, 47, 190); // original
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -613,7 +619,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                           if (!_isPostingComment)
                             Container(
                               decoration: BoxDecoration(
-                                color: Colors.blue,
+                                color: readMoreColor,
                                 borderRadius: BorderRadius.circular(25),
                               ),
                               child: IconButton(
@@ -628,8 +634,6 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
 
                     // const Spacer(),
                     const SizedBox(height: 12),
-
-                   
                   ],
                 ),
               ),
@@ -648,6 +652,14 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
     final title = (_postData["title"] ?? "").toString();
     final description = (_postData["description"] ?? "").toString();
     final updatedAt = _formatTime(_postData["updated_at"]?.toString());
+
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+
+    final readMoreColor = isDark
+        ? colorScheme.primary
+        : const Color.fromARGB(255, 45, 47, 190); // original
 
     return Card(
       elevation: 2,
@@ -741,10 +753,11 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                                 _expandedDescription
                                     ? "Read less"
                                     : "...Read more",
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.blue,
+                                  // color: Colors.blue,
+                                  color: readMoreColor,
                                 ),
                               ),
                             ),
@@ -830,6 +843,14 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
     final createdAtHuman = comment["created_at_human"] ??
         _formatHumanTime(comment["created_at"]?.toString());
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+
+    final readMoreColor = isDark
+        ? colorScheme.primary
+        : const Color.fromARGB(255, 45, 47, 190); // original
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       padding: const EdgeInsets.all(12),
@@ -906,13 +927,14 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                       Icon(
                         Icons.reply,
                         size: 18,
-                        color: Colors.blue[400],
+                        color: readMoreColor,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         "Reply",
                         style: TextStyle(
-                          color: Colors.blue[400],
+                          // color: Colors.blue[400],
+                          color: readMoreColor,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -957,6 +979,14 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   // COMMENT INPUT WIDGET
   // =========================
   Widget _buildCommentInput() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+
+    final readMoreColor = isDark
+        ? colorScheme.primary
+        : const Color.fromARGB(255, 45, 47, 190); // original
+
     return Container(
       padding: const EdgeInsets.all(12),
       color: Colors.grey[900],
@@ -1000,7 +1030,8 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
               if (!_isPostingComment)
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.blue,
+                    // color: Colors.blue,
+                    color: readMoreColor,
                     borderRadius: BorderRadius.circular(25),
                   ),
                   child: IconButton(
@@ -1052,6 +1083,13 @@ class RepliesModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+
+    final readMoreColor = isDark
+        ? colorScheme.primary
+        : const Color.fromARGB(255, 45, 47, 190); // original
     return DraggableScrollableSheet(
       initialChildSize: 0.9,
       minChildSize: 0.5,
@@ -1121,7 +1159,8 @@ class RepliesModal extends StatelessWidget {
                             ElevatedButton(
                               onPressed: onReplyPressed,
                               style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.blue,
+                                // backgroundColor: Colors.blue,
+                                backgroundColor: readMoreColor,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(20),
                                 ),
