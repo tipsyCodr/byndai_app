@@ -17,8 +17,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   final _phoneController = TextEditingController();
   String _selectedCode = "🇮🇳 +91";
 
-  
-
   void _showTopRightMessage(
     String message, {
     bool isSuccess = false,
@@ -115,6 +113,54 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   }
 
   /// Verifies the entered OTP and navigates based on the auth state.
+  // Future<bool> _verifyOtp(String otp) async {
+  //   final mobile = _phoneController.text.trim();
+  //   if (otp.length != 4) {
+  //     _showSnackBar("Enter a valid 4-digit OTP");
+  //     return false;
+  //   }
+
+  //   _showLoaderDialog();
+  //   final auth = context.read<AuthProvider>();
+  //   final success = await auth.verifyOTP(mobile, otp);
+
+  //   if (!mounted) return false;
+  //   Navigator.pop(context); // Dismiss loader
+
+  //   Navigator.pop(context); // 👈 Loader pehle close karo
+
+  //   if (success && !auth.isAuthenticated) {
+  //     _showTopRightMessage("OTP verified successfully");
+  //   }
+
+  //   if (!success) {
+  //     // _showSnackBar("OTP verification failed. Try again.");
+  //     _showTopRightMessage("OTP verification failed", isError: true);
+  //     return false;
+  //   }
+
+  //   // Defer navigation until after the current frame to avoid context issues.
+  //   WidgetsBinding.instance.addPostFrameCallback((_) async {
+  //     if (!mounted) return;
+
+  //     // Re-read the provider state to be safe.
+  //     final currentAuth = context.read<AuthProvider>();
+
+  //     if (currentAuth.isAuthenticated) {
+  //       Navigator.pushReplacementNamed(context, RouteNames.home);
+  //     } else if (currentAuth.pendingIsNewUser) {
+  //       Navigator.pushReplacementNamed(context, RouteNames.register);
+  //     } else if (currentAuth.pendingProcess?.toLowerCase() == 'login') {
+  //       await _promptPinLogin(mobile);
+  //     } else {
+  //       // Fallback case
+  //       Navigator.pushReplacementNamed(context, RouteNames.login);
+  //     }
+  //   });
+
+  //   return true;
+  // }
+
   Future<bool> _verifyOtp(String otp) async {
     final mobile = _phoneController.text.trim();
     if (otp.length != 4) {
@@ -127,35 +173,29 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     final success = await auth.verifyOTP(mobile, otp);
 
     if (!mounted) return false;
-    Navigator.pop(context); // Dismiss loader
-
-    Navigator.pop(context); // 👈 Loader pehle close karo
-
-    if (success && !auth.isAuthenticated) {
-      _showTopRightMessage("OTP verified successfully");
-    }
+    Navigator.pop(context); // Dismiss loader only
 
     if (!success) {
-      // _showSnackBar("OTP verification failed. Try again.");
       _showTopRightMessage("OTP verification failed", isError: true);
-      return false;
+      return false; // OTP dialog stays open
     }
 
-    // Defer navigation until after the current frame to avoid context issues.
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // Success
+    _showTopRightMessage("OTP verified successfully", isSuccess: true);
+    // OTP dialog will close automatically because we return true
+
+    // Defer navigation until after the current frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      // Re-read the provider state to be safe.
       final currentAuth = context.read<AuthProvider>();
-
       if (currentAuth.isAuthenticated) {
         Navigator.pushReplacementNamed(context, RouteNames.home);
       } else if (currentAuth.pendingIsNewUser) {
         Navigator.pushReplacementNamed(context, RouteNames.register);
       } else if (currentAuth.pendingProcess?.toLowerCase() == 'login') {
-        await _promptPinLogin(mobile);
+        _promptPinLogin(mobile);
       } else {
-        // Fallback case
         Navigator.pushReplacementNamed(context, RouteNames.login);
       }
     });
@@ -180,7 +220,6 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
   /// Shows a dialog for the user to enter their existing PIN to log in.
   Future<void> _handleExistingPinLogin(String mobile) async {
     final auth = context.read<AuthProvider>();
-   
 
     final loggedIn = await showDialog<bool>(
       context: context,
