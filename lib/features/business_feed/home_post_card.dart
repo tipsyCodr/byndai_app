@@ -26,8 +26,9 @@ class HomePostCard extends StatefulWidget {
 
 class _HomePostCardState extends State<HomePostCard> {
   // static const String _baseUrl =
-  //     "https://powderblue-jellyfish-554082.hostingersite.com";
+  //     "https://byndai.in/";
 
+  static const String _baseUrl = AppConfig.imageBaseUrl;
   static const String _baseUrl = AppConfig.imageBaseUrl;
 
   final bool _expandedDescription = false;
@@ -122,7 +123,7 @@ class _HomePostCardState extends State<HomePostCard> {
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).colorScheme.onError),
         ),
         backgroundColor: backgroundColor,
         duration: const Duration(seconds: 2),
@@ -171,7 +172,7 @@ class _HomePostCardState extends State<HomePostCard> {
     // Show snackbar message
     final message =
         newSaved ? "Post saved to playlist" : "Post removed from playlist";
-    final color = newSaved ? Colors.green : Colors.orange;
+    final color = newSaved ? Colors.green : Theme.of(context).colorScheme.error;
     _showSnackBar(message, color);
 
     // Update postData
@@ -265,7 +266,8 @@ class _HomePostCardState extends State<HomePostCard> {
       });
 
       // Show error snackbar
-      _showSnackBar("Failed to update save status", Colors.red);
+      _showSnackBar(
+          "Failed to update save status", Theme.of(context).colorScheme.error);
 
       // Notify parent to revert as well
       widget.onPostUpdated(_postData["id"], _postData);
@@ -443,14 +445,18 @@ class _HomePostCardState extends State<HomePostCard> {
               ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
               : const Color.fromARGB(255, 170, 169, 248),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: isDark
+              ? null
+              : Border.all(color: colorScheme.primary.withOpacity(0.1)),
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -797,6 +803,7 @@ class _HomePostCardState extends State<HomePostCard> {
     bool active = false,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -836,12 +843,16 @@ class _HomePostCardState extends State<HomePostCard> {
     required VoidCallback onTap,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
+          color: isAnimating
+              ? colorScheme.primary.withOpacity(0.1)
+              : Colors.transparent,
           color: isAnimating
               ? colorScheme.primary.withOpacity(0.1)
               : Colors.transparent,
@@ -884,6 +895,7 @@ class _HomePostCardState extends State<HomePostCard> {
     required bool isAnimating,
     required VoidCallback onTap,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,

@@ -18,10 +18,9 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
   static const String _baseUrl = AppConfig.apiBaseUrl;
 
   // static const String _storageBaseUrl =
-  //     "https://powderblue-jellyfish-554082.hostingersite.com/storage";
+  //     "https://byndai.in/storage";
 
-  static const String _storageBaseUrl =   AppConfig.apiProfileImg;
-   
+  static const String _storageBaseUrl = AppConfig.apiProfileImg;
 
   final ScrollController _scrollController = ScrollController();
 

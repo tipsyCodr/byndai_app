@@ -96,7 +96,9 @@ class _LeadsPageState extends State<LeadsPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setModalState) {
+            final colorScheme = Theme.of(context).colorScheme;
             return Dialog(
+              backgroundColor: colorScheme.surface,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -169,6 +171,7 @@ class _LeadsPageState extends State<LeadsPage> {
 
                                       final data = jsonDecode(response.body);
 
+                                      if (!context.mounted) return;
                                       Navigator.pop(context);
 
                                       ScaffoldMessenger.of(context)
@@ -178,6 +181,10 @@ class _LeadsPageState extends State<LeadsPage> {
                                               "Something went wrong"),
                                         ),
                                       );
+
+                                      if (data["status"] == true) {
+                                        _fetchLeadCategories();
+                                      }
                                     } catch (e) {
                                       Navigator.pop(context);
                                       ScaffoldMessenger.of(context)
@@ -187,12 +194,12 @@ class _LeadsPageState extends State<LeadsPage> {
                                     }
                                   },
                             child: isLoading
-                                ? const SizedBox(
+                                ? SizedBox(
                                     height: 18,
                                     width: 18,
                                     child: CircularProgressIndicator(
                                       strokeWidth: 2,
-                                      color: Colors.white,
+                                      color: colorScheme.onPrimary,
                                     ),
                                   )
                                 : const Text("Add"),
@@ -274,6 +281,7 @@ class _LeadsPageState extends State<LeadsPage> {
       builder: (context) {
         final screenHeight = MediaQuery.of(context).size.height;
         final screenWidth = MediaQuery.of(context).size.width;
+        final colorScheme = Theme.of(context).colorScheme;
 
         final maxImageHeight = screenHeight * 0.6;
         final maxImageWidth = screenWidth * 0.8;
@@ -290,7 +298,7 @@ class _LeadsPageState extends State<LeadsPage> {
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: colorScheme.surface,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   padding: const EdgeInsets.all(20),
@@ -317,7 +325,7 @@ class _LeadsPageState extends State<LeadsPage> {
                             child: Container(
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                color: Colors.grey.shade100,
+                                color: colorScheme.surfaceContainerHighest,
                               ),
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
@@ -348,7 +356,7 @@ class _LeadsPageState extends State<LeadsPage> {
                                     return SizedBox(
                                       height: 300,
                                       width: double.infinity,
-                                      child: _buildNoImagePlaceholder(),
+                                      child: _buildNoImagePlaceholder(context),
                                     );
                                   },
                                 ),
@@ -359,16 +367,16 @@ class _LeadsPageState extends State<LeadsPage> {
                           SizedBox(
                             height: 300,
                             width: double.infinity,
-                            child: _buildNoImagePlaceholder(),
+                            child: _buildNoImagePlaceholder(context),
                           ),
                         if (lead.imageFilename != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 12),
                             child: Text(
                               "File: ${lead.imageFilename}",
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 12,
-                                color: Colors.grey,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -383,7 +391,7 @@ class _LeadsPageState extends State<LeadsPage> {
                     onTap: () => Navigator.pop(context),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: colorScheme.surface,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
@@ -393,10 +401,10 @@ class _LeadsPageState extends State<LeadsPage> {
                         ],
                       ),
                       padding: const EdgeInsets.all(6),
-                      child: const Icon(
+                      child: Icon(
                         Icons.close,
                         size: 20,
-                        color: Colors.black87,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -409,38 +417,39 @@ class _LeadsPageState extends State<LeadsPage> {
     );
   }
 
-  Widget _buildNoImagePlaceholder() {
+  Widget _buildNoImagePlaceholder(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       height: 300,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.grey.shade200,
-        border: Border.all(color: Colors.grey.shade300),
+        color: colorScheme.surfaceContainerHighest,
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
-      child: const Column(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.image_not_supported_outlined,
             size: 60,
-            color: Colors.grey,
+            color: colorScheme.onSurfaceVariant,
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           Text(
             "No Image Available",
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey,
+              color: colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             "This lead doesn't have an image",
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -463,7 +472,10 @@ class _LeadsPageState extends State<LeadsPage> {
             child: const Text("Cancel"),
           ),
           ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
             icon: const Icon(Icons.delete),
             label: const Text("Delete"),
             onPressed: () async {
@@ -499,11 +511,12 @@ class _LeadsPageState extends State<LeadsPage> {
   // ================= TOP BAR =================
 
   Widget _buildCategoryRow() {
+    final colorScheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
         borderRadius: BorderRadius.circular(14),
       ),
       child: Row(
@@ -536,8 +549,8 @@ class _LeadsPageState extends State<LeadsPage> {
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: _selectedCategory == "All"
-                      ? Colors.white
-                      : Colors.black87,
+                      ? colorScheme.onPrimary
+                      : colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -588,13 +601,13 @@ class _LeadsPageState extends State<LeadsPage> {
                                 horizontal: 14, vertical: 6),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.white,
+                                  ? colorScheme.primary
+                                  : colorScheme.surface,
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
                                 color: isSelected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Colors.grey.shade300,
+                                    ? colorScheme.primary
+                                    : colorScheme.outlineVariant,
                               ),
                             ),
                             child: Text(
@@ -602,8 +615,9 @@ class _LeadsPageState extends State<LeadsPage> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
-                                color:
-                                    isSelected ? Colors.white : Colors.black87,
+                                color: isSelected
+                                    ? colorScheme.onPrimary
+                                    : colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -621,11 +635,11 @@ class _LeadsPageState extends State<LeadsPage> {
             child: Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: colorScheme.surface,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: colorScheme.outlineVariant),
               ),
-              child: const Icon(Icons.add, size: 18),
+              child: Icon(Icons.add, size: 18, color: colorScheme.onSurface),
             ),
           ),
 
@@ -684,13 +698,29 @@ class _LeadsPageState extends State<LeadsPage> {
         child: TextField(
           controller: _searchCtrl,
           decoration: InputDecoration(
-            prefixIcon: const Icon(CupertinoIcons.search, size: 18),
+            prefixIcon: Icon(CupertinoIcons.search,
+                size: 18,
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             hintText: "Search lead...",
+            hintStyle: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant),
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant),
             ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                  color: Theme.of(context).colorScheme.outlineVariant),
+            ),
+            filled: true,
+            fillColor: Theme.of(context)
+                .colorScheme
+                .surfaceContainerHighest
+                .withOpacity(0.3),
           ),
           onChanged: (val) {
             // agar future me search implement karna ho
@@ -1110,10 +1140,10 @@ class _LeadsPageState extends State<LeadsPage> {
                       /// POPUP MENU
                       PopupMenuButton<String>(
                         padding: EdgeInsets.zero,
-                        icon: const Icon(
+                        icon: Icon(
                           CupertinoIcons.ellipsis_vertical,
                           size: 19,
-                          color: Colors.grey,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -1131,8 +1161,8 @@ class _LeadsPageState extends State<LeadsPage> {
                             _confirmDelete(lead.id!);
                           }
                         },
-                        itemBuilder: (context) => const [
-                          PopupMenuItem(
+                        itemBuilder: (context) => [
+                          const PopupMenuItem(
                             value: 'edit',
                             child: Text("Edit"),
                           ),
@@ -1140,7 +1170,8 @@ class _LeadsPageState extends State<LeadsPage> {
                             value: 'delete',
                             child: Text(
                               "Delete",
-                              style: TextStyle(color: Colors.red),
+                              style: TextStyle(
+                                  color: Theme.of(context).colorScheme.error),
                             ),
                           ),
                         ],
@@ -1159,7 +1190,7 @@ class _LeadsPageState extends State<LeadsPage> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12.5,
-                        color: Colors.grey.shade600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
 
@@ -1168,8 +1199,10 @@ class _LeadsPageState extends State<LeadsPage> {
                   /// PHONE
                   Row(
                     children: [
-                      const Icon(CupertinoIcons.phone,
-                          size: 13, color: Colors.grey),
+                      Icon(CupertinoIcons.phone,
+                          size: 13,
+                          color:
+                              Theme.of(context).colorScheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
                         lead.mobile_no_1 ?? "",
@@ -1183,8 +1216,10 @@ class _LeadsPageState extends State<LeadsPage> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(CupertinoIcons.mail,
-                            size: 13, color: Colors.grey),
+                        Icon(CupertinoIcons.mail,
+                            size: 13,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -1261,7 +1296,8 @@ class _LeadsPageState extends State<LeadsPage> {
           suffixIcon: suffix,
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide:
+                BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -1272,11 +1308,13 @@ class _LeadsPageState extends State<LeadsPage> {
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 1.4),
+            borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.error, width: 1.4),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 1.6),
+            borderSide: BorderSide(
+                color: Theme.of(context).colorScheme.error, width: 1.6),
           ),
         ),
       ),

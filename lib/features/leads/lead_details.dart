@@ -17,10 +17,9 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 // ✅ ADD THIS BASE URL AT TOP
 // const String baseStorageUrl =
-//     "https://powderblue-jellyfish-554082.hostingersite.com/storage/";
+//     "https://byndai.in/storage/";
 
 const String baseStorageUrl = AppConfig.apiProfileImg2;
-   
 
 class LeadDetailsPage extends StatefulWidget {
   final LeadModel lead;
@@ -355,8 +354,23 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
   Widget _buildMediaSection(
       String title, String? url, String? base64, VoidCallback onTap,
       {bool isVideo = false}) {
-    return Card(
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color:
+            isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2))
+              ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -366,9 +380,11 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(title,
-                    style: const TextStyle(fontWeight: FontWeight.w600)),
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface)),
                 IconButton(
-                  icon: const Icon(Icons.edit),
+                  icon: Icon(Icons.edit, color: colorScheme.primary),
                   onPressed: onTap,
                 )
               ],
@@ -380,7 +396,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey.shade200,
+                  color: colorScheme.surfaceContainerHighest,
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
@@ -475,7 +491,8 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                 ),
               )
             else
-              const Text("No file added"),
+              Text("No file added",
+                  style: TextStyle(color: colorScheme.onSurfaceVariant)),
           ],
         ),
       ),
@@ -556,7 +573,8 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
               width: double.infinity,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(
+                    color: Theme.of(context).colorScheme.outlineVariant),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(10),
@@ -569,7 +587,8 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
             const SizedBox(height: 16),
             Text(
               filename,
-              style: const TextStyle(color: Colors.grey),
+              style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
             const SizedBox(height: 20),
             Row(
@@ -817,7 +836,8 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
 
   Widget _buildActionRow() {
     final lead = widget.lead;
-
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Collect all mobiles
     final mobiles = [
       if (lead.mobile_no_1 != null && lead.mobile_no_1!.isNotEmpty)
@@ -837,10 +857,21 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
 
     final email = lead.email ?? "";
 
-    return Card(
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 0.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color:
+            isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2))
+              ],
+      ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 12),
         child: Row(
@@ -851,7 +882,9 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
             IconButton(
               icon: Icon(
                 Icons.call,
-                color: mobiles.isNotEmpty ? Colors.green : Colors.grey,
+                color: mobiles.isNotEmpty
+                    ? Colors.green
+                    : colorScheme.onSurfaceVariant,
                 size: 28,
               ),
               onPressed: mobiles.isNotEmpty
@@ -864,7 +897,9 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
             IconButton(
               icon: Icon(
                 Icons.message,
-                color: mobiles.isNotEmpty ? Colors.orange : Colors.grey,
+                color: mobiles.isNotEmpty
+                    ? Colors.orange
+                    : colorScheme.onSurfaceVariant,
                 size: 28,
               ),
               onPressed: mobiles.isNotEmpty
@@ -877,7 +912,9 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
             IconButton(
               icon: Icon(
                 Icons.email,
-                color: email.isNotEmpty ? Colors.blue : Colors.grey,
+                color: email.isNotEmpty
+                    ? Colors.blue
+                    : colorScheme.onSurfaceVariant,
                 size: 28,
               ),
               onPressed: email.isNotEmpty
@@ -912,7 +949,9 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
             IconButton(
               icon: Icon(
                 Icons.language,
-                color: website != null ? Colors.purple : Colors.grey,
+                color: website != null
+                    ? Colors.purple
+                    : colorScheme.onSurfaceVariant,
                 size: 28,
               ),
               onPressed: website != null
@@ -935,7 +974,9 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
             IconButton(
               icon: FaIcon(
                 FontAwesomeIcons.whatsapp,
-                color: mobiles.isNotEmpty ? Colors.green : Colors.grey,
+                color: mobiles.isNotEmpty
+                    ? Colors.green
+                    : colorScheme.onSurfaceVariant,
                 size: 28,
               ),
               onPressed: mobiles.isNotEmpty
@@ -951,10 +992,23 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
 
   // ✅ Widget to show image section
   Widget _buildImageSection() {
-    return Card(
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 0.8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color:
+            isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2))
+              ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -963,12 +1017,16 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
+                Text(
                   "Lead Image",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.add_photo_alternate),
+                  icon: Icon(Icons.add_photo_alternate,
+                      color: colorScheme.primary),
                   onPressed: _showImageSourceModal,
                   tooltip: "Add/Change Image",
                 ),
@@ -983,7 +1041,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                 width: double.infinity,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: Colors.grey.shade100,
+                  color: colorScheme.surfaceContainerHighest,
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(10),
@@ -1037,13 +1095,15 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
 
   // ✅ Image placeholder widget
   Widget _buildImagePlaceholder() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       height: 180,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: Colors.grey.shade200,
-        border: Border.all(color: Colors.grey.shade300),
+        color: colorScheme.surfaceContainerHighest,
+        border: isDark ? null : Border.all(color: colorScheme.outlineVariant),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1051,19 +1111,19 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
           Icon(
             Icons.person_outline,
             size: 60,
-            color: Colors.grey.shade400,
+            color: colorScheme.onSurfaceVariant,
           ),
           const SizedBox(height: 8),
           Text(
             "No image added",
-            style: TextStyle(color: Colors.grey.shade600),
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: 4),
           Text(
             "Tap + button to add",
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey.shade500,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -1075,11 +1135,17 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
         elevation: 0,
-        title: const Text("Edit Lead"),
+        backgroundColor: isDark ? colorScheme.surfaceContainerHighest : null,
+        foregroundColor: colorScheme.onSurface,
+        title:
+            Text("Edit Lead", style: TextStyle(color: colorScheme.onSurface)),
         centerTitle: true,
       ),
       bottomNavigationBar: isDesktop
@@ -1091,12 +1157,16 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                   height: 48,
                   child: ElevatedButton.icon(
                     onPressed: isSaving ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                    ),
                     icon: isSaving
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                                strokeWidth: 2, color: colorScheme.onPrimary),
                           )
                         : const Icon(Icons.check, size: 18),
                     label: const Text("Save Changes"),
@@ -1130,23 +1200,34 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                             initialValue: _selectedCategory,
                             decoration: InputDecoration(
                               labelText: "Category",
+                              labelStyle: TextStyle(
+                                  color: colorScheme.onSurfaceVariant),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: isDark
+                                  ? colorScheme.surfaceContainerHighest
+                                  : colorScheme.surface,
                               contentPadding: const EdgeInsets.symmetric(
                                   horizontal: 14, vertical: 14),
                               enabledBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
-                                borderSide:
-                                    BorderSide(color: Colors.grey.shade300),
+                                borderSide: isDark
+                                    ? BorderSide.none
+                                    : BorderSide(
+                                        color: colorScheme.outlineVariant),
                               ),
                               focusedBorder: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide(
-                                  color: Theme.of(context).colorScheme.primary,
+                                  color: colorScheme.primary,
                                   width: 1.6,
                                 ),
                               ),
                             ),
+                            dropdownColor: isDark
+                                ? colorScheme.surfaceContainerHighest
+                                : null,
+                            style: TextStyle(
+                                color: colorScheme.onSurface, fontSize: 14),
                             items:
                                 _categories.map<DropdownMenuItem<int>>((item) {
                               return DropdownMenuItem<int>(
@@ -1207,9 +1288,13 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                       height: 48,
                       child: ElevatedButton.icon(
                         onPressed: isSaving ? null : _submit,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: colorScheme.primary,
+                          foregroundColor: colorScheme.onPrimary,
+                        ),
                         icon: isSaving
-                            ? const CircularProgressIndicator(
-                                color: Colors.white)
+                            ? CircularProgressIndicator(
+                                color: colorScheme.onPrimary)
                             : const Icon(Icons.check),
                         label: const Text("Save Changes"),
                       ),
@@ -1224,10 +1309,23 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
   }
 
   Widget _sectionCard({required List<Widget> children}) {
-    return Card(
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Container(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 0.8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      decoration: BoxDecoration(
+        color:
+            isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: isDark
+            ? []
+            : [
+                BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2))
+              ],
+      ),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(14, 14, 14, 2),
         child: Column(children: children),
@@ -1297,28 +1395,36 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
     String? error,
     Widget? suffix,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: TextField(
         controller: ctrl,
         keyboardType: keyboard,
         maxLines: maxLines,
+        style: TextStyle(color: colorScheme.onSurface),
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
           errorText: error,
           suffixIcon: suffix,
           filled: true,
-          fillColor: Colors.white,
+          fillColor: isDark
+              ? colorScheme.surfaceContainerHighest
+              : colorScheme.surface,
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.grey.shade300),
+            borderSide: isDark
+                ? BorderSide.none
+                : BorderSide(color: colorScheme.outlineVariant),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary,
+              color: colorScheme.primary,
               width: 1.6,
             ),
           ),

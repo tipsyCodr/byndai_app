@@ -1,5 +1,3 @@
-
-
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -570,15 +568,21 @@ class _ProfileTabState extends State<ProfileTab> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Media Upload Section
-          const Text(
+          Text(
             'Media',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface),
           ),
           const SizedBox(height: 16),
 
@@ -643,23 +647,39 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
 
           const SizedBox(height: 32),
-          const Divider(),
+          Divider(color: colorScheme.outlineVariant),
           const SizedBox(height: 16),
 
           // Personal Information Section
-          const Text(
+          Text(
             'Personal Information',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface),
           ),
           const SizedBox(height: 16),
 
           // Name Field
           TextField(
             controller: _nameController,
-            decoration: const InputDecoration(
+            style: TextStyle(color: colorScheme.onSurface),
+            decoration: InputDecoration(
               labelText: 'Full Name *',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.person),
+              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+              filled: true,
+              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark ? BorderSide.none : const BorderSide(),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark
+                    ? BorderSide.none
+                    : BorderSide(color: colorScheme.outline),
+              ),
+              prefixIcon: Icon(Icons.person, color: colorScheme.primary),
             ),
           ),
           const SizedBox(height: 16),
@@ -667,11 +687,26 @@ class _ProfileTabState extends State<ProfileTab> {
           // DOB Field
           TextField(
             controller: _dobController,
-            decoration: const InputDecoration(
+            style: TextStyle(color: colorScheme.onSurface),
+            decoration: InputDecoration(
               labelText: 'Date of Birth',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.calendar_today),
-              suffixIcon: Icon(Icons.arrow_drop_down),
+              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+              filled: true,
+              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark ? BorderSide.none : const BorderSide(),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark
+                    ? BorderSide.none
+                    : BorderSide(color: colorScheme.outline),
+              ),
+              prefixIcon:
+                  Icon(Icons.calendar_today, color: colorScheme.primary),
+              suffixIcon: Icon(Icons.arrow_drop_down,
+                  color: colorScheme.onSurfaceVariant),
             ),
             readOnly: true,
             onTap: () async {
@@ -692,11 +727,25 @@ class _ProfileTabState extends State<ProfileTab> {
           // ✅ GENDER DROPDOWN – Only Male & Female
           DropdownButtonFormField<String>(
             initialValue: _selectedGender,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Gender',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.people),
+              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+              filled: true,
+              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark ? BorderSide.none : const BorderSide(),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark
+                    ? BorderSide.none
+                    : BorderSide(color: colorScheme.outline),
+              ),
+              prefixIcon: Icon(Icons.people, color: colorScheme.primary),
             ),
+            dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
+            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
             items: _genders.map((gender) {
               return DropdownMenuItem(
                 value: gender,
@@ -712,24 +761,42 @@ class _ProfileTabState extends State<ProfileTab> {
           const SizedBox(height: 16),
 
           // Email Section
-          const Text(
+          Text(
             'Email',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface),
           ),
           const SizedBox(height: 8),
 
           // Primary Email
           TextField(
             controller: _emailController,
+            style: TextStyle(color: colorScheme.onSurface),
             decoration: InputDecoration(
               labelText: 'Primary Email',
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.email),
+              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+              filled: true,
+              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark ? BorderSide.none : const BorderSide(),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark
+                    ? BorderSide.none
+                    : BorderSide(color: colorScheme.outline),
+              ),
+              prefixIcon: Icon(Icons.email, color: colorScheme.primary),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.add),
                 onPressed:
                     _additionalEmailController == null ? _addEmailField : null,
-                color: _additionalEmailController == null ? null : Colors.grey,
+                color: _additionalEmailController == null
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -741,10 +808,24 @@ class _ProfileTabState extends State<ProfileTab> {
               padding: const EdgeInsets.only(bottom: 8),
               child: TextField(
                 controller: _additionalEmailController,
+                style: TextStyle(color: colorScheme.onSurface),
                 decoration: InputDecoration(
                   labelText: 'Secondary Email',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.email),
+                  labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                  filled: true,
+                  fillColor:
+                      isDark ? colorScheme.surfaceContainerHighest : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: isDark ? BorderSide.none : const BorderSide(),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: isDark
+                        ? BorderSide.none
+                        : BorderSide(color: colorScheme.outline),
+                  ),
+                  prefixIcon: Icon(Icons.email, color: colorScheme.primary),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: _removeEmailField,
@@ -756,9 +837,12 @@ class _ProfileTabState extends State<ProfileTab> {
           const SizedBox(height: 16),
 
           // Mobile Section
-          const Text(
+          Text(
             'Mobile',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+            style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface),
           ),
           const SizedBox(height: 8),
 
@@ -766,16 +850,31 @@ class _ProfileTabState extends State<ProfileTab> {
           TextField(
             controller: _mobileController,
             keyboardType: TextInputType.phone,
+            style: TextStyle(color: colorScheme.onSurface),
             decoration: InputDecoration(
               labelText: 'Primary Mobile',
-              border: const OutlineInputBorder(),
-              prefixIcon: const Icon(Icons.phone),
+              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+              filled: true,
+              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark ? BorderSide.none : const BorderSide(),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark
+                    ? BorderSide.none
+                    : BorderSide(color: colorScheme.outline),
+              ),
+              prefixIcon: Icon(Icons.phone, color: colorScheme.primary),
               suffixIcon: IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: _additionalMobileController == null
                     ? _addMobileField
                     : null,
-                color: _additionalMobileController == null ? null : Colors.grey,
+                color: _additionalMobileController == null
+                    ? colorScheme.primary
+                    : colorScheme.onSurfaceVariant,
               ),
             ),
           ),
@@ -788,10 +887,24 @@ class _ProfileTabState extends State<ProfileTab> {
               child: TextField(
                 controller: _additionalMobileController,
                 keyboardType: TextInputType.phone,
+                style: TextStyle(color: colorScheme.onSurface),
                 decoration: InputDecoration(
                   labelText: 'Secondary Mobile',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.phone),
+                  labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                  filled: true,
+                  fillColor:
+                      isDark ? colorScheme.surfaceContainerHighest : null,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: isDark ? BorderSide.none : const BorderSide(),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: isDark
+                        ? BorderSide.none
+                        : BorderSide(color: colorScheme.outline),
+                  ),
+                  prefixIcon: Icon(Icons.phone, color: colorScheme.primary),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red),
                     onPressed: _removeMobileField,
@@ -805,12 +918,25 @@ class _ProfileTabState extends State<ProfileTab> {
           // Country Dropdown - India only with value 1
           DropdownButtonFormField<String>(
             initialValue: _selectedCountry,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: 'Country',
-              border: OutlineInputBorder(),
-              prefixIcon:
-                  Icon(Icons.public, color: Color.fromARGB(255, 17, 11, 80)),
+              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+              filled: true,
+              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark ? BorderSide.none : const BorderSide(),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark
+                    ? BorderSide.none
+                    : BorderSide(color: colorScheme.outline),
+              ),
+              prefixIcon: Icon(Icons.public, color: colorScheme.primary),
             ),
+            dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
+            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
             items: const [
               DropdownMenuItem(
                 value: 'India',
@@ -829,28 +955,32 @@ class _ProfileTabState extends State<ProfileTab> {
           DropdownButtonFormField<int>(
             initialValue: _selectedStateId,
             isExpanded: true,
-            dropdownColor: Colors.white,
-            style: const TextStyle(color: Colors.black, fontSize: 14),
-            icon: const Icon(Icons.keyboard_arrow_down,
-                color: Color.fromARGB(255, 17, 11, 80)),
+            dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
+            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
+            icon: Icon(Icons.keyboard_arrow_down, color: colorScheme.primary),
             decoration: InputDecoration(
               labelText: "State",
-              labelStyle: TextStyle(
-                  color: Color.fromARGB(255, 17, 11, 80), fontSize: 14),
-              border: const OutlineInputBorder(),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide:
-                    const BorderSide(color: Color.fromARGB(255, 17, 11, 80)),
+              labelStyle:
+                  TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
+              filled: true,
+              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark ? BorderSide.none : const BorderSide(),
               ),
-              focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(
-                    color: Color.fromARGB(255, 17, 11, 80), width: 1),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark
+                    ? BorderSide.none
+                    : BorderSide(color: colorScheme.outline),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: colorScheme.primary, width: 1),
               ),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              prefixIcon:
-                  const Icon(Icons.map, color: Color.fromARGB(255, 17, 11, 80)),
+              prefixIcon: Icon(Icons.map, color: colorScheme.primary),
             ),
             items: _isLoadingStates
                 ? [
@@ -871,7 +1001,6 @@ class _ProfileTabState extends State<ProfileTab> {
                           value: state['id'],
                           child: Text(
                             state['state_name'],
-                            style: const TextStyle(color: Colors.black),
                           ),
                         );
                       }).toList(),
@@ -904,32 +1033,37 @@ class _ProfileTabState extends State<ProfileTab> {
           // District Dropdown
           DropdownButtonFormField<int>(
             // value: _selectedDistrictId,
-            initialValue: _filteredDistricts.any((d) => d['id'] == _selectedDistrictId)
-                ? _selectedDistrictId
-                : null,
+            initialValue:
+                _filteredDistricts.any((d) => d['id'] == _selectedDistrictId)
+                    ? _selectedDistrictId
+                    : null,
             isExpanded: true,
-            dropdownColor: Colors.white,
-            style: const TextStyle(color: Colors.black, fontSize: 14),
-            icon: const Icon(Icons.keyboard_arrow_down,
-                color: Color.fromARGB(255, 17, 11, 80)),
+            dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
+            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
+            icon: Icon(Icons.keyboard_arrow_down, color: colorScheme.primary),
             decoration: InputDecoration(
               labelText: "District",
-              labelStyle: TextStyle(
-                  color: Color.fromARGB(255, 17, 11, 80), fontSize: 14),
-              border: const OutlineInputBorder(),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(4),
-                borderSide:
-                    const BorderSide(color: Color.fromARGB(255, 17, 11, 80)),
+              labelStyle:
+                  TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
+              filled: true,
+              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark ? BorderSide.none : const BorderSide(),
               ),
-              focusedBorder: const OutlineInputBorder(
-                borderSide: BorderSide(
-                    color: Color.fromARGB(255, 17, 11, 80), width: 1),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark
+                    ? BorderSide.none
+                    : BorderSide(color: colorScheme.outline),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: colorScheme.primary, width: 1),
               ),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              prefixIcon: const Icon(Icons.location_city,
-                  color: Color.fromARGB(255, 17, 11, 80)),
+              prefixIcon: Icon(Icons.location_city, color: colorScheme.primary),
             ),
             items: _buildDistrictItems(),
             onChanged: _selectedStateId == null
@@ -958,10 +1092,23 @@ class _ProfileTabState extends State<ProfileTab> {
           TextField(
             controller: _addressController,
             // maxLines: 4,
-            decoration: const InputDecoration(
+            style: TextStyle(color: colorScheme.onSurface),
+            decoration: InputDecoration(
               labelText: 'Address',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.home),
+              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+              filled: true,
+              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark ? BorderSide.none : const BorderSide(),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark
+                    ? BorderSide.none
+                    : BorderSide(color: colorScheme.outline),
+              ),
+              prefixIcon: Icon(Icons.home, color: colorScheme.primary),
               alignLabelWithHint: true,
             ),
           ),
@@ -975,16 +1122,16 @@ class _ProfileTabState extends State<ProfileTab> {
               onPressed: _isSaving ? null : _updateProfile,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: const Color.fromARGB(255, 13, 9, 70),
-                foregroundColor: Colors.white,
+                backgroundColor: colorScheme.primary,
+                foregroundColor: colorScheme.onPrimary,
               ),
               child: _isSaving
-                  ? const SizedBox(
+                  ? SizedBox(
                       height: 20,
                       width: 20,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Colors.white,
+                        color: colorScheme.onPrimary,
                       ),
                     )
                   : const Text(
@@ -1002,15 +1149,15 @@ class _ProfileTabState extends State<ProfileTab> {
 
   // Helper method to build district dropdown items
   List<DropdownMenuItem<int>> _buildDistrictItems() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     if (_selectedStateId == null) {
       return [
-        const DropdownMenuItem<int>(
+        DropdownMenuItem<int>(
           value: null,
           child: Text(
             'Select state first',
-            style: TextStyle(
-              color: Color.fromARGB(255, 17, 11, 80),
-            ),
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
           ),
         )
       ];
@@ -1018,13 +1165,11 @@ class _ProfileTabState extends State<ProfileTab> {
 
     if (_isLoadingDistricts) {
       return [
-        const DropdownMenuItem<int>(
+        DropdownMenuItem<int>(
           value: null,
           child: Text(
             'Loading districts...',
-            style: TextStyle(
-              color: Color.fromARGB(255, 17, 11, 80),
-            ),
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
           ),
         )
       ];
@@ -1032,13 +1177,11 @@ class _ProfileTabState extends State<ProfileTab> {
 
     if (_filteredDistricts.isEmpty) {
       return [
-        const DropdownMenuItem<int>(
+        DropdownMenuItem<int>(
           value: null,
           child: Text(
             'No districts available',
-            style: TextStyle(
-              color: Color.fromARGB(255, 17, 11, 80),
-            ),
+            style: TextStyle(color: colorScheme.onSurfaceVariant),
           ),
         )
       ];
@@ -1049,7 +1192,6 @@ class _ProfileTabState extends State<ProfileTab> {
         value: district['id'],
         child: Text(
           district['district_name'],
-          style: const TextStyle(color: Colors.black),
         ),
       );
     }).toList();
@@ -1108,12 +1250,15 @@ class MediaUploadCard extends StatelessWidget {
     final hasNewFile = mediaFile != null;
     final hasExistingFile = existingFile != null && existingFile!.isNotEmpty;
     final showPreview = hasNewFile || hasExistingFile;
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.grey.shade300),
+          color: isDark ? colorScheme.surfaceContainerHighest : null,
+          border: isDark ? null : Border.all(color: colorScheme.outlineVariant),
           borderRadius: BorderRadius.circular(8),
         ),
         padding: const EdgeInsets.all(8),
@@ -1127,14 +1272,14 @@ class MediaUploadCard extends StatelessWidget {
               height: 50,
               child: Container(
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
+                  color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: showPreview
                     ? _buildPreview(hasNewFile, hasExistingFile)
                     : Icon(
                         isVideo ? Icons.videocam : Icons.image,
-                        color: Colors.grey.shade600,
+                        color: colorScheme.onSurfaceVariant,
                         size: 24,
                       ),
               ),
@@ -1143,7 +1288,10 @@ class MediaUploadCard extends StatelessWidget {
             // Title
             Text(
               title,
-              style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+              style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                  color: colorScheme.onSurface),
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1157,7 +1305,9 @@ class MediaUploadCard extends StatelessWidget {
               style: TextStyle(
                 color: hasNewFile
                     ? Colors.green
-                    : (hasExistingFile ? Colors.blue : Colors.grey.shade600),
+                    : (hasExistingFile
+                        ? Colors.blue
+                        : colorScheme.onSurfaceVariant),
                 fontSize: 10,
                 fontWeight: hasNewFile || hasExistingFile
                     ? FontWeight.w500
@@ -1176,7 +1326,7 @@ class MediaUploadCard extends StatelessWidget {
                     ? Colors.green.withOpacity(0.1)
                     : (hasExistingFile
                         ? Colors.blue.withOpacity(0.1)
-                        : Theme.of(context).primaryColor.withOpacity(0.1)),
+                        : colorScheme.primary.withOpacity(0.1)),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
@@ -1186,9 +1336,7 @@ class MediaUploadCard extends StatelessWidget {
                 style: TextStyle(
                   color: hasNewFile
                       ? Colors.green
-                      : (hasExistingFile
-                          ? Colors.blue
-                          : Theme.of(context).primaryColor),
+                      : (hasExistingFile ? Colors.blue : colorScheme.primary),
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),
@@ -1255,16 +1403,21 @@ class MediaUploadCard extends StatelessWidget {
   }
 
   Widget _buildFallbackIcon() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Icon(
-        Icons.broken_image,
-        color: Colors.grey.shade600,
-        size: 24,
-      ),
+    return Builder(
+      builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+        return Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Icon(
+            Icons.broken_image,
+            color: colorScheme.onSurfaceVariant,
+            size: 24,
+          ),
+        );
+      },
     );
   }
 }

@@ -23,7 +23,7 @@ class _EditProfilePageState extends State<EditProfilePage>
   @override
   void initState() {
     super.initState();
-     debugPrint("🟢 EDIT PAGE DATA: ${widget.userDetails}");
+    debugPrint("🟢 EDIT PAGE DATA: ${widget.userDetails}");
     _tabController = TabController(
       length: 6,
       vsync: this,
@@ -39,15 +39,24 @@ class _EditProfilePageState extends State<EditProfilePage>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text("Edit Profile"),
+        backgroundColor: isDark ? colorScheme.surfaceContainerHighest : null,
+        foregroundColor: colorScheme.onSurface,
+        title: Text(
+          "Edit Profile",
+          style: TextStyle(color: colorScheme.onSurface),
+        ),
         bottom: TabBar(
           controller: _tabController,
           isScrollable: true,
-          labelColor: Theme.of(context).primaryColor,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Theme.of(context).primaryColor,
+          labelColor: colorScheme.primary,
+          unselectedLabelColor: colorScheme.onSurfaceVariant,
+          indicatorColor: colorScheme.primary,
           tabs: const [
             Tab(text: "Profile"),
             Tab(text: "Links"),

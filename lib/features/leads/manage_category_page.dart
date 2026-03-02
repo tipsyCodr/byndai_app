@@ -73,7 +73,8 @@ class _ManageCategoryPageState extends State<ManageCategoryPage> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
@@ -142,14 +143,18 @@ class _ManageCategoryPageState extends State<ManageCategoryPage> {
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
+        backgroundColor: colorScheme.surface,
         elevation: 0,
         centerTitle: true,
-        title: const Text(
+        title: Text(
           "Manage Categories",
-          style: TextStyle(fontWeight: FontWeight.w600),
+          style: TextStyle(
+              fontWeight: FontWeight.w600, color: colorScheme.onSurface),
         ),
       ),
       body: _isLoading
@@ -175,10 +180,11 @@ class _ManageCategoryPageState extends State<ManageCategoryPage> {
                         margin: const EdgeInsets.only(bottom: 12),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
-                          color: Colors.white,
+                          color: colorScheme.surfaceContainerHighest
+                              .withOpacity(0.5),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.08),
+                              color: Colors.black.withOpacity(0.04),
                               blurRadius: 8,
                               offset: const Offset(0, 4),
                             ),
@@ -189,25 +195,27 @@ class _ManageCategoryPageState extends State<ManageCategoryPage> {
                               horizontal: 16, vertical: 12),
                           leading: CircleAvatar(
                             radius: 18,
-                            backgroundColor: Colors.blue.shade50,
+                            backgroundColor: colorScheme.primaryContainer,
                             child: Text(
                               "${index + 1}",
-                              style: const TextStyle(
+                              style: TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  color: Colors.blue),
+                                  color: colorScheme.onPrimaryContainer),
                             ),
                           ),
                           title: Text(
                             category,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w600,
                               fontSize: 16,
+                              color: colorScheme.onSurface,
                             ),
                           ),
                           trailing: PopupMenuButton<String>(
-                            icon: const Icon(
+                            icon: Icon(
                               CupertinoIcons.ellipsis_vertical,
                               size: 18,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                             onSelected: (value) {
                               if (value == "edit") {
@@ -217,8 +225,8 @@ class _ManageCategoryPageState extends State<ManageCategoryPage> {
                                 _confirmDelete(id);
                               }
                             },
-                            itemBuilder: (context) => const [
-                              PopupMenuItem(
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(
                                 value: "edit",
                                 child: Row(
                                   children: [
@@ -233,9 +241,11 @@ class _ManageCategoryPageState extends State<ManageCategoryPage> {
                                 child: Row(
                                   children: [
                                     Icon(CupertinoIcons.delete,
-                                        size: 16, color: Colors.red),
-                                    SizedBox(width: 8),
-                                    Text("Delete"),
+                                        size: 16, color: colorScheme.error),
+                                    const SizedBox(width: 8),
+                                    Text("Delete",
+                                        style: TextStyle(
+                                            color: colorScheme.error)),
                                   ],
                                 ),
                               ),
