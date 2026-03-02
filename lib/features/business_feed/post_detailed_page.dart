@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:gridcard/config/app_config.dart';
 
 class PostDetailsPage extends StatefulWidget {
   final int postId;
@@ -21,8 +22,11 @@ class PostDetailsPage extends StatefulWidget {
 }
 
 class _PostDetailsPageState extends State<PostDetailsPage> {
-  static const String _baseUrl =
-      "https://powderblue-jellyfish-554082.hostingersite.com";
+  // static const String _baseUrl =
+  //     "https://powderblue-jellyfish-554082.hostingersite.com";
+
+    static const String _baseUrl = AppConfig.imageBaseUrl;
+    
 
   // =========================
   // STATE VARIABLES

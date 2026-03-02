@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:gridcard/config/app_config.dart';
 
 class ReportPage extends StatefulWidget {
   final int postId;
@@ -16,8 +17,11 @@ class ReportPage extends StatefulWidget {
 }
 
 class _ReportPageState extends State<ReportPage> {
-  static const String _baseUrl =
-      "https://powderblue-jellyfish-554082.hostingersite.com/api";
+  // static const String _baseUrl =
+  //     "https://powderblue-jellyfish-554082.hostingersite.com/api";
+
+    static const String _baseUrl =  AppConfig.apiBaseUrl;
+      
 
   // =========================
   // STATE VARIABLES

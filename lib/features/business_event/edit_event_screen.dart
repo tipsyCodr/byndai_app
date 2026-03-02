@@ -68,8 +68,10 @@ class _EditEventScreenState extends State<EditEventScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
-  static const String _imageBaseUrl =
-      "https://powderblue-jellyfish-554082.hostingersite.com";
+  // static const String _imageBaseUrl =
+  //     "https://powderblue-jellyfish-554082.hostingersite.com";
+
+  static const String _imageBaseUrl = AppConfig.imageBaseUrl;
 
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {

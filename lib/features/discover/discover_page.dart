@@ -26,8 +26,11 @@ class _DiscoverPageState extends State<DiscoverPage> {
   String eventErrorMessage = '';
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
-  static const String _imageBaseUrl =
-      "https://powderblue-jellyfish-554082.hostingersite.com";
+  // static const String _imageBaseUrl =
+  //     "https://powderblue-jellyfish-554082.hostingersite.com";
+
+  static const String _imageBaseUrl = AppConfig.imageBaseUrl;
+    
 
   // ================= HEADERS (SAME AS COMPONENT 1) =================
   Future<Map<String, String>> _getHeaders() async {

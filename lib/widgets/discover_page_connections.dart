@@ -17,8 +17,11 @@ class DiscoverConnectionSuggest extends StatefulWidget {
 class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
   static const String _baseUrl = AppConfig.apiBaseUrl;
 
-  static const String _storageBaseUrl =
-      "https://powderblue-jellyfish-554082.hostingersite.com/storage";
+  // static const String _storageBaseUrl =
+  //     "https://powderblue-jellyfish-554082.hostingersite.com/storage";
+
+  static const String _storageBaseUrl =   AppConfig.apiProfileImg;
+   
 
   final ScrollController _scrollController = ScrollController();
 

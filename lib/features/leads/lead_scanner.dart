@@ -1,4 +1,3 @@
-
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,10 +5,11 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:gridcard/config/app_config.dart';
 
 class LeadsScannerPage extends StatefulWidget {
   final Function(Map<String, dynamic>)? onDataExtracted;
-  
+
   const LeadsScannerPage({super.key, this.onDataExtracted});
 
   @override
@@ -24,8 +24,8 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
   Map<String, dynamic>? _formData;
 
   // final String apiUrl = "http://byndai_server-main.test/api/ocr-extract";
-
-  final String apiUrl = "https://powderblue-jellyfish-554082.hostingersite.com/api/ocr-extract";
+  static const String _baseUrl = AppConfig.apiBaseUrl;
+  final String apiUrl = "$_baseUrl/ocr-extract";
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +178,10 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
                   const SizedBox(height: 20),
                   const Text(
                     "Extracted Form Data:",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.green),
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green),
                   ),
                   const SizedBox(height: 8),
                   Container(
@@ -192,7 +195,8 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: _formData!.entries.map((entry) {
-                        if (entry.value != null && entry.value.toString().isNotEmpty) {
+                        if (entry.value != null &&
+                            entry.value.toString().isNotEmpty) {
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 2),
                             child: Text(
@@ -215,7 +219,8 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
                     },
                     icon: const Icon(Icons.check_circle),
                     label: const Text("Use This Data in Form"),
-                    style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.blue),
                   ),
                 ],
               )
@@ -278,10 +283,10 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
       if (response.statusCode == 200) {
         final json = jsonDecode(resStr);
         print("OCR API Response: $json");
-        
+
         setState(() {
           _ocrText = json['text'] ?? '';
-          
+
           // Extract formdata from response
           if (json['formdata'] != null) {
             _formData = Map<String, dynamic>.from(json['formdata']);
@@ -303,20 +308,21 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
   Map<String, dynamic> _parseFormDataFromText(String text) {
     // Simple parsing logic if formdata not in API response
     final Map<String, dynamic> data = {};
-    
+
     // Extract email patterns
-    final emailRegex = RegExp(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b');
+    final emailRegex =
+        RegExp(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b');
     final emails = emailRegex.allMatches(text).map((m) => m.group(0)).toList();
     if (emails.isNotEmpty) data['email1'] = emails[0];
     if (emails.length > 1) data['email2'] = emails[1];
-    
+
     // Extract phone numbers
     final phoneRegex = RegExp(r'\b\d{10}\b');
     final phones = phoneRegex.allMatches(text).map((m) => m.group(0)).toList();
     for (int i = 0; i < phones.length && i < 3; i++) {
-      data['mobile${i+1}'] = phones[i];
+      data['mobile${i + 1}'] = phones[i];
     }
-    
+
     return data;
   }
 }

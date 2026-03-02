@@ -628,7 +628,9 @@ class _EditPostPageState extends State<EditPostPage> {
     if (path == null || path.isEmpty) return '';
     if (path.startsWith('http')) return path;
     // Assuming base URL is same as used in PostCard
-    const base = "https://powderblue-jellyfish-554082.hostingersite.com";
+    // const base = "https://powderblue-jellyfish-554082.hostingersite.com";
+    const base = AppConfig.imageBaseUrl;
+
     if (path.startsWith('/')) {
       return base + path;
     } else {

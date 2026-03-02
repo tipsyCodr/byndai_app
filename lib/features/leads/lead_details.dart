@@ -16,8 +16,11 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 // ✅ ADD THIS BASE URL AT TOP
-const String baseStorageUrl =
-    "https://powderblue-jellyfish-554082.hostingersite.com/storage/";
+// const String baseStorageUrl =
+//     "https://powderblue-jellyfish-554082.hostingersite.com/storage/";
+
+const String baseStorageUrl = AppConfig.apiProfileImg2;
+   
 
 class LeadDetailsPage extends StatefulWidget {
   final LeadModel lead;

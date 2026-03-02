@@ -8,6 +8,7 @@ import './post_detailed_page.dart';
 import './report_page.dart';
 import './industry_icon_mapper.dart';
 import 'edit_post_page.dart';
+import 'package:gridcard/config/app_config.dart';
 
 class MyPostCard extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -28,8 +29,12 @@ class MyPostCard extends StatefulWidget {
 }
 
 class _MyPostCardState extends State<MyPostCard> {
-  static const String _baseUrl =
-      "https://powderblue-jellyfish-554082.hostingersite.com";
+  //......................................
+  // static const String _baseUrl =
+  //     "https://powderblue-jellyfish-554082.hostingersite.com";
+
+   static const String _baseUrl = AppConfig.imageBaseUrl;
+  
 
   bool _expandedDescription = false;
   bool _showDebugInfo = false;

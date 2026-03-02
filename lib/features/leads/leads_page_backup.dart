@@ -11,6 +11,7 @@ import './lead_details.dart';
 import './lead_scanner.dart';
 import './lead_chat_page.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:gridcard/config/app_config.dart';
 
 class LeadsPage extends StatefulWidget {
   const LeadsPage({super.key});
@@ -22,8 +23,11 @@ class LeadsPage extends StatefulWidget {
 class _LeadsPageState extends State<LeadsPage> {
   final ScrollController _scrollCtrl = ScrollController();
   final TextEditingController _searchCtrl = TextEditingController();
-  static const String _baseUrl =
-      "https://powderblue-jellyfish-554082.hostingersite.com";
+  // static const String _baseUrl =
+  //     "https://powderblue-jellyfish-554082.hostingersite.com";
+
+   static const String _baseUrl =  AppConfig.imageBaseUrl;
+     
 
   int? _currentUserId; // Store user ID after fetching
 

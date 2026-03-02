@@ -12,7 +12,13 @@ class AppConfig {
       'https://powderblue-jellyfish-554082.hostingersite.com/api';
 
   static const String apiProfileImg =
-    "https://powderblue-jellyfish-554082.hostingersite.com/storage";
-  
-  static const double roundness = 5;
+      "https://powderblue-jellyfish-554082.hostingersite.com/storage";
+
+  static const String apiProfileImg2 =
+      "https://powderblue-jellyfish-554082.hostingersite.com/storage/";
+
+  static const String imageBaseUrl =
+      "https://powderblue-jellyfish-554082.hostingersite.com";
+
+  static const double roundness = 6;
 }
