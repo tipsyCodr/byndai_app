@@ -489,51 +489,56 @@ class _ProfilePageState extends State<ProfilePage> {
         if (link.trim().isEmpty) return;
         _openLink(link, platform: name.toLowerCase());
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.grey.shade100, // light background
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: Colors.grey.shade300, // light border
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: color.withOpacity(0.15),
-              child: FaIcon(
-                icon,
-                size: 16,
-                color: color,
+      child: Builder(
+        builder: (context) {
+          final cs = Theme.of(context).colorScheme;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: cs.outlineVariant,
+                width: 1,
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: color.withOpacity(0.15),
+                  child: FaIcon(
+                    icon,
+                    size: 16,
+                    color: color,
+                  ),
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(
+                  Icons.open_in_new,
+                  size: 16,
+                  color: cs.onSurfaceVariant,
+                )
+              ],
             ),
-            const Icon(
-              Icons.open_in_new,
-              size: 16,
-              color: Colors.grey,
-            )
-          ],
-        ),
+          );
+        },
       ),
     );
   }
 
   // ✅ MAIN DYNAMIC GRID
- 
 
   Widget _buildSocialIconsGrid() {
     if (_isLoadingMasterLinks) return const SizedBox.shrink();
@@ -573,20 +578,15 @@ class _ProfilePageState extends State<ProfilePage> {
         _openLink(link, platform: name.toLowerCase());
       },
       child: Container(
-        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: Colors.grey.shade100,
+          color: color,
           borderRadius: BorderRadius.circular(30),
-          border: Border.all(
-            color: Colors.grey.shade300,
-            width: 1,
-          ),
         ),
         child: Center(
           child: FaIcon(
             icon,
-            size: 24,
-            color: color,
+            size: 28,
+            color: Colors.white,
           ),
         ),
       ),
@@ -721,11 +721,12 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildRatingsSection() {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.shade900,
+        color: cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
@@ -734,19 +735,19 @@ class _ProfilePageState extends State<ProfilePage> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Your ratings',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: cs.onSurface,
                 ),
               ),
               Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade800,
+                  color: cs.surface,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: _isLoadingAvgRating
@@ -764,7 +765,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           Text(
                             '(${_avgRating.toStringAsFixed(1)}) $_totalReviews people',
                             style: TextStyle(
-                              color: Colors.grey.shade300,
+                              color: cs.onSurfaceVariant,
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                             ),
@@ -777,8 +778,8 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 16),
           Text(
             'Rate your experience working with ${_getFullName()}',
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: cs.onSurface,
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -803,12 +804,12 @@ class _ProfilePageState extends State<ProfilePage> {
           const SizedBox(height: 8),
           TextField(
             controller: _feedbackController,
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: cs.onSurface),
             decoration: InputDecoration(
               hintText: 'Feedback',
-              hintStyle: TextStyle(color: Colors.grey.shade500),
+              hintStyle: TextStyle(color: cs.onSurfaceVariant),
               filled: true,
-              fillColor: Colors.grey.shade800,
+              fillColor: cs.surface,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide.none,
@@ -824,7 +825,8 @@ class _ProfilePageState extends State<ProfilePage> {
             child: ElevatedButton(
               onPressed: _submitRating,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -832,7 +834,7 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               child: const Text(
                 'Submit Rating',
-                style: TextStyle(color: Colors.white, fontSize: 16),
+                style: TextStyle(fontSize: 16),
               ),
             ),
           ),
@@ -849,41 +851,42 @@ class _ProfilePageState extends State<ProfilePage> {
     required String message,
     required String createdAt,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      width: 240, // slightly reduced width for tighter look
+      width: 240,
       margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.all(10), // reduced padding
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surface,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.05),
             spreadRadius: 1,
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
         ],
         border: Border.all(
-          color: Colors.grey.shade200,
+          color: cs.outlineVariant,
           width: 1,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min, // take minimum height
+        mainAxisSize: MainAxisSize.min,
         children: [
           Row(
             children: [
               CircleAvatar(
-                radius: 14, // slightly smaller avatar
-                backgroundColor: Colors.blue.shade50,
+                radius: 14,
+                backgroundColor: cs.primaryContainer,
                 child: Text(
                   username.isNotEmpty ? username[0].toUpperCase() : "U",
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade700,
+                    color: cs.onPrimaryContainer,
                   ),
                 ),
               ),
@@ -891,8 +894,8 @@ class _ProfilePageState extends State<ProfilePage> {
               Expanded(
                 child: Text(
                   username,
-                  style: const TextStyle(
-                    color: Colors.black87,
+                  style: TextStyle(
+                    color: cs.onSurface,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -902,13 +905,13 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ],
           ),
-          const SizedBox(height: 6), // reduced spacing
+          const SizedBox(height: 6),
           _starsRow(rating, isLight: true),
           const SizedBox(height: 6),
           Text(
             message.isNotEmpty ? message : "No message",
             style: TextStyle(
-              color: Colors.grey.shade700,
+              color: cs.onSurfaceVariant,
               fontSize: 12,
             ),
             maxLines: 3,
@@ -918,7 +921,7 @@ class _ProfilePageState extends State<ProfilePage> {
           Text(
             createdAt.isNotEmpty ? createdAt.split("T").first : "",
             style: TextStyle(
-              color: Colors.grey.shade500,
+              color: cs.onSurfaceVariant.withOpacity(0.7),
               fontSize: 10,
             ),
           ),
@@ -949,16 +952,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ================= EMPTY REVIEWS =================
   Widget _buildEmptyReviews() {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           children: [
-            Icon(Icons.rate_review, size: 40, color: Colors.grey.shade500),
+            Icon(Icons.rate_review, size: 40, color: cs.onSurfaceVariant),
             const SizedBox(height: 8),
             Text(
               "No reviews yet",
-              style: TextStyle(color: Colors.grey.shade400),
+              style: TextStyle(color: cs.onSurfaceVariant),
             ),
           ],
         ),
@@ -1000,16 +1004,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ================= EMPTY REVIEWS (LIGHT) =================
   Widget _buildEmptyReviewsLight() {
+    final cs = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           children: [
-            Icon(Icons.rate_review, size: 40, color: Colors.grey.shade400),
+            Icon(Icons.rate_review, size: 40, color: cs.onSurfaceVariant),
             const SizedBox(height: 8),
             Text(
               "No reviews yet",
-              style: TextStyle(color: Colors.grey.shade600),
+              style: TextStyle(color: cs.onSurfaceVariant),
             ),
           ],
         ),
@@ -1112,13 +1117,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                   fit: BoxFit.cover,
                                 )
                               : Container(
-                                  color: Colors.grey.shade700,
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.person,
-                                      size: 80,
-                                      color: Colors.white,
-                                    ),
+                                  color: colorScheme.surfaceContainerHighest,
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 80,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                         ),
@@ -1142,7 +1145,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                         /// BACK BUTTON
                         Positioned(
-                          top: 12,
+                          top: MediaQuery.of(context).padding.top + 12,
                           left: 16,
                           child: GestureDetector(
                             onTap: () => Navigator.pop(context),
@@ -1157,7 +1160,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         /// EDIT BUTTON (ONLY OWNER)
                         if (!isViewerMode)
                           Positioned(
-                            top: 12,
+                            top: MediaQuery.of(context).padding.top + 12,
                             right: 16,
                             child: GestureDetector(
                               onTap: () {
@@ -1184,11 +1187,10 @@ class _ProfilePageState extends State<ProfilePage> {
                           right: 16,
                           child: Column(
                             children: [
-                              
-
                               CircleAvatar(
                                 radius: 40,
-                                backgroundColor: Colors.grey.shade300,
+                                backgroundColor:
+                                    colorScheme.surfaceContainerHighest,
                                 backgroundImage: apiProfileLogoUrl != null
                                     ? NetworkImage(apiProfileLogoUrl)
                                     : null,
@@ -1256,20 +1258,26 @@ class _ProfilePageState extends State<ProfilePage> {
                             width: double.infinity,
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: isDark
+                                  ? colorScheme.surfaceContainerHighest
+                                  : colorScheme.surface,
                               borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  spreadRadius: 1,
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                              border: Border.all(
-                                color: Colors.grey.shade200,
-                                width: 1,
-                              ),
+                              boxShadow: isDark
+                                  ? []
+                                  : [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        spreadRadius: 1,
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                              border: isDark
+                                  ? null
+                                  : Border.all(
+                                      color: colorScheme.outlineVariant,
+                                      width: 1,
+                                    ),
                             ),
                             child: ElevatedButton(
                               onPressed: () async {
@@ -1304,9 +1312,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                 }
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color.fromARGB(255, 28, 26, 61),
-                                foregroundColor: Colors.white,
+                                backgroundColor: colorScheme.primary,
+                                foregroundColor: colorScheme.onPrimary,
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 14),
                                 shape: RoundedRectangleBorder(
@@ -1342,31 +1349,37 @@ class _ProfilePageState extends State<ProfilePage> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: isDark
+                                    ? colorScheme.surfaceContainerHighest
+                                    : colorScheme.surface,
                                 borderRadius: BorderRadius.circular(18),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.1),
-                                    spreadRadius: 1,
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                                border: Border.all(
-                                  color: Colors.grey.shade200,
-                                  width: 1,
-                                ),
+                                boxShadow: isDark
+                                    ? []
+                                    : [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          spreadRadius: 1,
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                border: isDark
+                                    ? null
+                                    : Border.all(
+                                        color: colorScheme.outlineVariant,
+                                        width: 1,
+                                      ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   /// SECTION TITLE
-                                  const Text(
+                                  Text(
                                     'Social Links',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                                      color: colorScheme.onSurface,
                                     ),
                                   ),
 
@@ -1395,31 +1408,37 @@ class _ProfilePageState extends State<ProfilePage> {
                               width: double.infinity,
                               padding: const EdgeInsets.all(16),
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                color: isDark
+                                    ? colorScheme.surfaceContainerHighest
+                                    : colorScheme.surface,
                                 borderRadius: BorderRadius.circular(18),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.grey.withOpacity(0.1),
-                                    spreadRadius: 1,
-                                    blurRadius: 6,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                                border: Border.all(
-                                  color: Colors.grey.shade200,
-                                  width: 1,
-                                ),
+                                boxShadow: isDark
+                                    ? []
+                                    : [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          spreadRadius: 1,
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                border: isDark
+                                    ? null
+                                    : Border.all(
+                                        color: colorScheme.outlineVariant,
+                                        width: 1,
+                                      ),
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   /// TITLE
-                                  const Text(
+                                  Text(
                                     'Have a question?',
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
+                                      color: colorScheme.onSurface,
                                     ),
                                   ),
 
@@ -1428,8 +1447,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                   /// NAME
                                   Text(
                                     fullName,
-                                    style: const TextStyle(
-                                      color: Colors.black87,
+                                    style: TextStyle(
+                                      color: colorScheme.onSurface,
                                       fontSize: 16,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -1441,7 +1460,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   Text(
                                     '+91 $phone',
                                     style: TextStyle(
-                                      color: Colors.grey.shade600,
+                                      color: colorScheme.onSurfaceVariant,
                                       fontSize: 14,
                                     ),
                                   ),
@@ -1454,14 +1473,16 @@ class _ProfilePageState extends State<ProfilePage> {
                                       Expanded(
                                         child: TextField(
                                           controller: _messageController,
-                                          style: const TextStyle(
-                                              color: Colors.black87),
+                                          style: TextStyle(
+                                              color: colorScheme.onSurface),
                                           decoration: InputDecoration(
                                             hintText: 'Message',
                                             hintStyle: TextStyle(
-                                                color: Colors.grey.shade500),
+                                                color: colorScheme
+                                                    .onSurfaceVariant),
                                             filled: true,
-                                            fillColor: Colors.grey.shade50,
+                                            fillColor: colorScheme
+                                                .surfaceContainerHighest,
                                             border: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(12),
@@ -1475,7 +1496,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                             suffixIcon: IconButton(
                                               icon: Icon(
                                                 Icons.camera_alt,
-                                                color: Colors.blue.shade400,
+                                                color: colorScheme.primary,
                                               ),
                                               onPressed: _pickImageForMessage,
                                             ),
@@ -1486,8 +1507,9 @@ class _ProfilePageState extends State<ProfilePage> {
                                       ElevatedButton(
                                         onPressed: _sendMessage,
                                         style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.blue,
-                                          foregroundColor: Colors.white,
+                                          backgroundColor: colorScheme.primary,
+                                          foregroundColor:
+                                              colorScheme.onPrimary,
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
                                                 BorderRadius.circular(12),
@@ -1549,31 +1571,37 @@ class _ProfilePageState extends State<ProfilePage> {
                             padding: const EdgeInsets.all(
                                 16), // ✅ INNER CARD PADDING
                             decoration: BoxDecoration(
-                              color: Colors.white,
+                              color: isDark
+                                  ? colorScheme.surfaceContainerHighest
+                                  : colorScheme.surface,
                               borderRadius: BorderRadius.circular(18),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.grey.withOpacity(0.1),
-                                  spreadRadius: 1,
-                                  blurRadius: 6,
-                                  offset: const Offset(0, 2),
-                                ),
-                              ],
-                              border: Border.all(
-                                color: Colors.grey.shade200,
-                                width: 1,
-                              ),
+                              boxShadow: isDark
+                                  ? []
+                                  : [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        spreadRadius: 1,
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                              border: isDark
+                                  ? null
+                                  : Border.all(
+                                      color: colorScheme.outlineVariant,
+                                      width: 1,
+                                    ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 /// TITLE
-                                const Text(
+                                Text(
                                   'Reviews',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
+                                    color: colorScheme.onSurface,
                                   ),
                                 ),
 

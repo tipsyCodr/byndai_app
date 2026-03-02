@@ -436,18 +436,20 @@ class _HomePostCardState extends State<HomePostCard> {
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
         decoration: BoxDecoration(
-          color: isDark
-              ? colorScheme.surfaceVariant.withOpacity(0.3)
-              : Colors.white,
+          color: isDark ? colorScheme.surfaceContainerHighest : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          border: isDark
+              ? null
+              : Border.all(color: colorScheme.primary.withOpacity(0.1)),
+          boxShadow: isDark
+              ? []
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
         ),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -606,7 +608,10 @@ class _HomePostCardState extends State<HomePostCard> {
                 ),
               ),
 
-              const Divider(),
+              Divider(
+                  color: isDark
+                      ? Colors.transparent
+                      : colorScheme.outlineVariant.withOpacity(0.5)),
 
               // =========================
               // FIXED FOOTER
