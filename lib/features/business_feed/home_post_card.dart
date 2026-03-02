@@ -122,7 +122,7 @@ class _HomePostCardState extends State<HomePostCard> {
       SnackBar(
         content: Text(
           message,
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: Theme.of(context).colorScheme.onError),
         ),
         backgroundColor: backgroundColor,
         duration: const Duration(seconds: 2),
@@ -171,7 +171,7 @@ class _HomePostCardState extends State<HomePostCard> {
     // Show snackbar message
     final message =
         newSaved ? "Post saved to playlist" : "Post removed from playlist";
-    final color = newSaved ? Colors.green : Colors.orange;
+    final color = newSaved ? Colors.green : Theme.of(context).colorScheme.error;
     _showSnackBar(message, color);
 
     // Update postData
@@ -265,7 +265,8 @@ class _HomePostCardState extends State<HomePostCard> {
       });
 
       // Show error snackbar
-      _showSnackBar("Failed to update save status", Colors.red);
+      _showSnackBar(
+          "Failed to update save status", Theme.of(context).colorScheme.error);
 
       // Notify parent to revert as well
       widget.onPostUpdated(_postData["id"], _postData);
@@ -442,7 +443,7 @@ class _HomePostCardState extends State<HomePostCard> {
           border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -466,7 +467,8 @@ class _HomePostCardState extends State<HomePostCard> {
                         children: [
                           CircleAvatar(
                             radius: 18,
-                            backgroundColor: Colors.grey.shade200,
+                            backgroundColor:
+                                colorScheme.surfaceContainerHighest,
                             child: ClipOval(
                               child: (profilePicUrl != null &&
                                       profilePicUrl.isNotEmpty)
@@ -477,17 +479,17 @@ class _HomePostCardState extends State<HomePostCard> {
                                       fit: BoxFit.cover,
                                       errorBuilder:
                                           (context, error, stackTrace) {
-                                        return const Icon(
+                                        return Icon(
                                           Icons.person,
                                           size: 22,
-                                          color: Colors.grey,
+                                          color: colorScheme.onSurfaceVariant,
                                         );
                                       },
                                     )
-                                  : const Icon(
+                                  : Icon(
                                       Icons.person,
                                       size: 22,
-                                      color: Colors.grey,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                             ),
                           ),
@@ -498,9 +500,10 @@ class _HomePostCardState extends State<HomePostCard> {
                               children: [
                                 Text(
                                   fname,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 15,
                                     fontWeight: FontWeight.w700,
+                                    color: colorScheme.onSurface,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -508,7 +511,7 @@ class _HomePostCardState extends State<HomePostCard> {
                                   updatedAt,
                                   style: TextStyle(
                                     fontSize: 12,
-                                    color: Colors.grey.shade600,
+                                    color: colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                               ],
@@ -516,12 +519,13 @@ class _HomePostCardState extends State<HomePostCard> {
                           ),
                           CircleAvatar(
                             radius: 14,
-                            backgroundColor: Colors.grey.shade200,
+                            backgroundColor:
+                                colorScheme.surfaceContainerHighest,
                             child: Icon(
                               IndustryIconMapper.getIcon(
                                   _postData["industry_icon"]),
                               size: 16,
-                              color: Colors.blue.shade700,
+                              color: colorScheme.primary,
                             ),
                           ),
                         ],
@@ -546,7 +550,8 @@ class _HomePostCardState extends State<HomePostCard> {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(Icons.star, size: 18),
+                            Icon(Icons.star,
+                                size: 18, color: colorScheme.onSurfaceVariant),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Column(
@@ -554,8 +559,10 @@ class _HomePostCardState extends State<HomePostCard> {
                                 children: [
                                   Text(
                                     _getDisplayDescription(description),
-                                    style: const TextStyle(
-                                        fontSize: 14, height: 1.35),
+                                    style: TextStyle(
+                                        fontSize: 14,
+                                        height: 1.35,
+                                        color: colorScheme.onSurfaceVariant),
                                   ),
                                   if (_shouldShowReadMore(description))
                                     GestureDetector(
@@ -569,14 +576,14 @@ class _HomePostCardState extends State<HomePostCard> {
                                           ),
                                         );
                                       },
-                                      child: const Padding(
-                                        padding: EdgeInsets.only(top: 4),
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(top: 4),
                                         child: Text(
                                           "...Read more",
                                           style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
-                                            color: Colors.blue,
+                                            color: colorScheme.primary,
                                           ),
                                         ),
                                       ),
@@ -634,7 +641,7 @@ class _HomePostCardState extends State<HomePostCard> {
                 fit: BoxFit.cover,
                 width: double.infinity,
                 placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: const Center(child: CircularProgressIndicator()),
                 ),
                 errorWidget: (context, url, error) {
@@ -642,9 +649,14 @@ class _HomePostCardState extends State<HomePostCard> {
                   debugPrint("URL: $url");
 
                   return Container(
-                    color: Colors.grey.shade200,
+                    color:
+                        Theme.of(context).colorScheme.surfaceContainerHighest,
                     alignment: Alignment.center,
-                    child: const Text("Image load failed"),
+                    child: Text("Image load failed",
+                        style: TextStyle(
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurfaceVariant)),
                   );
                 },
               ),
@@ -760,6 +772,7 @@ class _HomePostCardState extends State<HomePostCard> {
     required VoidCallback onTap,
     bool active = false,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
@@ -770,7 +783,8 @@ class _HomePostCardState extends State<HomePostCard> {
             Icon(
               icon,
               size: 18,
-              color: active ? Colors.blue : Colors.grey.shade700,
+              color:
+                  active ? colorScheme.primary : colorScheme.onSurfaceVariant,
             ),
             const SizedBox(width: 4),
             Text(
@@ -778,7 +792,7 @@ class _HomePostCardState extends State<HomePostCard> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: active ? Colors.blue : Colors.grey.shade800,
+                color: active ? colorScheme.primary : colorScheme.onSurface,
               ),
             ),
           ],
@@ -794,14 +808,16 @@ class _HomePostCardState extends State<HomePostCard> {
     required bool isAnimating,
     required VoidCallback onTap,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color:
-              isAnimating ? Colors.blue.withOpacity(0.1) : Colors.transparent,
+          color: isAnimating
+              ? colorScheme.primary.withOpacity(0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -812,7 +828,8 @@ class _HomePostCardState extends State<HomePostCard> {
                 icon,
                 key: ValueKey<bool>(active),
                 size: 18,
-                color: active ? Colors.blue : Colors.grey.shade700,
+                color:
+                    active ? colorScheme.primary : colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: 4),
@@ -821,7 +838,7 @@ class _HomePostCardState extends State<HomePostCard> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: active ? Colors.blue : Colors.grey.shade800,
+                color: active ? colorScheme.primary : colorScheme.onSurface,
               ),
             ),
           ],
@@ -837,6 +854,7 @@ class _HomePostCardState extends State<HomePostCard> {
     required bool isAnimating,
     required VoidCallback onTap,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -855,7 +873,7 @@ class _HomePostCardState extends State<HomePostCard> {
                 icon,
                 key: ValueKey<bool>(active),
                 size: 18,
-                color: active ? Colors.orange : Colors.grey.shade700,
+                color: active ? Colors.orange : colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(width: 4),
@@ -864,7 +882,7 @@ class _HomePostCardState extends State<HomePostCard> {
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: active ? Colors.orange : Colors.grey.shade800,
+                color: active ? Colors.orange : colorScheme.onSurface,
               ),
             ),
           ],
