@@ -1,6 +1,3 @@
-
-
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
@@ -153,7 +150,8 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
     final platformClicks = data["platform_clicks"];
 
     // totals (same for all pages)
-    _totalViews = int.tryParse(profileViews["total_view_count"].toString()) ?? 0;
+    _totalViews =
+        int.tryParse(profileViews["total_view_count"].toString()) ?? 0;
     _totalTimeSeconds =
         int.tryParse(profileViews["total_time_seconds"].toString()) ?? 0;
 
@@ -192,9 +190,8 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
         }
       }
 
-      final existingClickerKey = _clickers
-          .map((e) => "${e["viewer_id"]}_${e["platform"]}")
-          .toSet();
+      final existingClickerKey =
+          _clickers.map((e) => "${e["viewer_id"]}_${e["platform"]}").toSet();
       for (final c in newClickers) {
         final key = "${c["viewer_id"]}_${c["platform"]}";
         if (!existingClickerKey.contains(key)) {
@@ -343,7 +340,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
               subtitle,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey.shade700,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -357,20 +354,21 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
     required String value,
     required IconData icon,
   }) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: 170,
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
         boxShadow: [
           BoxShadow(
             blurRadius: 10,
             spreadRadius: 0,
             offset: const Offset(0, 6),
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withOpacity(0.04),
           )
         ],
       ),
@@ -380,10 +378,10 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
             height: 44,
             width: 44,
             decoration: BoxDecoration(
-              color: Colors.grey.shade100,
+              color: cs.primaryContainer,
               borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, size: 20, color: Colors.black87),
+            child: Icon(icon, size: 20, color: cs.onPrimaryContainer),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -396,7 +394,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey.shade700,
+                    color: cs.onSurface.withOpacity(0.7),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -419,19 +417,20 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
   }
 
   Widget _emptyBox(String text) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Colors.grey.shade50,
+        color: cs.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
       ),
       child: Text(
         text,
         style: TextStyle(
           fontSize: 13,
-          color: Colors.grey.shade700,
+          color: cs.onSurface.withOpacity(0.6),
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -439,9 +438,9 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
   }
 
   Widget _viewerCard(Map item) {
-    final name =
-        (item["viewer_fname"] ?? item["viewer_user_name"] ?? "Unknown")
-            .toString();
+    final cs = Theme.of(context).colorScheme;
+    final name = (item["viewer_fname"] ?? item["viewer_user_name"] ?? "Unknown")
+        .toString();
 
     final viewCount = (item["view_count"] ?? 0).toString();
     final time = int.tryParse(item["total_time_seconds"].toString()) ?? 0;
@@ -451,9 +450,9 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -462,12 +461,12 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: Colors.grey.shade200,
+                backgroundColor: cs.primaryContainer,
                 child: Text(
                   name.isNotEmpty ? name[0].toUpperCase() : "?",
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w800,
-                    color: Colors.black,
+                    color: cs.onPrimaryContainer,
                   ),
                 ),
               ),
@@ -488,24 +487,25 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
           const SizedBox(height: 12),
           Row(
             children: [
-              Icon(Icons.remove_red_eye, size: 16, color: Colors.grey.shade700),
+              Icon(Icons.remove_red_eye,
+                  size: 16, color: cs.onSurface.withOpacity(0.6)),
               const SizedBox(width: 6),
               Text(
                 "$viewCount views",
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade800,
+                  color: cs.onSurface.withOpacity(0.8),
                   fontWeight: FontWeight.w700,
                 ),
               ),
               const SizedBox(width: 12),
-              Icon(Icons.timer, size: 16, color: Colors.grey.shade700),
+              Icon(Icons.timer, size: 16, color: cs.onSurface.withOpacity(0.6)),
               const SizedBox(width: 6),
               Text(
                 _formatSeconds(time),
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade800,
+                  color: cs.onSurface.withOpacity(0.8),
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -518,7 +518,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey.shade600,
+              color: cs.onSurface.withOpacity(0.6),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -528,9 +528,9 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
   }
 
   Widget _clickerCard(Map item) {
-    final name =
-        (item["viewer_fname"] ?? item["viewer_user_name"] ?? "Unknown")
-            .toString();
+    final cs = Theme.of(context).colorScheme;
+    final name = (item["viewer_fname"] ?? item["viewer_user_name"] ?? "Unknown")
+        .toString();
 
     final platform = (item["platform"] ?? "-").toString();
     final clickCount = (item["click_count"] ?? 0).toString();
@@ -540,9 +540,9 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
       padding: const EdgeInsets.all(14),
       margin: const EdgeInsets.only(right: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cs.surfaceContainerHighest.withOpacity(0.3),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -551,11 +551,11 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
             children: [
               CircleAvatar(
                 radius: 18,
-                backgroundColor: Colors.grey.shade100,
+                backgroundColor: cs.primaryContainer,
                 child: Icon(
                   _platformIcon(platform),
                   size: 16,
-                  color: Colors.black87,
+                  color: cs.onPrimaryContainer,
                 ),
               ),
               const SizedBox(width: 10),
@@ -579,7 +579,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                 platform.toUpperCase(),
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey.shade800,
+                  color: cs.onSurface.withOpacity(0.8),
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -600,7 +600,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey.shade600,
+              color: cs.onSurface.withOpacity(0.6),
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -612,25 +612,26 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
   // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     final avgRating = (_ratingData?["average_rating"] ?? 0).toString();
     final totalReviews = (_ratingData?["total_reviews"] ?? 0).toString();
 
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: cs.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: cs.surface,
         elevation: 0.6,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
-        title: const Text(
+        title: Text(
           "Analytics",
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
-            color: Colors.black,
+            color: cs.onSurface,
           ),
         ),
         actions: [
@@ -721,10 +722,12 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                                   padding: const EdgeInsets.all(14),
                                   margin: const EdgeInsets.only(right: 12),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: cs.surfaceContainerHighest
+                                        .withOpacity(0.3),
                                     borderRadius: BorderRadius.circular(16),
-                                    border:
-                                        Border.all(color: Colors.grey.shade200),
+                                    border: Border.all(
+                                        color:
+                                            cs.outlineVariant.withOpacity(0.5)),
                                   ),
                                   child: Column(
                                     crossAxisAlignment:
@@ -735,7 +738,8 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                                           Icon(
                                             _platformIcon(platform),
                                             size: 18,
-                                            color: Colors.black87,
+                                            color:
+                                                cs.onSurface.withOpacity(0.8),
                                           ),
                                           const SizedBox(width: 8),
                                           Expanded(
@@ -764,7 +768,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                                         "$unique unique users",
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey.shade700,
+                                          color: cs.onSurface.withOpacity(0.7),
                                           fontWeight: FontWeight.w600,
                                         ),
                                       ),
@@ -806,7 +810,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                                         "Scroll for more →",
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey.shade700,
+                                          color: cs.onSurface.withOpacity(0.6),
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),
@@ -850,7 +854,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                                         "Scroll for more →",
                                         style: TextStyle(
                                           fontSize: 12,
-                                          color: Colors.grey.shade700,
+                                          color: cs.onSurface.withOpacity(0.6),
                                           fontWeight: FontWeight.w700,
                                         ),
                                       ),

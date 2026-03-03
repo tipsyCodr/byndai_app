@@ -16,9 +16,6 @@ import '../../features/qr_generator/qr_generator_page.dart';
 import 'package:gridcard/widgets/post_card.dart' as old_post_card;
 import '../../features/business_feed/home_post_card.dart';
 
-// NEW PostCard (API Map model)
-import '../business_feed/post_card.dart';
-
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;

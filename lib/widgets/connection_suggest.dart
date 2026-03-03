@@ -231,8 +231,16 @@ class _ConnectionSuggestState extends State<ConnectionSuggest> {
               Positioned.fill(
                 child: profilePic == null
                     ? Container(
-                        color: Colors.grey.shade300,
-                        child: const Icon(Icons.account_circle, size: 80),
+                        color: isDark
+                            ? Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                            : Colors.grey.shade300,
+                        child: Icon(
+                          Icons.account_circle,
+                          size: 80,
+                          color: isDark ? Colors.grey.shade600 : null,
+                        ),
                       )
                     : Image.network(
                         profilePic,

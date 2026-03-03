@@ -298,6 +298,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final FocusNode _emailFocusNode = FocusNode(); // ✅ NEW
 
   bool _passwordVisible = false;
+  bool _confirmPasswordVisible = false;
 
   // Username state
   bool _isCheckingUsername = false;
@@ -556,9 +557,18 @@ class _RegisterPageState extends State<RegisterPage> {
               // Confirm Password
               TextFormField(
                 controller: _confirmController,
-                obscureText: true,
+                obscureText: !_confirmPasswordVisible,
                 decoration:
-                    _inputDecoration("Confirm Password", Icons.lock_outline),
+                    _inputDecoration("Confirm Password", Icons.lock_outline)
+                        .copyWith(
+                  suffixIcon: IconButton(
+                    icon: Icon(_confirmPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off),
+                    onPressed: () => setState(() =>
+                        _confirmPasswordVisible = !_confirmPasswordVisible),
+                  ),
+                ),
                 validator: (v) =>
                     v == _passwordController.text ? null : "Passwords mismatch",
               ),

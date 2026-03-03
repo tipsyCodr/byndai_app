@@ -76,25 +76,26 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
     if (user == null) {
       return Scaffold(
         appBar: AppBar(
-          backgroundColor: Colors.white,
+          backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 1,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                color: Colors.black),
+            icon: Icon(Icons.arrow_back_ios_new_rounded,
+                color: Theme.of(context).colorScheme.onSurface),
             onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
+          title: Text(
             'Friend Request',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
-              color: Colors.black,
+              color: Theme.of(context).colorScheme.onSurface,
             ),
           ),
           centerTitle: true,
           actions: [
             IconButton(
-              icon: const Icon(Icons.close_rounded, color: Colors.black),
+              icon: Icon(Icons.close_rounded,
+                  color: Theme.of(context).colorScheme.onSurface),
               onPressed: () => Navigator.pop(context),
             ),
           ],
@@ -145,27 +146,28 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
     final userEmail = user.email ?? '';
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 1,
         leading: IconButton(
-          icon:
-              const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.black),
+          icon: Icon(Icons.arrow_back_ios_new_rounded,
+              color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Friend Request',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w600,
-            color: Colors.black,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.close_rounded, color: Colors.black),
+            icon: Icon(Icons.close_rounded,
+                color: Theme.of(context).colorScheme.onSurface),
             onPressed: () => Navigator.pop(context),
           ),
         ],
@@ -192,9 +194,14 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                         padding: const EdgeInsets.all(16),
                         margin: const EdgeInsets.only(bottom: 32),
                         decoration: BoxDecoration(
-                          color: Colors.grey[50],
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withOpacity(0.5),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey[200]!),
+                          border: Border.all(
+                              color:
+                                  Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: Row(
                           children: [
@@ -219,15 +226,14 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                             fit: BoxFit.cover,
                                           ),
                               ),
-                              child:
-                                  user.masterUser?.toJson()['profile_pic'] ==
-                                          null
-                                      ? const Icon(
-                                          Icons.person,
-                                          color: Colors.blue,
-                                          size: 30,
-                                        )
-                                      : null,
+                              child: user.masterUser?.toJson()['profile_pic'] ==
+                                      null
+                                  ? const Icon(
+                                      Icons.person,
+                                      color: Colors.blue,
+                                      size: 30,
+                                    )
+                                  : null,
                             ),
                             const SizedBox(width: 16),
                             Expanded(
@@ -242,8 +248,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                     ),
                                   ),
                                   const SizedBox(height: 4),
-                                  if (user.masterUser?.toJson()['desg'] !=
-                                      null)
+                                  if (user.masterUser?.toJson()['desg'] != null)
                                     Text(
                                       user.masterUser!.toJson()['desg']!,
                                       style: TextStyle(
@@ -280,7 +285,10 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.grey[100],
+                          color: Theme.of(context)
+                              .colorScheme
+                              .surfaceContainerHighest
+                              .withOpacity(0.5),
                           borderRadius: BorderRadius.circular(30),
                         ),
                         child: Row(
@@ -310,7 +318,9 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                         fontWeight: FontWeight.w600,
                                         color: _selectedTab == 0
                                             ? Colors.white
-                                            : Colors.grey[600],
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
                                       ),
                                     ),
                                   ),
@@ -343,7 +353,9 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                         fontWeight: FontWeight.w600,
                                         color: _selectedTab == 1
                                             ? Colors.white
-                                            : Colors.grey[600],
+                                            : Theme.of(context)
+                                                .colorScheme
+                                                .onSurfaceVariant,
                                       ),
                                     ),
                                   ),
@@ -358,27 +370,29 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                       Container(
                         padding: const EdgeInsets.all(24),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: Theme.of(context).colorScheme.surface,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
+                              color: Colors.black.withOpacity(0.05),
                               blurRadius: 20,
                               spreadRadius: 2,
                               offset: const Offset(0, 10),
                             ),
                           ],
-                          border: Border.all(color: Colors.grey[200]!),
+                          border: Border.all(
+                              color:
+                                  Theme.of(context).colorScheme.outlineVariant),
                         ),
                         child: Column(
                           children: [
                             // QR Code Title
                             Text(
                               _getTitle(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
-                                color: Colors.black87,
+                                color: Theme.of(context).colorScheme.onSurface,
                               ),
                             ),
                             const SizedBox(height: 16),
@@ -480,9 +494,11 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                 isPortrait ? 24 : 32,
               ),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.surface,
                 border: Border(
-                  top: BorderSide(color: Colors.grey[200]!, width: 1),
+                  top: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      width: 1),
                 ),
               ),
               child: Row(
@@ -528,13 +544,19 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                         _shareQrCode(context, qrData, userName);
                       },
                       style: OutlinedButton.styleFrom(
-                        backgroundColor: Colors.grey[50],
-                        foregroundColor: Colors.black87,
+                        backgroundColor: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withOpacity(0.5),
+                        foregroundColor:
+                            Theme.of(context).colorScheme.onSurface,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        side: BorderSide(color: Colors.grey[300]!),
+                        side: BorderSide(
+                            color:
+                                Theme.of(context).colorScheme.outlineVariant),
                       ),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,

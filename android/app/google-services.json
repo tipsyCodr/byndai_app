@@ -1,0 +1,62 @@
+{
+  "project_info": {
+    "project_number": "649165501928",
+    "project_id": "byndai",
+    "storage_bucket": "byndai.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:649165501928:android:028403c39e9dc72977205d",
+        "android_client_info": {
+          "package_name": "com.pathidea.byndai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "649165501928-7eciph4jcr691lu6b9oj0jtb0jbqlo1b.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pathidea.byndai",
+            "certificate_hash": "a8063c99a023b9613c6265d2fc14d18cb72f321b"
+          }
+        },
+        {
+          "client_id": "649165501928-mf1bknc75dot2o799hlgn4eav73q13s6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pathidea.byndai",
+            "certificate_hash": "a396bc27208ecf47240fc0a2d01ff624d49de5df"
+          }
+        },
+        {
+          "client_id": "649165501928-3n4dm4ceh2ttbplq14i9jmne0s4upema.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDK3X7yxXt4_5vCo51ZG1k4ipjbIxPzwK8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "649165501928-3n4dm4ceh2ttbplq14i9jmne0s4upema.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "649165501928-hglghteaf3b455kche3q5d1on07sqo7g.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.pathidea.byndai"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

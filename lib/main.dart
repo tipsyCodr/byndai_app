@@ -12,9 +12,32 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/routes/app_routes.dart';
 import 'package:gridcard/routes/route_names.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'dart:async';
+import 'dart:ui';
+import 'firebase_options.dart';
+
+late final FirebaseAnalytics analytics;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Initialize Analytics
+  analytics = FirebaseAnalytics.instance;
+
+  // Initialize Crashlytics
+  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+  PlatformDispatcher.instance.onError = (error, stack) {
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    return true;
+  };
 
   // Load session BEFORE running app to determine initial route
   debugPrint('[MAIN] Checking for existing session...');
@@ -89,6 +112,9 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xFF0F111F),
       ),
       initialRoute: initialRoute,
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: analytics),
+      ],
       routes: AppRoutes.routes,
       title: AppConfig.appName,
     );

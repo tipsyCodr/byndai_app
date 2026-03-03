@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/models/login_response.dart';
 import 'package:gridcard/models/user_model.dart';
@@ -7,6 +8,9 @@ import 'package:http/http.dart' as http;
 
 class AuthService {
   static const String _baseUrl = AppConfig.apiBaseUrl;
+
+  /// Stores the last error message from the backend for callers to read
+  static String? lastError;
 
   /// Check if email already exists or not
   static Future<bool?> checkEmailAvailability(String email) async {
@@ -74,7 +78,22 @@ class AuthService {
       }
 
       // If we reach here, it's an API-level error.
-      debugPrint('⚠️ API Error: ${responseBody['message'] ?? 'Unknown error'}');
+      final errorMsg = responseBody['message']?.toString() ?? 'Unknown error';
+      debugPrint('⚠️ API Error: $errorMsg');
+
+      // Map known errors to friendly messages
+      if (errorMsg.contains('Duplicate entry') && errorMsg.contains('mobile')) {
+        lastError = 'Mobile number already registered';
+      } else if (errorMsg.contains('Duplicate entry') &&
+          errorMsg.contains('email')) {
+        lastError = 'Email already registered';
+      } else if (errorMsg.contains('Duplicate entry')) {
+        lastError = 'Account already exists';
+      } else {
+        lastError = errorMsg;
+      }
+
+      Fluttertoast.showToast(msg: lastError!);
       return null;
     } catch (e) {
       debugPrint('🚨 Exception on POST $url: $e');
@@ -188,6 +207,42 @@ class AuthService {
     if (json['user'] != null) {
       return LoginResponse(
         token: token,
+        user: UserModel.fromJson(json['user']),
+      );
+    }
+
+    return null;
+  }
+
+  /// Google sign-in: sends ID token + profile to backend
+  static Future<Map<String, dynamic>?> googleLogin({
+    required String idToken,
+    required String email,
+    required String name,
+  }) async {
+    return await _post('google-login', {
+      'id_token': idToken,
+      'email': email,
+      'name': name,
+    });
+  }
+
+  /// Register a Google user (uses google_id_token instead of OTP token)
+  static Future<LoginResponse?> registerGoogleUser(
+      Map<String, dynamic> data) async {
+    final json = await _post('google-register', data);
+    if (json == null) return null;
+
+    if (json['user'] != null && json['token'] != null) {
+      return LoginResponse(
+        token: json['token'],
+        user: UserModel.fromJson(json['user']),
+      );
+    }
+
+    if (json['user'] != null) {
+      return LoginResponse(
+        token: data['id_token'] ?? '',
         user: UserModel.fromJson(json['user']),
       );
     }

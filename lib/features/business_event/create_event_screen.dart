@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:io';
+// import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -821,9 +821,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   ),
                 );
               }).toList(),
-
-              
-
               onChanged: (value) {
                 if (value == null) return;
 
@@ -869,7 +866,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
               ),
-              
               items: _filteredDistricts.map((district) {
                 return DropdownMenuItem(
                   value: district['id'].toString(),
@@ -879,8 +875,6 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
                   ),
                 );
               }).toList(),
-
-            
               onChanged: (_selectedState == null)
                   ? null
                   : (value) {

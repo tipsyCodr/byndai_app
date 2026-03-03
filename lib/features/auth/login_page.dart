@@ -1,9 +1,48 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:gridcard/routes/route_names.dart';
+import 'package:provider/provider.dart';
 
 class LoginPage extends StatelessWidget {
   const LoginPage({super.key});
+
+  void _handleGoogleSignIn(BuildContext context) async {
+    // Show loader
+    showDialog(
+      barrierDismissible: false,
+      context: context,
+      builder: (_) => const Center(
+        child: SpinKitPulsingGrid(
+          color: Color.fromARGB(255, 92, 165, 225),
+          size: 60.0,
+        ),
+      ),
+    );
+
+    final auth = context.read<AuthProvider>();
+    final result = await auth.signInWithGoogle();
+
+    // Dismiss loader
+    if (context.mounted) Navigator.pop(context);
+
+    switch (result) {
+      case GoogleSignInResult.loggedIn:
+        if (context.mounted) {
+          Navigator.pushReplacementNamed(context, RouteNames.home);
+        }
+        break;
+      case GoogleSignInResult.needsRegistration:
+        if (context.mounted) {
+          Navigator.pushNamed(context, RouteNames.googleRegister);
+        }
+        break;
+      case GoogleSignInResult.failed:
+        // Toast is already shown by the provider
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +103,8 @@ class LoginPage extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
+
+                // Login with Mobile Button
                 SizedBox(
                   width: double.infinity,
                   height: 60,
@@ -87,6 +128,50 @@ class LoginPage extends StatelessWidget {
                     ),
                   ),
                 ),
+
+                const SizedBox(height: 14),
+
+                // OR divider
+                Row(
+                  children: [
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12),
+                      child: Text("OR",
+                          style:
+                              TextStyle(color: Colors.black54, fontSize: 13)),
+                    ),
+                    Expanded(child: Divider(color: Colors.grey.shade300)),
+                  ],
+                ),
+
+                const SizedBox(height: 14),
+
+                // Google Sign-In Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 60,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _handleGoogleSignIn(context),
+                    icon: const Icon(Icons.g_mobiledata,
+                        size: 28, color: Color(0xFF21254A)),
+                    label: const Text(
+                      "Sign in with Google",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF21254A),
+                      ),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFDDDDDD)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                  ),
+                ),
+
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

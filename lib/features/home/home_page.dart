@@ -27,6 +27,14 @@ class _HomePageState extends State<HomePage> {
   Future<void> _onPop(bool didPop, Object? result) async {
     if (didPop) return;
 
+    // If not on the Home tab, navigate back to Home first
+    if (_selectedIndex != 0) {
+      setState(() => _selectedIndex = 0);
+      _lastBackPressed = null; // Reset so double-press starts fresh on Home
+      return;
+    }
+
+    // On Home tab: double-press to exit
     final now = DateTime.now();
     if (_lastBackPressed == null ||
         now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
@@ -37,7 +45,6 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    // ✅ Fixed: Use SystemNavigator.pop() to actually exit the app
     SystemNavigator.pop();
   }
 
@@ -198,8 +205,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  
 
   Widget _buildDockItem(int index, IconData icon) {
     final isSelected = _selectedIndex == index;

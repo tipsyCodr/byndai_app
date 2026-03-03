@@ -8,6 +8,7 @@ import '../features/auth/splash_screen.dart';
 import '../features/auth/phone_verification_page.dart';
 import './route_names.dart';
 import '../features/qr_scan/profile_qr_code.dart';
+import '../features/auth/google_register_page.dart';
 
 class AppRoutes {
   static Map<String, WidgetBuilder> get routes => {
@@ -19,5 +20,6 @@ class AppRoutes {
         RouteNames.onboarding: (context) => OnboardingPage(),
         RouteNames.phone: (context) => PhoneVerificationPage(),
         RouteNames.profile_qr: (context) => ProfileQRCodePage(),
+        RouteNames.googleRegister: (context) => GoogleRegisterPage(),
       };
 }

@@ -451,8 +451,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _openLink(String url, {required String platform}) async {
     try {
-      final fixed = url.trim();
+      String fixed = url.trim();
       if (fixed.isEmpty) return;
+
+      // Ensure URL starts with http:// or https://
+      if (!fixed.startsWith('http://') && !fixed.startsWith('https://')) {
+        fixed = 'https://$fixed';
+      }
 
       // ✅ track click first
       await _trackProfileLinkClick(platform);

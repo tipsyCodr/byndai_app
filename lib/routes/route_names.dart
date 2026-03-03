@@ -9,4 +9,5 @@ class RouteNames {
   static const String onboarding = '/onboarding';
   static const String phone = '/phone';
   static const String profile_qr = '/profile_qr';
+  static const String googleRegister = '/google-register';
 }

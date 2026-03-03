@@ -1,12 +1,16 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import '../../models/login_response.dart';
 
 import '../../models/user_model.dart';
 import 'auth_service.dart';
+
+enum GoogleSignInResult { loggedIn, needsRegistration, failed }
 
 class AuthProvider extends ChangeNotifier {
   UserModel? _user;
@@ -22,6 +26,7 @@ class AuthProvider extends ChangeNotifier {
   String? _pendingProcess;
   String? _pendingRegisterToken;
   Map<String, dynamic>? _pendingRegisterUser;
+  Map<String, String>? _googleSignInData;
 
   // Getters
   UserModel? get user => _user;
@@ -33,6 +38,7 @@ class AuthProvider extends ChangeNotifier {
   String? get pendingRegisterToken => _pendingRegisterToken;
   String? get pendingRegisterMobile => _pendingRegisterUser?['user_mobile'];
   Map<String, dynamic>? get pendingRegisterUser => _pendingRegisterUser;
+  Map<String, String>? get googleSignInData => _googleSignInData;
 
   /// Restores authentication state from a pre-loaded session.
   /// Called from main() to avoid async issues in widgets.
@@ -389,5 +395,116 @@ class AuthProvider extends ChangeNotifier {
           return false;
         }) ??
         false;
+  }
+
+  // ================= GOOGLE SIGN-IN =================
+
+  /// Full Google Sign-In flow:
+  /// 1. Google Sign-In popup
+  /// 2. Get Firebase ID token
+  /// 3. Send to backend
+  /// 4. Auto-login or redirect to registration
+  Future<GoogleSignInResult> signInWithGoogle() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      // 1. Initialize & authenticate with Google Sign-In v7
+      final googleSignIn = GoogleSignIn.instance;
+      await googleSignIn.initialize();
+
+      GoogleSignInAccount? googleUser;
+      try {
+        googleUser = await googleSignIn.authenticate();
+      } on GoogleSignInException catch (e) {
+        debugPrint('Google Sign-In cancelled or failed: ${e.code}');
+        _isLoading = false;
+        notifyListeners();
+        return GoogleSignInResult.failed;
+      }
+
+      // 2. Get the ID token from Google Sign-In authentication
+      final googleIdToken = googleUser.authentication.idToken;
+
+      // 3. Sign in to Firebase using the Google credential
+      final credential = firebase_auth.GoogleAuthProvider.credential(
+        idToken: googleIdToken,
+      );
+      final firebaseUser = await firebase_auth.FirebaseAuth.instance
+          .signInWithCredential(credential);
+      final firebaseIdToken = await firebaseUser.user?.getIdToken();
+
+      if (firebaseIdToken == null) {
+        Fluttertoast.showToast(msg: 'Failed to get authentication token');
+        _isLoading = false;
+        notifyListeners();
+        return GoogleSignInResult.failed;
+      }
+
+      // 4. Call backend
+      final response = await AuthService.googleLogin(
+        idToken: firebaseIdToken,
+        email: googleUser.email,
+        name: googleUser.displayName ?? '',
+      );
+
+      if (response == null) {
+        Fluttertoast.showToast(msg: 'Google sign-in failed');
+        _isLoading = false;
+        notifyListeners();
+        return GoogleSignInResult.failed;
+      }
+
+      // 5. Check if auto-login or registration needed
+      if (response['token'] != null && response['user'] != null) {
+        // Auto-login: user exists with mobile
+        final loginResponse = LoginResponse(
+          token: response['token'],
+          user: UserModel.fromJson(response['user']),
+        );
+        await _processSuccessfulLogin(
+            loginResponse, 'Google login successful!');
+        _isLoading = false;
+        notifyListeners();
+        return GoogleSignInResult.loggedIn;
+      }
+
+      // Registration needed: store Google data for prefilling
+      _googleSignInData = {
+        'id_token': firebaseIdToken,
+        'email': googleUser.email,
+        'name': googleUser.displayName ?? '',
+        'photo_url': googleUser.photoUrl ?? '',
+      };
+      _isLoading = false;
+      notifyListeners();
+      return GoogleSignInResult.needsRegistration;
+    } catch (e) {
+      debugPrint('Google Sign-In error: $e');
+      Fluttertoast.showToast(msg: 'Google sign-in failed: ${e.toString()}');
+      _isLoading = false;
+      notifyListeners();
+      return GoogleSignInResult.failed;
+    }
+  }
+
+  /// Register a Google user after mobile verification
+  Future<bool> registerGoogleUser(Map<String, dynamic> data) async {
+    return await _handleLoading(() async {
+          final response = await AuthService.registerGoogleUser(data);
+          if (response != null) {
+            await _processSuccessfulLogin(response, 'Registration successful!');
+            _googleSignInData = null; // Clear Google data
+            return true;
+          }
+          return false;
+        }) ??
+        false;
+  }
+
+  /// Clear Google sign-in data (e.g., if user cancels registration)
+  void clearGoogleSignInData() {
+    _googleSignInData = null;
+    notifyListeners();
   }
 }

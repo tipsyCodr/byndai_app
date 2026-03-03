@@ -4,6 +4,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:gridcard/routes/route_names.dart';
 import 'package:gridcard/widgets/secure_input_dialog.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 import 'package:provider/provider.dart';
 
 class PhoneVerificationPage extends StatefulWidget {
@@ -23,54 +24,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     bool isError = false,
   }) {
     if (!mounted) return;
-
-    final overlay = Overlay.of(context);
-
-    Color bgColor;
-
-    if (isSuccess) {
-      bgColor = Colors.green.shade600;
-    } else if (isError) {
-      bgColor = Colors.red.shade600;
-    } else {
-      bgColor = Colors.orange.shade600; // 🟠 default = info
-    }
-
-    final overlayEntry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: 8,
-        right: 4,
-        child: Material(
-          color: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: bgColor,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 8,
-                ),
-              ],
-            ),
-            child: Text(
-              message,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-
-    overlay.insert(overlayEntry);
-
-    Future.delayed(const Duration(seconds: 2), () {
-      overlayEntry.remove();
-    });
+    TopAlert.show(context, message, isSuccess: isSuccess, isError: isError);
   }
 
   @override
@@ -371,6 +325,32 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     );
   }
 
+  void _handleGoogleSignIn() async {
+    _showLoaderDialog();
+
+    final auth = context.read<AuthProvider>();
+    final result = await auth.signInWithGoogle();
+
+    if (!mounted) return;
+    Navigator.pop(context); // Dismiss loader
+
+    switch (result) {
+      case GoogleSignInResult.loggedIn:
+        if (mounted) {
+          Navigator.pushReplacementNamed(context, RouteNames.home);
+        }
+        break;
+      case GoogleSignInResult.needsRegistration:
+        if (mounted) {
+          Navigator.pushNamed(context, RouteNames.googleRegister);
+        }
+        break;
+      case GoogleSignInResult.failed:
+        // Toast is already shown by the provider
+        break;
+    }
+  }
+
   Widget _buildLoginForm(ColorScheme colors) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -441,6 +421,47 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
             ),
             child: Text("Next",
                 style: TextStyle(fontSize: 18, color: colors.onPrimary)),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // OR divider
+        Row(
+          children: [
+            Expanded(child: Divider(color: colors.onSurface.withOpacity(0.2))),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text("OR",
+                  style: TextStyle(
+                      color: colors.onSurface.withOpacity(0.5), fontSize: 13)),
+            ),
+            Expanded(child: Divider(color: colors.onSurface.withOpacity(0.2))),
+          ],
+        ),
+
+        const SizedBox(height: 16),
+
+        // Google Sign-In Button
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: _handleGoogleSignIn,
+            icon: Icon(Icons.g_mobiledata, size: 28, color: colors.primary),
+            label: Text(
+              "Sign in with Google",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: colors.onSurface,
+              ),
+            ),
+            style: OutlinedButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              side: BorderSide(color: colors.onSurface.withOpacity(0.2)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+            ),
           ),
         ),
       ],

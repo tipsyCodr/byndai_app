@@ -168,6 +168,7 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
 
   // ================= CARD =================
   Widget _userCard(Map<String, dynamic> user) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final profilePic = _fullStorageUrl(user["profile_pic"]);
     final fname = user["fname"] ?? "";
     final friendCount = user["friend_count"] ?? 0;
@@ -200,10 +201,25 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                   fit: BoxFit.cover,
                 )
               : null,
-          color: profilePic == null ? Colors.grey.shade300 : null,
+          color: profilePic == null
+              ? (isDark
+                  ? Theme.of(context).colorScheme.surfaceContainerHighest
+                  : Colors.grey.shade300)
+              : null,
         ),
         child: Stack(
           children: [
+            // Icon behind image if no image
+            if (profilePic == null)
+              Positioned.fill(
+                child: Center(
+                  child: Icon(
+                    Icons.account_circle,
+                    size: 80,
+                    color: isDark ? Colors.grey.shade600 : Colors.grey.shade400,
+                  ),
+                ),
+              ),
             // Gradient
 
             Positioned(

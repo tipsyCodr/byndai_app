@@ -370,7 +370,7 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
-      backgroundColor: const Color(0xffF5F7FA),
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Column(
         children: [
           // ========== COVER SECTION (60% height) ==========
@@ -486,7 +486,7 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
                 child: ElevatedButton(
                   onPressed: _isLoading ? null : _handleConnect,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xff1E1B4B),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(18),
                     ),

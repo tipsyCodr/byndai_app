@@ -142,7 +142,7 @@ class _QrGeneratorPageState extends State<QrGeneratorPage> {
         _handleBack();
       },
       child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7F9),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         appBar: AppBar(
           title: Text(_showPreview ? "Preview" : "Generate QR Code"),
           centerTitle: true,
@@ -162,9 +162,15 @@ class _QrGeneratorPageState extends State<QrGeneratorPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
+                        Text(
                           "Create your branded QR code",
-                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Theme.of(context)
+                                .colorScheme
+                                .onSurface
+                                .withOpacity(0.6),
+                          ),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 30),
@@ -174,7 +180,10 @@ class _QrGeneratorPageState extends State<QrGeneratorPage> {
                             labelText: "Card Title",
                             prefixIcon: const Icon(Icons.title),
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withOpacity(0.3),
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12)),
                           ),
@@ -185,11 +194,15 @@ class _QrGeneratorPageState extends State<QrGeneratorPage> {
                         const SizedBox(height: 20),
                         TextFormField(
                           controller: _linkController,
+                          keyboardType: TextInputType.url,
                           decoration: InputDecoration(
                             labelText: "URL / Link",
                             prefixIcon: const Icon(Icons.link),
                             filled: true,
-                            fillColor: Colors.white,
+                            fillColor: Theme.of(context)
+                                .colorScheme
+                                .surfaceContainerHighest
+                                .withOpacity(0.3),
                             border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(12)),
                           ),
