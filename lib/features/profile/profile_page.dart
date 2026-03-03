@@ -1486,8 +1486,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                                 color: colorScheme
                                                     .onSurfaceVariant),
                                             filled: true,
-                                            fillColor: colorScheme
-                                                .surfaceContainerHighest,
+                                            fillColor:
+                                                colorScheme.surfaceContainer,
                                             border: OutlineInputBorder(
                                               borderRadius:
                                                   BorderRadius.circular(12),
