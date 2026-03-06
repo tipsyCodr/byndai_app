@@ -1,5 +1,3 @@
-
-
 import 'dart:convert';
 import 'dart:io';
 
@@ -323,14 +321,44 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              _inputField(label: "Legal Name", controller: legalNameCtrl),              
+              _inputField(label: "Legal Name", controller: legalNameCtrl),
+
+              // Padding(
+              //   padding: const EdgeInsets.only(bottom: 14),
+              //   child: DropdownButtonFormField<int>(
+              //     initialValue: industries.any((e) => e["id"] == selectedIndustryId)
+              //         ? selectedIndustryId
+              //         : null,
+              //     decoration: InputDecoration(
+              //       labelText: "Industry",
+              //       border: OutlineInputBorder(
+              //         borderRadius: BorderRadius.circular(12),
+              //       ),
+              //     ),
+              //     items: industries.map((industry) {
+              //       return DropdownMenuItem<int>(
+              //         value: industry["id"],
+              //         child: Text(industry["title"].toString()),
+              //       );
+              //     }).toList(),
+              //     onChanged: isIndustriesLoading
+              //         ? null
+              //         : (val) {
+              //             setState(() {
+              //               selectedIndustryId = val;
+              //             });
+              //           },
+              //   ),
+              // ),
 
               Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: DropdownButtonFormField<int>(
-                  initialValue: industries.any((e) => e["id"] == selectedIndustryId)
-                      ? selectedIndustryId
-                      : null,
+                  isExpanded: true, // ← Add this line
+                  initialValue:
+                      industries.any((e) => e["id"] == selectedIndustryId)
+                          ? selectedIndustryId
+                          : null,
                   decoration: InputDecoration(
                     labelText: "Industry",
                     border: OutlineInputBorder(
@@ -346,9 +374,7 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
                   onChanged: isIndustriesLoading
                       ? null
                       : (val) {
-                          setState(() {
-                            selectedIndustryId = val;
-                          });
+                          setState(() => selectedIndustryId = val);
                         },
                 ),
               ),

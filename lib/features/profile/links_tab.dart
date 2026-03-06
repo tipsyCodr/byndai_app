@@ -1,6 +1,3 @@
-
-
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
@@ -254,7 +251,7 @@ class _LinksTabState extends State<LinksTab> {
     Map<String, dynamic>? linkItem,
   }) {
     String? selectedPlatform = isEdit ? (linkItem?["name"]?.toString()) : null;
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final TextEditingController linkController = TextEditingController(
       text: isEdit ? (linkItem?["link"]?.toString() ?? "") : "",
     );
@@ -262,6 +259,8 @@ class _LinksTabState extends State<LinksTab> {
     bool isLoading = false;
 
     Widget formUI(StateSetter setModalState) {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final colorScheme = Theme.of(context).colorScheme;
       return Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,12 +274,23 @@ class _LinksTabState extends State<LinksTab> {
           // Dropdown
           DropdownButtonFormField<String>(
             initialValue: selectedPlatform,
+            // decoration: InputDecoration(
+            //   labelText: "Select Platform",
+            //   border: OutlineInputBorder(
+            //     borderRadius: BorderRadius.circular(12),
+            //   ),
+            // ),
             decoration: InputDecoration(
               labelText: "Select Platform",
+              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+              filled: true,
+              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark ? BorderSide.none : const BorderSide(),
               ),
             ),
+            dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
             items: socialOptions.map((item) {
               return DropdownMenuItem<String>(
                 value: item["value"],
@@ -303,22 +313,103 @@ class _LinksTabState extends State<LinksTab> {
             controller: linkController,
             enabled: !isLoading,
             keyboardType: TextInputType.url,
+            // decoration: InputDecoration(
+            //   labelText: "Enter Link",
+            //   hintText: "https://",
+            //   border: OutlineInputBorder(
+            //     borderRadius: BorderRadius.circular(12),
+            //   ),
+            // ),
             decoration: InputDecoration(
               labelText: "Enter Link",
               hintText: "https://",
+              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+              filled: true,
+              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(8),
+                borderSide: isDark ? BorderSide.none : const BorderSide(),
               ),
+            ),
+            style: TextStyle(
+              color: isDark ? Colors.white : null,
             ),
           ),
 
           const SizedBox(height: 16),
 
           // Button
+          // SizedBox(
+          //   width: double.infinity,
+          //   height: 48,
+          //   child: ElevatedButton(
+          //     onPressed: isLoading
+          //         ? null
+          //         : () async {
+          //             if (selectedPlatform == null) {
+          //               ScaffoldMessenger.of(context).showSnackBar(
+          //                 const SnackBar(
+          //                     content: Text("Please select platform")),
+          //               );
+          //               return;
+          //             }
+
+          //             if (linkController.text.trim().isEmpty) {
+          //               ScaffoldMessenger.of(context).showSnackBar(
+          //                 const SnackBar(content: Text("Please enter link")),
+          //               );
+          //               return;
+          //             }
+
+          //             setModalState(() => isLoading = true);
+
+          //             bool ok = false;
+
+          //             if (isEdit) {
+          //               ok = await _updateMasterLink(
+          //                 id: int.parse(linkItem!["id"].toString()),
+          //                 name: selectedPlatform!,
+          //                 link: linkController.text.trim(),
+          //               );
+          //             } else {
+          //               ok = await _createMasterLink(
+          //                 name: selectedPlatform!,
+          //                 link: linkController.text.trim(),
+          //               );
+          //             }
+
+          //             setModalState(() => isLoading = false);
+
+          //             if (ok) {
+          //               Navigator.pop(context);
+          //             }
+          //           },
+          //     child: isLoading
+          //         ? const SizedBox(
+          //             height: 22,
+          //             width: 22,
+          //             child: CircularProgressIndicator(
+          //               strokeWidth: 2.5,
+          //               color: Colors.white,
+          //             ),
+          //           )
+          //         : Text(isEdit ? "Update" : "Save"),
+          //   ),
+          // ),
+
           SizedBox(
             width: double.infinity,
             height: 48,
             child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    isDark ? colorScheme.surfaceContainerHighest : null,
+                foregroundColor: colorScheme.onSurface,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               onPressed: isLoading
                   ? null
                   : () async {
@@ -371,16 +462,41 @@ class _LinksTabState extends State<LinksTab> {
                     )
                   : Text(isEdit ? "Update" : "Save"),
             ),
-          ),
+          )
         ],
       );
     }
+
+    // showDialog(
+    //   context: context,
+    //   barrierDismissible: !isLoading,
+    //   builder: (context) {
+    //     return AlertDialog(
+    //       backgroundColor: isDark ? const Color(0xFF1E1E1E) : null,
+    //       shape: RoundedRectangleBorder(
+    //         borderRadius: BorderRadius.circular(16),
+    //       ),
+    //       contentPadding: const EdgeInsets.all(16),
+    //       content: SizedBox(
+    //         width: 420,
+    //         child: StatefulBuilder(
+    //           builder: (context, setModalState) {
+    //             return formUI(setModalState);
+    //           },
+    //         ),
+    //       ),
+    //     );
+    //   },
+    // );
 
     showDialog(
       context: context,
       barrierDismissible: !isLoading,
       builder: (context) {
+        final colorScheme = Theme.of(context).colorScheme;
+
         return AlertDialog(
+          backgroundColor: colorScheme.surface,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -401,11 +517,12 @@ class _LinksTabState extends State<LinksTab> {
   // ================= DELETE CONFIRM =================
   void confirmDelete(Map<String, dynamic> linkItem) {
     final id = int.parse(linkItem["id"].toString());
-
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surface,
           title: const Text("Delete Link"),
           content: const Text("Are you sure you want to delete this link?"),
           actions: [
@@ -429,6 +546,8 @@ class _LinksTabState extends State<LinksTab> {
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     return Scaffold(
       body: isPageLoading
           ? const Center(child: CircularProgressIndicator())
@@ -449,12 +568,35 @@ class _LinksTabState extends State<LinksTab> {
                     final String link = item["link"]?.toString() ?? "";
 
                     return Card(
+                      // shape: RoundedRectangleBorder(
+                      //   borderRadius: BorderRadius.circular(14),
+                      // ),
+
+                      color:
+                          isDark ? colorScheme.surfaceContainerHighest : null,
+                      elevation: isDark ? 0 : 1,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
+                        side: isDark
+                            ? BorderSide(color: Colors.white.withOpacity(0.05))
+                            : BorderSide.none,
                       ),
                       child: ListTile(
-                        title: Text(getLabelFromValue(name)),
-                        subtitle: Text(link),
+                        // title: Text(getLabelFromValue(name)),
+                        // subtitle: Text(link),
+                        title: Text(
+                          getLabelFromValue(name),
+                          style: TextStyle(
+                            color: colorScheme.onSurface,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        subtitle: Text(
+                          link,
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                        ),
                         trailing: PopupMenuButton<String>(
                           onSelected: (val) {
                             if (val == "edit") {
@@ -493,7 +635,12 @@ class _LinksTabState extends State<LinksTab> {
                 ),
 
       // + Button
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: openAddLinkModal,
+      //   child: const Icon(Icons.add),
+      // ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: isDark ? const Color(0xFF2A2A2A) : null,
         onPressed: openAddLinkModal,
         child: const Icon(Icons.add),
       ),

@@ -1,5 +1,3 @@
-
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
@@ -56,10 +54,12 @@ class _KeywordsTabState extends State<KeywordsTab> {
         final List list = data["data"] ?? [];
 
         setState(() {
-          keywords = list.map((e) => {
-                "id": e["id"],
-                "keywords": e["keywords"],
-              }).toList();
+          keywords = list
+              .map((e) => {
+                    "id": e["id"],
+                    "keywords": e["keywords"],
+                  })
+              .toList();
         });
       } else {
         final msg = data["message"] ?? "Failed to fetch keywords";
@@ -190,6 +190,9 @@ class _KeywordsTabState extends State<KeywordsTab> {
 
     bool saving = false;
 
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     showDialog(
       context: context,
       barrierDismissible: !saving,
@@ -212,11 +215,59 @@ class _KeywordsTabState extends State<KeywordsTab> {
                 ),
               ),
               actions: [
-                TextButton(
+                OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                    side: BorderSide.none, // ✅ border remove
+                  ),
                   onPressed: saving ? null : () => Navigator.pop(context),
                   child: const Text("Cancel"),
                 ),
+                // ElevatedButton(
+                //   onPressed: saving
+                //       ? null
+                //       : () async {
+                //           final title = keywordController.text.trim();
+
+                //           if (title.isEmpty) {
+                //             ScaffoldMessenger.of(context).showSnackBar(
+                //               const SnackBar(
+                //                   content: Text("Please enter keyword")),
+                //             );
+                //             return;
+                //           }
+
+                //           setModalState(() => saving = true);
+
+                //           if (isEdit) {
+                //             // await updateKeyword(keyword["id"], title);
+                //             await updateKeyword(keyword!["id"], title);
+                //           } else {
+                //             await createKeyword(title);
+                //           }
+
+                //           setModalState(() => saving = false);
+
+                //           Navigator.pop(context);
+                //         },
+                //   child: saving
+                //       ? const SizedBox(
+                //           height: 20,
+                //           width: 20,
+                //           child: CircularProgressIndicator(
+                //             strokeWidth: 2.5,
+                //             color: Colors.white,
+                //           ),
+                //         )
+                //       : Text(isEdit ? "Update" : "Save"),
+                // ),
+
                 ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                  ),
                   onPressed: saving
                       ? null
                       : () async {
@@ -233,7 +284,6 @@ class _KeywordsTabState extends State<KeywordsTab> {
                           setModalState(() => saving = true);
 
                           if (isEdit) {
-                            // await updateKeyword(keyword["id"], title);
                             await updateKeyword(keyword!["id"], title);
                           } else {
                             await createKeyword(title);
@@ -252,7 +302,7 @@ class _KeywordsTabState extends State<KeywordsTab> {
                             color: Colors.white,
                           ),
                         )
-                      : Text(isEdit ? "Update" : "Save"),
+                      : Text(isEdit ? "Save" : "Save"),
                 ),
               ],
             );
@@ -299,6 +349,8 @@ class _KeywordsTabState extends State<KeywordsTab> {
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -316,6 +368,13 @@ class _KeywordsTabState extends State<KeywordsTab> {
                     final item = keywords[index];
 
                     return Card(
+                      // shape: RoundedRectangleBorder(
+                      //   borderRadius: BorderRadius.circular(14),
+                      // ),
+                      elevation: 0,
+                      color: isDark
+                          ? colorScheme.surfaceContainerHighest
+                          : colorScheme.surface,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
