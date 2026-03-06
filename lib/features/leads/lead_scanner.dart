@@ -30,6 +30,7 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).colorScheme.surface,
       appBar: AppBar(
         title: const Text('Leads Scanner'),
         backgroundColor: Colors.blue,
@@ -161,9 +162,14 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.grey[900]
+                          : Colors.grey.shade50,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade400),
+                      border: Border.all(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.grey[700]!
+                              : Colors.grey.shade300),
                     ),
                     child: SelectableText(_ocrText),
                   ),
@@ -188,9 +194,14 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade50,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.green[900]!.withOpacity(0.3)
+                          : Colors.green.shade50,
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green),
+                      border: Border.all(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.green[700]!
+                              : Colors.green),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,

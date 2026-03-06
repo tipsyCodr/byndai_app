@@ -22,6 +22,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:gridcard/core/services/social_provider.dart';
 import '../../features/analitics/user_analitics_page.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
@@ -58,9 +59,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
       final int? userId = await UserStorageService().getUserId();
       if (userId == null) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('User not logged in')),
-          );
+          TopAlert.show(context, 'User not logged in', isError: true);
         }
         return;
       }
@@ -87,24 +86,20 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('QR Code saved successfully!')),
-          );
+          TopAlert.show(context, 'QR Code saved successfully!',
+              isSuccess: true);
         }
       } else {
         debugPrint("QR upload failed: $responseBody");
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Upload failed: ${response.statusCode}')),
-          );
+          TopAlert.show(context, 'Upload failed: ${response.statusCode}',
+              isError: true);
         }
       }
     } catch (e) {
       debugPrint("QR upload error: $e");
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
+        TopAlert.show(context, 'Error: $e', isError: true);
       }
     }
   }
@@ -189,16 +184,8 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
         CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // OLD functionality
-      context.read<SocialProvider>().fetchPosts('All');
-
-      // NEW functionality
-      _fetchLatest5Posts();
-      // 🔥 ADD THIS
-      _fetchUserAnalytics();
       _fadeController.forward();
-      _fetchAverageRating();
-      _fetchProfileCompletion();
+      _handleRefresh();
     });
   }
 
@@ -890,6 +877,17 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     );
   }
 
+  Future<void> _handleRefresh() async {
+    if (!mounted) return;
+    context.read<SocialProvider>().fetchPosts('All');
+    await Future.wait([
+      _fetchLatest5Posts(),
+      _fetchUserAnalytics(),
+      _fetchAverageRating(),
+      _fetchProfileCompletion(),
+    ]);
+  }
+
   // ===========================
   // BUILD
   // ===========================
@@ -899,86 +897,91 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     final posts = socialProvider.posts;
 
     return FadeTransition(
-      opacity: _fadeAnimation,
-      child: CustomScrollView(
-        physics: const BouncingScrollPhysics(),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildPerformanceDashboard(),
-                  const SizedBox(height: 24),
-                  _buildMainActions(context),
-                  const SizedBox(height: 24),
-                  _buildGeneratedQrHeader(context),
+        opacity: _fadeAnimation,
+        child: RefreshIndicator(
+          onRefresh: _handleRefresh,
+          color: Theme.of(context).colorScheme.primary,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics()),
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildPerformanceDashboard(),
+                      const SizedBox(height: 24),
+                      _buildMainActions(context),
+                      const SizedBox(height: 24),
+                      _buildGeneratedQrHeader(context),
 
-                  const SizedBox(height: 32),
-                  Text(
-                    'Suggested Connections',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontSize: 18,
-                      letterSpacing: 0.5,
-                      fontWeight: FontWeight.bold,
+                      const SizedBox(height: 32),
+                      Text(
+                        'Suggested Connections',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.primary,
+                          fontSize: 18,
+                          letterSpacing: 0.5,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const ConnectionSuggest(),
+                      const SizedBox(height: 32),
+                      const ActionDock(),
+                      const SizedBox(height: 32),
+
+                      // NEW SECTION
+                      // NEW SECTION
+                      _buildNewBusinessHeader(context),
+                      const SizedBox(height: 16),
+                      _buildLatestBusinessCarousel(),
+
+                      // const SizedBox(height: 32),
+
+                      // _buildGeneratedQrHeader(context),
+
+                      // const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+              ),
+
+              // OLD provider post as it is
+              if (socialProvider.isLoading && posts.isEmpty)
+                const SliverToBoxAdapter(
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(32.0),
+                      child:
+                          CircularProgressIndicator(color: Color(0xFF21254A)),
                     ),
                   ),
-                  const SizedBox(height: 16),
-                  const ConnectionSuggest(),
-                  const SizedBox(height: 32),
-                  const ActionDock(),
-                  const SizedBox(height: 32),
+                )
+              else if (posts.isNotEmpty)
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  sliver: SliverToBoxAdapter(
+                    child: old_post_card.PostCard(
+                      userName: posts[0].user.fullName,
+                      userRole: posts[0].user.designation,
+                      location: posts[0].industry ?? "Business",
+                      avatarUrl: posts[0].user.imageUrl,
+                      postImageUrl: posts[0].imageUrl ?? '',
+                      description: posts[0].content,
+                      likesCount: posts[0].likesCount,
+                      commentsCount: posts[0].commentsCount,
+                      onLike: () => socialProvider.toggleLike(posts[0].id),
+                      onSave: () => socialProvider.toggleSave(posts[0].id),
+                    ),
+                  ),
+                ),
 
-                  // NEW SECTION
-                  // NEW SECTION
-                  _buildNewBusinessHeader(context),
-                  const SizedBox(height: 16),
-                  _buildLatestBusinessCarousel(),
-
-                  // const SizedBox(height: 32),
-
-                  // _buildGeneratedQrHeader(context),
-
-                  // const SizedBox(height: 16),
-                ],
-              ),
-            ),
+              const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
+            ],
           ),
-
-          // OLD provider post as it is
-          if (socialProvider.isLoading && posts.isEmpty)
-            const SliverToBoxAdapter(
-              child: Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: CircularProgressIndicator(color: Color(0xFF21254A)),
-                ),
-              ),
-            )
-          else if (posts.isNotEmpty)
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: SliverToBoxAdapter(
-                child: old_post_card.PostCard(
-                  userName: posts[0].user.fullName,
-                  userRole: posts[0].user.designation,
-                  location: posts[0].industry ?? "Business",
-                  avatarUrl: posts[0].user.imageUrl,
-                  postImageUrl: posts[0].imageUrl ?? '',
-                  description: posts[0].content,
-                  likesCount: posts[0].likesCount,
-                  commentsCount: posts[0].commentsCount,
-                  onLike: () => socialProvider.toggleLike(posts[0].id),
-                  onSave: () => socialProvider.toggleSave(posts[0].id),
-                ),
-              ),
-            ),
-
-          const SliverPadding(padding: EdgeInsets.only(bottom: 120)),
-        ],
-      ),
-    );
+        ));
   }
 }

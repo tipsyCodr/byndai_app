@@ -6,6 +6,7 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:http/http.dart' as http;
+import 'package:gridcard/widgets/top_alert.dart';
 import './chat_screen.dart';
 
 class ConnectionsPage extends StatefulWidget {
@@ -501,8 +502,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
       final json = jsonDecode(response.body);
 
       if (response.statusCode == 200 && json['status'] == true) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(json['message'])));
+        TopAlert.show(context, json['message'], isSuccess: true);
 
         setState(() {
           pendingConnections.removeAt(index);
@@ -511,12 +511,10 @@ class _ConnectionsPageState extends State<ConnectionsPage>
         fetchAcceptedFriends(reset: true);
         fetchConnections(reset: true);
       } else {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(json['message'] ?? "Failed")));
+        TopAlert.show(context, json['message'] ?? "Failed", isError: true);
       }
     } catch (_) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Network error')));
+      TopAlert.show(context, 'Network error', isError: true);
     }
   }
 
@@ -568,23 +566,17 @@ class _ConnectionsPageState extends State<ConnectionsPage>
           }
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        TopAlert.show(context, message, isSuccess: true);
 
         fetchConnections(reset: true);
         fetchAcceptedFriends(reset: true);
         fetchSentRequests(reset: true); // ✅
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message)),
-        );
+        TopAlert.show(context, message, isError: true);
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Network error")),
-      );
+      TopAlert.show(context, "Network error", isError: true);
       debugPrint("❌ DELETE API Exception: $e");
     } finally {
       if (!mounted) return;
@@ -625,23 +617,17 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
   // ================== EXPORT CLICK ==================
   void _onExportClick() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Export feature coming soon ✅")),
-    );
+    TopAlert.show(context, "Export feature coming soon ✅");
   }
 
   // ================== EXPORT CLICK (PENDING) ==================
   void _onPendingExportClick() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Pending export coming soon ✅")),
-    );
+    TopAlert.show(context, "Pending export coming soon ✅");
   }
 
   // ================== EXPORT CLICK (SENT) ==================
   void _onSentExportClick() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Sent export coming soon ✅")),
-    );
+    TopAlert.show(context, "Sent export coming soon ✅");
   }
 
   @override
@@ -786,7 +772,6 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                       if (friendId == null) return const SizedBox.shrink();
 
                       return GestureDetector(
-                        
                         onTap: () async {
                           final session =
                               await UserStorageService().loadSession();
@@ -854,12 +839,9 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                     Navigator.pop(context);
 
                                     if (chatId == null) {
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                            content: Text(
-                                                "Chat create nahi ho paya")),
-                                      );
+                                      TopAlert.show(
+                                          context, "Chat create nahi ho paya",
+                                          isError: true);
                                       return;
                                     }
 
@@ -1003,8 +985,6 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                           int.tryParse(item['sender_id'].toString());
 
                       return GestureDetector(
-                      
-
                         onTap: () async {
                           final session =
                               await UserStorageService().loadSession();
@@ -1021,7 +1001,6 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                             ),
                           );
                         },
-
                         child: Card(
                           color: const Color(0xFF1E1E1E),
                           shape: RoundedRectangleBorder(
@@ -1179,8 +1158,6 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                       final userName = item['user_name'] ?? '';
 
                       return GestureDetector(
-                        
-
                         onTap: () async {
                           final session =
                               await UserStorageService().loadSession();
@@ -1199,7 +1176,6 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                             ),
                           );
                         },
-
                         child: Card(
                           color: const Color(0xFF1E1E1E),
                           shape: RoundedRectangleBorder(

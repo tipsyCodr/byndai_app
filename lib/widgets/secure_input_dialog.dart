@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pinput/pinput.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 enum SecureInputType { otp, loginPin, setPin }
 
@@ -51,9 +52,8 @@ class _SecureInputDialogState extends State<SecureInputDialog> {
   void _submit() async {
     final value = _controller.text.trim();
     if (value.length != widget.length) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Enter a valid ${widget.length}-digit code")),
-      );
+      TopAlert.show(context, "Enter a valid ${widget.length}-digit code",
+          isError: true);
       return;
     }
 
@@ -90,7 +90,6 @@ class _SecureInputDialogState extends State<SecureInputDialog> {
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          
           Pinput(
             controller: _controller,
             focusNode: _focusNode,
@@ -100,7 +99,6 @@ class _SecureInputDialogState extends State<SecureInputDialog> {
             defaultPinTheme: _pinTheme,
             onCompleted: (_) => _submit(),
           ),
-
           const SizedBox(height: 8),
           Text(
             widget.description,

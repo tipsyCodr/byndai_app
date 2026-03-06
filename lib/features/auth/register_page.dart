@@ -276,6 +276,7 @@
 import 'package:flutter/material.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:gridcard/routes/route_names.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -407,9 +408,8 @@ class _RegisterPageState extends State<RegisterPage> {
     final token = auth.pendingRegisterToken;
 
     if (mobile == null || token == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Session expired. Please start again.")),
-      );
+      TopAlert.show(context, "Session expired. Please start again.",
+          isError: true);
       Navigator.pushNamedAndRemoveUntil(
           context, RouteNames.phone, (_) => false);
       return;
@@ -429,9 +429,7 @@ class _RegisterPageState extends State<RegisterPage> {
     if (success) {
       Navigator.pushReplacementNamed(context, RouteNames.home);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Registration failed")),
-      );
+      TopAlert.show(context, "Registration failed", isError: true);
     }
   }
 

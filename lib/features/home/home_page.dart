@@ -11,6 +11,7 @@ import 'package:gridcard/features/chat/connections_page.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/routes/route_names.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 import '../qr_scan/profile_qr_code.dart';
 import 'dart:ui';
 
@@ -39,9 +40,7 @@ class _HomePageState extends State<HomePage> {
     if (_lastBackPressed == null ||
         now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
       _lastBackPressed = now;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Press back again to exit")),
-      );
+      TopAlert.show(context, "Press back again to exit");
       return;
     }
 
@@ -113,9 +112,7 @@ class _HomePageState extends State<HomePage> {
               final userId = await UserStorageService().getUserId();
 
               if (userId == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("User ID not found")),
-                );
+                TopAlert.show(context, "User ID not found", isError: true);
                 return;
               }
 

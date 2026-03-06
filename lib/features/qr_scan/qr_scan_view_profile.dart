@@ -274,6 +274,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:http/http.dart' as http;
+import 'package:gridcard/widgets/top_alert.dart';
 
 class QRScanViewProfile extends StatefulWidget {
   final String receiverId;
@@ -349,20 +350,10 @@ class _QRScanViewProfileState extends State<QRScanViewProfile> {
     setState(() => _isLoading = false);
     if (!mounted) return;
     if (errorMessage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Connection request sent'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      TopAlert.show(context, '✅ Connection request sent', isSuccess: true);
       Navigator.pop(context, true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(errorMessage),
-          backgroundColor: Colors.red,
-        ),
-      );
+      TopAlert.show(context, errorMessage, isError: true);
     }
   }
 

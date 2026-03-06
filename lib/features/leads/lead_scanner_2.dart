@@ -12,6 +12,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:gridcard/routes/route_names.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class LeadScanner2 extends StatefulWidget {
   final Function(Map<String, dynamic>)? onDataExtracted;
@@ -442,12 +443,142 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
         setState(() {
           _categories = json["data"];
         });
+
+        if (_selectedCategoryId == null && _categories.isNotEmpty) {
+          // Optional: auto select first category
+        }
       }
     } catch (e) {
       debugPrint("Category Fetch Error: $e");
     } finally {
       setState(() => _isCategoryLoading = false);
     }
+  }
+
+  void _showAddCategoryModal() {
+    final TextEditingController newCategoryCtrl = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Dialog(
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Add Category",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: newCategoryCtrl,
+                      decoration: const InputDecoration(
+                        labelText: "Category Name",
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (_) {
+                        setModalState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Cancel"),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: newCategoryCtrl.text.trim().isEmpty ||
+                                    isLoading
+                                ? null
+                                : () async {
+                                    setModalState(() => isLoading = true);
+
+                                    try {
+                                      final userId = await UserStorageService()
+                                          .getUserId();
+
+                                      if (userId == null) {
+                                        Navigator.pop(context);
+                                        TopAlert.show(context,
+                                            "User not found. Login again",
+                                            isError: true);
+                                        return;
+                                      }
+
+                                      final response = await http.post(
+                                        Uri.parse(
+                                            "${AppConfig.apiBaseUrl}/lead-category-create"),
+                                        headers: await _getHeaders(),
+                                        body: jsonEncode({
+                                          "user_id": userId,
+                                          "category":
+                                              newCategoryCtrl.text.trim(),
+                                        }),
+                                      );
+
+                                      final data = jsonDecode(response.body);
+
+                                      if (!context.mounted) return;
+                                      Navigator.pop(context);
+
+                                      TopAlert.show(
+                                        context,
+                                        data["message"] ??
+                                            "Something went wrong",
+                                        isSuccess: data["status"] == true,
+                                        isError: data["status"] != true,
+                                      );
+
+                                      if (data["status"] == true) {
+                                        _fetchCategories();
+                                      }
+                                    } catch (e) {
+                                      Navigator.pop(context);
+                                      TopAlert.show(context, "Error: $e",
+                                          isError: true);
+                                    }
+                                  },
+                            child: isLoading
+                                ? const SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text("Add"),
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   // ✅ NEW: Category Field
@@ -650,9 +781,7 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
 
   Future<void> _pickSelfyImage(ImageSource source) async {
     if (_selfyImages.length >= 2) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Max 2 selfy images allowed")),
-      );
+      TopAlert.show(context, "❌ Max 2 selfy images allowed", isError: true);
       return;
     }
 
@@ -763,12 +892,8 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
 
       if (userId == null) {
         setState(() => isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("❌ User session not found. Please login again."),
-            backgroundColor: Colors.red,
-          ),
-        );
+        TopAlert.show(context, "❌ User session not found. Please login again.",
+            isError: true);
         return;
       }
 
@@ -816,30 +941,18 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
       final success = await provider.addLeadRaw(data);
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("✅ Lead Added Successfully")),
-        );
+        TopAlert.show(context, "✅ Lead Added Successfully", isSuccess: true);
         Navigator.of(context).pushNamedAndRemoveUntil(
           RouteNames.home,
           (route) => false,
         );
       } else {
         setState(() => isSaving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Failed to save lead"),
-            backgroundColor: Colors.red,
-          ),
-        );
+        TopAlert.show(context, "Failed to save lead", isError: true);
       }
     } catch (e) {
       setState(() => isSaving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error: ${e.toString()}"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      TopAlert.show(context, "Error: ${e.toString()}", isError: true);
     }
   }
 
@@ -855,41 +968,50 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
     Widget? suffix,
     int maxLines = 1,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 8),
         Text(label,
-            style: const TextStyle(fontSize: 14, color: Colors.black87)),
+            style: TextStyle(
+                fontSize: 14, color: isDark ? Colors.white70 : Colors.black87)),
         const SizedBox(height: 4),
         TextField(
           controller: controller,
           focusNode: focusNode,
           keyboardType: keyboard,
           maxLines: maxLines,
+          style: TextStyle(color: isDark ? Colors.white : Colors.black),
           onChanged: (_) {
             validate();
             if (onChanged != null) onChanged();
           },
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.grey.shade50,
+            fillColor: isDark ? Colors.grey[900] : Colors.grey.shade50,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: error != null ? Colors.red : Colors.grey.shade300,
+                color: error != null
+                    ? Colors.red
+                    : (isDark ? Colors.grey[700]! : Colors.grey.shade300),
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: error != null ? Colors.red : Colors.grey.shade300,
+                color: error != null
+                    ? Colors.red
+                    : (isDark ? Colors.grey[700]! : Colors.grey.shade300),
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(
-                color: error != null ? Colors.red : Colors.blue,
+                color: error != null
+                    ? Colors.red
+                    : Theme.of(context).colorScheme.primary,
               ),
             ),
             errorText: error,
@@ -1029,11 +1151,17 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
                   height: 90,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300),
-                    color: Colors.grey.shade50,
+                    border: Border.all(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.grey[700]!
+                            : Colors.grey.shade300),
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.grey[900]
+                        : Colors.grey.shade50,
                   ),
-                  child: const Icon(CupertinoIcons.add,
-                      size: 30, color: Colors.black54),
+                  child: Icon(CupertinoIcons.add,
+                      size: 30,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant),
                 ),
               ),
           ],
@@ -1086,8 +1214,13 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.grey.shade300),
-              color: Colors.grey.shade50,
+              border: Border.all(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.grey[700]!
+                      : Colors.grey.shade300),
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.grey[900]
+                  : Colors.grey.shade50,
             ),
             child: Row(
               children: [
@@ -1116,7 +1249,7 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -1169,9 +1302,24 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
                     ),
 
                     const SizedBox(height: 12),
-                    const Text(
-                      "Category",
-                      style: TextStyle(fontSize: 14, color: Colors.black87),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "  Category",
+                          style: TextStyle(
+                              fontSize: 14,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.add_circle_outline,
+                              color: Colors.blue),
+                          onPressed: _showAddCategoryModal,
+                          tooltip: "Add Category",
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 6),
 
@@ -1181,8 +1329,15 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(8),
-                              border: Border.all(color: Colors.grey.shade300),
-                              color: Colors.grey.shade50,
+                              border: Border.all(
+                                  color: Theme.of(context).brightness ==
+                                          Brightness.dark
+                                      ? Colors.grey[700]!
+                                      : Colors.grey.shade300),
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.grey[900]
+                                  : Colors.grey.shade50,
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<int>(

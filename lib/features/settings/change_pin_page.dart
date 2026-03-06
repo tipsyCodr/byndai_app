@@ -115,6 +115,7 @@
 import 'package:flutter/material.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class ChangePinPage extends StatefulWidget {
   const ChangePinPage({super.key});
@@ -137,12 +138,10 @@ class _ChangePinPageState extends State<ChangePinPage> {
     final success = await authProvider.updatePin("", _newPinController.text);
 
     if (mounted && success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("PIN updated successfully")));
+      TopAlert.show(context, "PIN updated successfully", isSuccess: true);
       Navigator.pop(context);
     } else if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Failed to update PIN.")));
+      TopAlert.show(context, "Failed to update PIN.", isError: true);
     }
   }
 

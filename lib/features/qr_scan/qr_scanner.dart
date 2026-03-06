@@ -9,6 +9,7 @@ import '../../core/services/profile_provider.dart';
 import '../../core/services/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'qr_scan_view_profile.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class QRScannerPage extends StatefulWidget {
   final Function(Map<String, dynamic>)? onScanComplete;
@@ -160,12 +161,8 @@ class _QRScannerPageState extends State<QRScannerPage> {
               }
 
               Clipboard.setData(ClipboardData(text: contactText));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Contact details copied to clipboard'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
+              TopAlert.show(context, 'Contact details copied to clipboard',
+                  isSuccess: true);
               Navigator.pop(context);
             },
             child: const Text('Copy Details'),
@@ -197,12 +194,8 @@ class _QRScannerPageState extends State<QRScannerPage> {
             icon: const Icon(Icons.copy, size: 18),
             onPressed: () {
               Clipboard.setData(ClipboardData(text: value));
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('$label copied to clipboard'),
-                  duration: const Duration(seconds: 1),
-                ),
-              );
+              TopAlert.show(context, '$label copied to clipboard',
+                  isSuccess: true);
             },
           ),
         ],
@@ -432,12 +425,8 @@ class _QRScannerPageState extends State<QRScannerPage> {
           );
 
           if (result == true && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ Connection request sent successfully'),
-                backgroundColor: Colors.green,
-              ),
-            );
+            TopAlert.show(context, '✅ Connection request sent successfully',
+                isSuccess: true);
           }
         } else {
           _showErrorDialog('Profile not found');

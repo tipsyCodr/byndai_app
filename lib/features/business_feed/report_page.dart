@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class ReportPage extends StatefulWidget {
   final int postId;
@@ -118,20 +119,10 @@ class _ReportPageState extends State<ReportPage> {
   // SHOW SNACKBAR
   // =========================
   void _showSnackBar(String message, Color backgroundColor) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(color: Colors.white),
-        ),
-        backgroundColor: backgroundColor,
-        duration: const Duration(seconds: 3),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
+    if (!mounted) return;
+    final isError = backgroundColor == Colors.red;
+    final isSuccess = backgroundColor == Colors.green;
+    TopAlert.show(context, message, isError: isError, isSuccess: isSuccess);
   }
 
   @override

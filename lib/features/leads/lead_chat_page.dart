@@ -285,6 +285,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class ChatTemplate {
   final String message;
@@ -519,9 +520,7 @@ class _LeadChatPageState extends State<LeadChatPage> {
                 final msg = msgCtrl.text.trim();
 
                 if (msg.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("❌ Message required")),
-                  );
+                  TopAlert.show(context, "Message required", isError: true);
                   return;
                 }
 
@@ -549,9 +548,7 @@ class _LeadChatPageState extends State<LeadChatPage> {
   // ================= DELETE TEMPLATE =================
   void _deleteTemplate(int index) {
     if (_templates.length <= 1) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ At least 1 template required")),
-      );
+      TopAlert.show(context, "At least 1 template required", isError: true);
       return;
     }
 
@@ -757,11 +754,8 @@ class _LeadChatPageState extends State<LeadChatPage> {
                   onPressed: () async {
                     try {
                       if (selectedMobile.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("❌ Mobile number missing"),
-                          ),
-                        );
+                        TopAlert.show(context, "Mobile number missing",
+                            isError: true);
                         return;
                       }
 
@@ -789,11 +783,8 @@ class _LeadChatPageState extends State<LeadChatPage> {
                       final file = File(selectedTemplate.mediaPath!);
 
                       if (!file.existsSync()) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("❌ Selected media file not found"),
-                          ),
-                        );
+                        TopAlert.show(context, "Selected media file not found",
+                            isError: true);
                         return;
                       }
 
@@ -803,11 +794,8 @@ class _LeadChatPageState extends State<LeadChatPage> {
                       );
                     } catch (e) {
                       debugPrint("WhatsApp Error: $e");
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("❌ WhatsApp open nahi ho paya: $e"),
-                        ),
-                      );
+                      TopAlert.show(context, "WhatsApp open nahi ho paya: $e",
+                          isError: true);
                     }
                   },
                 ),

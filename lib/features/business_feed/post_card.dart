@@ -8,6 +8,7 @@
 // import './report_page.dart';
 // import './industry_icon_mapper.dart';
 // import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 // class PostCard extends StatefulWidget {
 //   final Map<String, dynamic> post;
@@ -30,7 +31,6 @@
 //   //     "https://powderblue-jellyfish-554082.hostingersite.com";
 
 //     static const String _baseUrl =  AppConfig.imageBaseUrl;
-      
 
 //   bool _expandedDescription = false;
 //   bool _showDebugInfo = false;
@@ -920,7 +920,6 @@
 //   }
 // }
 
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -952,8 +951,7 @@ class _PostCardState extends State<PostCard> {
   // static const String _baseUrl =
   //     "https://powderblue-jellyfish-554082.hostingersite.com";
 
-    static const String _baseUrl =  AppConfig.imageBaseUrl;
-      
+  static const String _baseUrl = AppConfig.imageBaseUrl;
 
   bool _expandedDescription = false;
   bool _showDebugInfo = false;
@@ -1024,15 +1022,10 @@ class _PostCardState extends State<PostCard> {
   }
 
   void _showSnackBar(String message, Color backgroundColor) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message, style: const TextStyle(color: Colors.white)),
-        backgroundColor: backgroundColor,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
+    if (!mounted) return;
+    final isError = backgroundColor == Colors.red;
+    final isSuccess = backgroundColor == Colors.green;
+    TopAlert.show(context, message, isError: isError, isSuccess: isSuccess);
   }
 
   // ========== SAVE API ==========
@@ -1058,9 +1051,8 @@ class _PostCardState extends State<PostCard> {
       if (mounted) setState(() => _isSaveAnimating = false);
     });
 
-    final message = newSaved
-        ? "Post saved to playlist"
-        : "Post removed from playlist";
+    final message =
+        newSaved ? "Post saved to playlist" : "Post removed from playlist";
     final color = newSaved ? Colors.green : Colors.orange;
     _showSnackBar(message, color);
 
@@ -1159,10 +1151,11 @@ class _PostCardState extends State<PostCard> {
     });
 
     Future.delayed(const Duration(milliseconds: 300), () {
-      if (mounted) setState(() {
-        _isLikeAnimating = false;
-        _isDislikeAnimating = false;
-      });
+      if (mounted)
+        setState(() {
+          _isLikeAnimating = false;
+          _isDislikeAnimating = false;
+        });
     });
 
     final updatedPostData = Map<String, dynamic>.from(_postData);
@@ -1242,7 +1235,8 @@ class _PostCardState extends State<PostCard> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     // Placeholder color: grey200 in light, surfaceVariant in dark
-    final placeholderColor = isDark ? colorScheme.surfaceVariant : Colors.grey[200];
+    final placeholderColor =
+        isDark ? colorScheme.surfaceVariant : Colors.grey[200];
 
     return SizedBox(
       height: 210,
@@ -1381,9 +1375,8 @@ class _PostCardState extends State<PostCard> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final inactiveColor = isDark
-        ? colorScheme.onSurface.withOpacity(0.6)
-        : Colors.grey.shade700;
+    final inactiveColor =
+        isDark ? colorScheme.onSurface.withOpacity(0.6) : Colors.grey.shade700;
     final activeColor = colorScheme.primary;
 
     return InkWell(
@@ -1423,9 +1416,8 @@ class _PostCardState extends State<PostCard> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final inactiveColor = isDark
-        ? colorScheme.onSurface.withOpacity(0.6)
-        : Colors.grey.shade700;
+    final inactiveColor =
+        isDark ? colorScheme.onSurface.withOpacity(0.6) : Colors.grey.shade700;
     final activeColor = colorScheme.primary;
 
     return GestureDetector(
@@ -1434,9 +1426,8 @@ class _PostCardState extends State<PostCard> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: isAnimating
-              ? activeColor.withOpacity(0.1)
-              : Colors.transparent,
+          color:
+              isAnimating ? activeColor.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -1475,9 +1466,8 @@ class _PostCardState extends State<PostCard> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final inactiveColor = isDark
-        ? colorScheme.onSurface.withOpacity(0.6)
-        : Colors.grey.shade700;
+    final inactiveColor =
+        isDark ? colorScheme.onSurface.withOpacity(0.6) : Colors.grey.shade700;
     final activeColor = colorScheme.secondary;
 
     return GestureDetector(
@@ -1486,9 +1476,8 @@ class _PostCardState extends State<PostCard> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
         decoration: BoxDecoration(
-          color: isAnimating
-              ? activeColor.withOpacity(0.1)
-              : Colors.transparent,
+          color:
+              isAnimating ? activeColor.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -1539,17 +1528,15 @@ class _PostCardState extends State<PostCard> {
         ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
         : const Color(0xFFDCDEF7); // original light color
 
-    final avatarBgColor = isDark
-        ? colorScheme.surfaceVariant
-        : Colors.grey.shade200; // original
+    final avatarBgColor =
+        isDark ? colorScheme.surfaceVariant : Colors.grey.shade200; // original
 
     final timeColor = isDark
         ? colorScheme.onSurface.withOpacity(0.6)
         : Colors.grey.shade600; // original
 
-    final debugBgColor = isDark
-        ? colorScheme.surfaceVariant
-        : Colors.grey[100]; // original
+    final debugBgColor =
+        isDark ? colorScheme.surfaceVariant : Colors.grey[100]; // original
 
     final industryIconColor = isDark
         ? colorScheme.primary
@@ -1559,7 +1546,8 @@ class _PostCardState extends State<PostCard> {
         ? colorScheme.primary
         : const Color.fromARGB(255, 45, 47, 190); // original
 
-    final starIconColor = isDark ? colorScheme.primary : null; // leave default in light
+    final starIconColor =
+        isDark ? colorScheme.primary : null; // leave default in light
 
     final inactiveIconColor = isDark
         ? colorScheme.onSurface.withOpacity(0.6)
@@ -1577,7 +1565,8 @@ class _PostCardState extends State<PostCard> {
           children: [
             // ========== TOP HEADER ==========
             GestureDetector(
-              onLongPress: () => setState(() => _showDebugInfo = !_showDebugInfo),
+              onLongPress: () =>
+                  setState(() => _showDebugInfo = !_showDebugInfo),
               child: Row(
                 children: [
                   CircleAvatar(
@@ -1736,7 +1725,9 @@ class _PostCardState extends State<PostCard> {
                             child: Padding(
                               padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                _expandedDescription ? "Read less" : "...Read more",
+                                _expandedDescription
+                                    ? "Read less"
+                                    : "...Read more",
                                 style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
@@ -1776,10 +1767,3 @@ class _PostCardState extends State<PostCard> {
     );
   }
 }
-
-
-
-
-
-
-

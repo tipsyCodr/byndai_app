@@ -1,11 +1,9 @@
-
-
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
+import 'package:gridcard/widgets/top_alert.dart';
 
 import './add_business_info_page.dart';
 import './business_info_details_page.dart';
@@ -110,26 +108,16 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
         });
 
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(jsonData["message"] ?? "Deleted successfully")),
-        );
+        TopAlert.show(context, jsonData["message"] ?? "Deleted successfully",
+            isSuccess: true);
       } else {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(jsonData["message"] ?? "Delete failed"),
-            backgroundColor: Colors.red,
-          ),
-        );
+        TopAlert.show(context, jsonData["message"] ?? "Delete failed",
+            isError: true);
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error: $e"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
     }
   }
 
@@ -355,7 +343,6 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
             padding: const EdgeInsets.all(16),
             children: [
               const SizedBox(height: 10),
-
               if (userId == null)
                 const Center(
                   child: Padding(

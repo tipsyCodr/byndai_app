@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class ProfilePage extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
@@ -468,9 +469,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       if (!canOpen) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Cannot open link: $fixed")),
-        );
+        TopAlert.show(context, "Cannot open link: $fixed", isError: true);
         return;
       }
 
@@ -480,9 +479,7 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Invalid link")),
-      );
+      TopAlert.show(context, "Invalid link", isError: true);
     }
   }
 
@@ -610,18 +607,14 @@ class _ProfilePageState extends State<ProfilePage> {
 
   void _sendMessage() {
     if (_messageController.text.isNotEmpty || _selectedImage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Message sent!')),
-      );
+      TopAlert.show(context, 'Message sent!', isSuccess: true);
 
       setState(() {
         _messageController.clear();
         _selectedImage = null;
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Type a message or select an image')),
-      );
+      TopAlert.show(context, 'Type a message or select an image');
     }
   }
 
@@ -663,17 +656,13 @@ class _ProfilePageState extends State<ProfilePage> {
 
       // self rating block
       if (toUserId == fromUserId) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("You can't rate yourself")),
-        );
+        TopAlert.show(context, "You can't rate yourself", isError: true);
         return;
       }
 
       // ⭐ rating mandatory
       if (_selectedRating == 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Please select rating")),
-        );
+        TopAlert.show(context, "Please select rating", isError: true);
         return;
       }
 
@@ -699,9 +688,8 @@ class _ProfilePageState extends State<ProfilePage> {
       debugPrint("🟦 REVIEW POST: ${res.statusCode} => ${res.body}");
 
       if (res.statusCode == 200 && jsonData["status"] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(jsonData["message"] ?? "Review added")),
-        );
+        TopAlert.show(context, jsonData["message"] ?? "Review added",
+            isSuccess: true);
 
         // reset fields
         setState(() {
@@ -713,15 +701,11 @@ class _ProfilePageState extends State<ProfilePage> {
         await _fetchReviews();
         await _fetchAverageRating();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(jsonData["message"] ?? "Failed")),
-        );
+        TopAlert.show(context, jsonData["message"] ?? "Failed", isError: true);
       }
     } catch (e) {
       debugPrint("🔴 ERROR _submitRating(): $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Network error")),
-      );
+      TopAlert.show(context, "Network error", isError: true);
     }
   }
 
@@ -991,19 +975,14 @@ class _ProfilePageState extends State<ProfilePage> {
       );
       final jsonData = jsonDecode(response.body);
       if (response.statusCode == 200 && jsonData['status'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(jsonData['message'] ?? 'Accepted')),
-        );
+        TopAlert.show(context, jsonData['message'] ?? 'Accepted',
+            isSuccess: true);
         Navigator.pop(context); // go back to connections page
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(jsonData['message'] ?? 'Failed')),
-        );
+        TopAlert.show(context, jsonData['message'] ?? 'Failed', isError: true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Network error')),
-      );
+      TopAlert.show(context, 'Network error', isError: true);
     }
   }
 
@@ -1043,19 +1022,14 @@ class _ProfilePageState extends State<ProfilePage> {
       );
       final jsonData = jsonDecode(response.body);
       if (response.statusCode == 200 && jsonData['status'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(jsonData['message'] ?? 'Removed')),
-        );
+        TopAlert.show(context, jsonData['message'] ?? 'Removed',
+            isSuccess: true);
         Navigator.pop(context);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(jsonData['message'] ?? 'Failed')),
-        );
+        TopAlert.show(context, jsonData['message'] ?? 'Failed', isError: true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Network error')),
-      );
+      TopAlert.show(context, 'Network error', isError: true);
     }
   }
 
@@ -1297,22 +1271,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                       widget.userId!);
 
                                   if (error == null) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content:
-                                            Text("✅ Connection request sent"),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
+                                    TopAlert.show(
+                                        context, "✅ Connection request sent",
+                                        isSuccess: true);
 
                                     Navigator.pop(context, true);
                                   } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text(error),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
+                                    TopAlert.show(context, error,
+                                        isError: true);
                                   }
                                 }
                               },

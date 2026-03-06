@@ -6,6 +6,7 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class ProfileTab extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
@@ -430,24 +431,12 @@ class _ProfileTabState extends State<ProfileTab> {
 
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    TopAlert.show(context, message, isError: true);
   }
 
   void _showSuccessSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    TopAlert.show(context, message, isSuccess: true);
   }
 
   // ================= INIT =================

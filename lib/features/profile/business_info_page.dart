@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gridcard/core/services/profile_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class BusinessInfoPage extends StatefulWidget {
   const BusinessInfoPage({super.key});
@@ -62,8 +63,8 @@ class _BusinessInfoPageState extends State<BusinessInfoPage> {
     );
 
     if (mounted && success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Business info updated successfully")));
+      TopAlert.show(context, "Business info updated successfully",
+          isSuccess: true);
       Navigator.pop(context);
     }
   }

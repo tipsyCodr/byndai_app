@@ -7,6 +7,7 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class EditPostPage extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -158,9 +159,7 @@ class _EditPostPageState extends State<EditPostPage> {
   Future<void> _updatePost() async {
     // Validate industry
     if (_selectedIndustryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select industry")),
-      );
+      TopAlert.show(context, "Please select industry", isError: true);
       return;
     }
 
@@ -216,9 +215,7 @@ class _EditPostPageState extends State<EditPostPage> {
         if (jsonResponse["status"] == true) {
           // Success - return updated post data
           final updatedPost = jsonResponse["data"] ?? widget.post;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Post updated successfully")),
-          );
+          TopAlert.show(context, "Post updated successfully", isSuccess: true);
           Navigator.pop(context, updatedPost);
         } else {
           throw Exception(jsonResponse["message"] ?? "Update failed");
@@ -228,9 +225,7 @@ class _EditPostPageState extends State<EditPostPage> {
       }
     } catch (e) {
       debugPrint("Update error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to update: $e")),
-      );
+      TopAlert.show(context, "Failed to update: $e", isError: true);
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -345,11 +340,8 @@ class _EditPostPageState extends State<EditPostPage> {
                         ? null
                         : () {
                             if (_industryOptions.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("No industries found"),
-                                ),
-                              );
+                              TopAlert.show(context, "No industries found",
+                                  isError: true);
                               return;
                             }
 

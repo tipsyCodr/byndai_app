@@ -1,5 +1,3 @@
-
-
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
@@ -8,6 +6,7 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class PostCreationPage extends StatefulWidget {
   const PostCreationPage({super.key});
@@ -84,22 +83,17 @@ class _PostCreationPageState extends State<PostCreationPage> {
             }).toList();
           });
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-                content:
-                    Text(jsonData["message"] ?? "Failed to load industries")),
-          );
+          TopAlert.show(
+              context, jsonData["message"] ?? "Failed to load industries",
+              isError: true);
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Failed to load industries")),
-        );
+        TopAlert.show(context, "Failed to load industries", isError: true);
       }
     } catch (e) {
       debugPrint("Fetch industries error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Network error while loading industries")),
-      );
+      TopAlert.show(context, "Network error while loading industries",
+          isError: true);
     } finally {
       if (mounted) setState(() => _isIndustryLoading = false);
     }
@@ -134,9 +128,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
         _images.add(null);
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum 5 images allowed')),
-      );
+      TopAlert.show(context, 'Maximum 5 images allowed', isError: true);
     }
   }
 
@@ -171,9 +163,7 @@ class _PostCreationPageState extends State<PostCreationPage> {
   Future<void> _submitPost() async {
     // ✅ Industry validation
     if (_selectedIndustryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please select industry")),
-      );
+      TopAlert.show(context, "Please select industry", isError: true);
       return;
     }
 
@@ -419,11 +409,8 @@ class _PostCreationPageState extends State<PostCreationPage> {
                         ? null
                         : () {
                             if (_industryOptions.isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("No industries found"),
-                                ),
-                              );
+                              TopAlert.show(context, "No industries found",
+                                  isError: true);
                               return;
                             }
 
