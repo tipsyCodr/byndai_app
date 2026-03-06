@@ -792,7 +792,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Branded QR Generator',
+                    'QR Code Generator',
                     style: TextStyle(
                       color: colorScheme.onSurface,
                       fontSize: 16,
@@ -801,7 +801,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Create custom QR with your logo',
+                    'Make your own QR Codes',
                     style: TextStyle(
                       color: colorScheme.onSurface.withOpacity(0.6),
                       fontSize: 12,
@@ -819,7 +819,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                 shape: BoxShape.circle,
               ),
               child: const Icon(
-                Icons.add,
+                Icons.arrow_forward_ios_rounded,
                 color: Colors.white,
                 size: 20,
               ),
@@ -917,6 +917,8 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                       const SizedBox(height: 24),
                       _buildGeneratedQrHeader(context),
 
+                      const SizedBox(height: 16),
+                      const ActionDock(),
                       const SizedBox(height: 32),
                       Text(
                         'Suggested Connections',
@@ -929,8 +931,6 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                       ),
                       const SizedBox(height: 16),
                       const ConnectionSuggest(),
-                      const SizedBox(height: 32),
-                      const ActionDock(),
                       const SizedBox(height: 32),
 
                       // NEW SECTION
