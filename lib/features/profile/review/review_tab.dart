@@ -1,40 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'package:gridcard/config/app_config.dart';
-// import 'package:gridcard/core/services/user_storage_service.dart';
-// import 'package:http/http.dart' as http;
-
-// class ReviewTab extends StatefulWidget {
-//   final Map<String, dynamic>? userDetails;
-
-//   const ReviewTab({super.key, this.userDetails});
-
-//   @override
-//   State<ReviewTab> createState() => _ReviewTabState();
-// }
-
-// class _ReviewTabState extends State<ReviewTab> {
-//   static const String _baseUrl = AppConfig.apiBaseUrl;
-//   // ================= HEADERS =================
-//   Future<Map<String, String>> _getHeaders() async {
-//     final token = await UserStorageService().getToken();
-//     return {
-//       'Content-Type': 'application/json',
-//       'Accept': 'application/json',
-//       if (token != null) 'Authorization': 'Bearer $token',
-//     };
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return const Center(
-//       child: Text(
-//         "Review Tab (Stateful)",
-//         style: TextStyle(fontSize: 16),
-//       ),
-//     );
-//   }
-// }
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
@@ -118,8 +81,11 @@ class _ReviewTabState extends State<ReviewTab> {
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.grey.shade100,
+      // backgroundColor: Colors.grey.shade100,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
           : reviews.isEmpty
@@ -194,16 +160,31 @@ class _ReviewTabState extends State<ReviewTab> {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(14),
+      // decoration: BoxDecoration(
+      //   color: Colors.white,
+      //   borderRadius: BorderRadius.circular(16),
+      //   boxShadow: [
+      //     BoxShadow(
+      //       color: Colors.black.withOpacity(0.06),
+      //       blurRadius: 12,
+      //       offset: const Offset(0, 4),
+      //     ),
+      //   ],
+      // ),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).brightness == Brightness.dark
+            ? Theme.of(context).colorScheme.surfaceContainerHighest
+            : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: Theme.of(context).brightness == Brightness.dark
+            ? []
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.06),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -251,7 +232,8 @@ class _ReviewTabState extends State<ReviewTab> {
               style: TextStyle(
                 fontSize: 14,
                 height: 1.4,
-                color: Colors.grey.shade800,
+                // color: Colors.grey.shade800,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             )
           else
@@ -259,7 +241,8 @@ class _ReviewTabState extends State<ReviewTab> {
               "No message",
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade500,
+                // color: Colors.grey.shade500,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
                 fontStyle: FontStyle.italic,
               ),
             ),

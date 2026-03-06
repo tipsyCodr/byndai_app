@@ -159,22 +159,64 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
     }
   }
 
+  // Widget _inputField({
+  //   required String label,
+  //   required TextEditingController controller,
+  //   int maxLines = 1,
+  //   TextInputType keyboardType = TextInputType.text,
+  // }) {
+  //   return Padding(
+  //     padding: const EdgeInsets.only(bottom: 14),
+  //     child: TextFormField(
+  //       controller: controller,
+  //       maxLines: maxLines,
+  //       keyboardType: keyboardType,
+  //       decoration: InputDecoration(
+  //         labelText: label,
+  //         border: OutlineInputBorder(
+  //           borderRadius: BorderRadius.circular(12),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _inputField({
     required String label,
     required TextEditingController controller,
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
         keyboardType: keyboardType,
+        style: TextStyle(color: colorScheme.onSurface),
         decoration: InputDecoration(
           labelText: label,
+          labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+          filled: true,
+          fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
+            borderSide: isDark ? BorderSide.none : const BorderSide(),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: isDark
+                ? BorderSide.none
+                : BorderSide(color: colorScheme.outline),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: isDark
+                ? BorderSide.none
+                : BorderSide(color: colorScheme.primary),
           ),
         ),
       ),
@@ -300,6 +342,8 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
     final title = widget.isEdit ? "Edit Business Info" : "Add Business Info";
     final buttonText =
         widget.isEdit ? "Update Business Info" : "Save Business Info";
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       appBar: AppBar(
@@ -312,44 +356,22 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
             children: [
               _inputField(label: "Legal Name", controller: legalNameCtrl),
 
-              // Padding(
-              //   padding: const EdgeInsets.only(bottom: 14),
-              //   child: DropdownButtonFormField<int>(
-              //     initialValue: industries.any((e) => e["id"] == selectedIndustryId)
-              //         ? selectedIndustryId
-              //         : null,
-              //     decoration: InputDecoration(
-              //       labelText: "Industry",
-              //       border: OutlineInputBorder(
-              //         borderRadius: BorderRadius.circular(12),
-              //       ),
-              //     ),
-              //     items: industries.map((industry) {
-              //       return DropdownMenuItem<int>(
-              //         value: industry["id"],
-              //         child: Text(industry["title"].toString()),
-              //       );
-              //     }).toList(),
-              //     onChanged: isIndustriesLoading
-              //         ? null
-              //         : (val) {
-              //             setState(() {
-              //               selectedIndustryId = val;
-              //             });
-              //           },
-              //   ),
-              // ),
-
               Padding(
                 padding: const EdgeInsets.only(bottom: 14),
                 child: DropdownButtonFormField<int>(
-                  isExpanded: true, // ← Add this line
+                  isExpanded: true,
+                  dropdownColor: colorScheme.surface,
+                  style: TextStyle(color: colorScheme.onSurface),
                   initialValue:
                       industries.any((e) => e["id"] == selectedIndustryId)
                           ? selectedIndustryId
                           : null,
                   decoration: InputDecoration(
                     labelText: "Industry",
+                    labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                    filled: true,
+                    fillColor:
+                        isDark ? colorScheme.surfaceContainerHighest : null,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -409,9 +431,14 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
+                // decoration: BoxDecoration(
+                //   borderRadius: BorderRadius.circular(12),
+                //   border: Border.all(color: Colors.grey.shade400),
+                // ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade400),
+                  border: Border.all(color: colorScheme.outline),
+                  color: colorScheme.surface,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -432,14 +459,14 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
                                 paymentQrImage!.path,
                                 height: 160,
                                 width: double.infinity,
-                                fit: BoxFit.cover,
+                                // fit: BoxFit.cover,
+                                fit: BoxFit.contain,
                               )
-                            : Image.file(
-                                File(paymentQrImage!.path),
+                            : Image.file(File(paymentQrImage!.path),
                                 height: 160,
                                 width: double.infinity,
-                                fit: BoxFit.cover,
-                              ),
+                                // fit: BoxFit.cover,
+                                fit: BoxFit.contain),
                       )
 
                     // ✅ OLD image from backend
@@ -451,7 +478,8 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
                           "$_imgBaseUrl/$existingQrPath",
                           height: 160,
                           width: double.infinity,
-                          fit: BoxFit.cover,
+                          // fit: BoxFit.cover,
+                          fit: BoxFit.contain,
                           errorBuilder: (_, __, ___) {
                             return Container(
                               height: 140,
@@ -469,8 +497,12 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
                       Container(
                         height: 140,
                         width: double.infinity,
+                        // decoration: BoxDecoration(
+                        //   color: Colors.grey.shade100,
+                        //   borderRadius: BorderRadius.circular(12),
+                        // ),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade100,
+                          color: colorScheme.surfaceVariant,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Center(
@@ -499,6 +531,10 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primary,
+                    foregroundColor: colorScheme.onPrimary,
+                  ),
                   onPressed: isLoading ? null : _submit,
                   child: isLoading
                       ? const SizedBox(

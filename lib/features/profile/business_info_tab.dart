@@ -158,8 +158,42 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
     return v.toString().trim();
   }
 
+  // Widget _infoRow(String label, String value) {
+  //   if (value.trim().isEmpty) return const SizedBox.shrink();
+  //   final colorScheme = Theme.of(context).colorScheme;
+  //   return Padding(
+  //     padding: const EdgeInsets.only(top: 6),
+  //     child: Row(
+  //       crossAxisAlignment: CrossAxisAlignment.start,
+  //       children: [
+  //         SizedBox(
+  //           width: 110,
+  //           child: Text(
+  //             label,
+  //             style: TextStyle(
+  //               color: Colors.grey.shade700,
+  //               fontSize: 13,
+  //               fontWeight: FontWeight.w600,
+  //             ),
+  //           ),
+  //         ),
+  //         Expanded(
+  //           child: Text(
+  //             value,
+  //             style: const TextStyle(fontSize: 13),
+  //             softWrap: true,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   Widget _infoRow(String label, String value) {
     if (value.trim().isEmpty) return const SizedBox.shrink();
+
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Padding(
       padding: const EdgeInsets.only(top: 6),
       child: Row(
@@ -170,7 +204,7 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
             child: Text(
               label,
               style: TextStyle(
-                color: Colors.grey.shade700,
+                color: colorScheme.onSurfaceVariant,
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
@@ -179,7 +213,10 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 13),
+              style: TextStyle(
+                fontSize: 13,
+                color: colorScheme.onSurface,
+              ),
               softWrap: true,
             ),
           ),
@@ -188,17 +225,38 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
     );
   }
 
+  // Widget _chip(String text) {
+  //   return Container(
+  //     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+  //     decoration: BoxDecoration(
+  //       color: Colors.grey.shade100,
+  //       borderRadius: BorderRadius.circular(999),
+  //       border: Border.all(color: Colors.grey.shade200),
+  //     ),
+  //     child: Text(
+  //       text,
+  //       style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+  //     ),
+  //   );
+  // }
+
   Widget _chip(String text) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Text(
         text,
-        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+          color: colorScheme.onSurface,
+        ),
       ),
     );
   }
@@ -211,7 +269,7 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
     final email = _safeText(item["contact_email"]);
 
     final businessId = int.tryParse(_safeText(item["id"])) ?? 0;
-
+    final colorScheme = Theme.of(context).colorScheme;
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: () {
@@ -226,9 +284,9 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
         margin: const EdgeInsets.only(bottom: 14),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.shade200),
+          border: Border.all(color: colorScheme.outlineVariant),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -246,9 +304,10 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
                 Expanded(
                   child: Text(
                     legalName.isEmpty ? "Business" : legalName,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
+                      color: colorScheme.onSurface,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -257,7 +316,9 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
 
                 // 3 dots
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_horiz, color: Colors.grey),
+                  // icon: const Icon(Icons.more_horiz, color: Colors.grey),
+                  icon: Icon(Icons.more_horiz,
+                      color: colorScheme.onSurfaceVariant),
                   onSelected: (value) async {
                     if (value == "edit") {
                       final result = await Navigator.push(
@@ -319,14 +380,14 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
 
             const SizedBox(height: 10),
 
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                _chip("ID: ${_safeText(item["id"])}"),
-                _chip("Industry: ${_safeText(item["industry_id"])}"),
-              ],
-            )
+            // Wrap(
+            //   spacing: 8,
+            //   runSpacing: 8,
+            //   children: [
+            //     _chip("ID: ${_safeText(item["id"])}"),
+            //     _chip("Industry: ${_safeText(item["industry_id"])}"),
+            //   ],
+            // )
           ],
         ),
       ),

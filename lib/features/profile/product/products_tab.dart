@@ -159,6 +159,8 @@ class _ProductsTabState extends State<ProductsTab> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       body: isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -290,7 +292,14 @@ class _ProductsTabState extends State<ProductsTab> {
                     // );
 
                     return Card(
-                      elevation: 2,
+                      // elevation: 2,
+                      // shape: RoundedRectangleBorder(
+                      //   borderRadius: BorderRadius.circular(14),
+                      // ),
+                      elevation: 0,
+                      color: isDark
+                          ? colorScheme.surfaceContainerHighest
+                          : colorScheme.surface,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
                       ),
