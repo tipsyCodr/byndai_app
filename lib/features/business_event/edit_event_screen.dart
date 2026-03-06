@@ -9,6 +9,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class EditEventScreen extends StatefulWidget {
   final Map<String, dynamic> eventData;
@@ -318,21 +319,11 @@ class _EditEventScreenState extends State<EditEventScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
+    TopAlert.show(context, message, isError: true);
   }
 
   void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
+    TopAlert.show(context, message, isSuccess: true);
   }
 
   // ================= IMAGE MANAGEMENT =================
@@ -356,9 +347,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
         _selectedNewImages.add(null);
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum 5 images allowed')),
-      );
+      TopAlert.show(context, 'Maximum 5 images allowed', isError: true);
     }
   }
 
@@ -1497,12 +1486,8 @@ class _EditEventScreenState extends State<EditEventScreen> {
                         ElevatedButton(
                           onPressed: () {
                             // Copy URL logic
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('URL copied to clipboard'),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
+                            TopAlert.show(context, 'URL copied to clipboard',
+                                isSuccess: true);
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
@@ -1760,12 +1745,8 @@ class _EditEventScreenState extends State<EditEventScreen> {
           IconButton(
             onPressed: () {
               // Copy to clipboard functionality
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('URL copied to clipboard'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              TopAlert.show(context, 'URL copied to clipboard',
+                  isSuccess: true);
               Navigator.pop(context);
             },
             icon: const Icon(Icons.copy, color: Colors.blue),

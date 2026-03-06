@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
+import 'package:gridcard/widgets/top_alert.dart';
 import './add_product_page.dart';
 import './product_details_page.dart'; // we'll create this next
 
@@ -86,9 +87,7 @@ class _ProductsTabState extends State<ProductsTab> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -106,17 +105,13 @@ class _ProductsTabState extends State<ProductsTab> {
         setState(() {
           products.removeWhere((p) => p['id'] == productId);
         });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Product deleted successfully")),
-        );
+        TopAlert.show(context, "Product deleted successfully", isSuccess: true);
       } else {
         throw (jsonData["message"] ?? "Delete failed");
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error deleting product: $e")),
-      );
+      TopAlert.show(context, "Error deleting product: $e", isError: true);
     }
   }
 

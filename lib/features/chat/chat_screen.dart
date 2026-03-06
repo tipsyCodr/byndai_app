@@ -1,4 +1,3 @@
-
 // import 'package:flutter/cupertino.dart';
 // import 'package:flutter/material.dart';
 // import 'package:intl/intl.dart';
@@ -300,9 +299,7 @@
 //   }
 // }
 
-
 //=====================================================================================
-
 
 import 'dart:convert';
 import 'dart:async';
@@ -313,6 +310,7 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -491,9 +489,7 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint("❌ send-message failed: $responseBody");
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Message send nahi hua")),
-      );
+      TopAlert.show(context, "Message send nahi hua", isError: true);
     } catch (e) {
       debugPrint("❌ _sendMessage Exception: $e");
     } finally {
@@ -564,7 +560,6 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-
       appBar: AppBar(
         backgroundColor: Colors.black,
         leading: IconButton(
@@ -602,7 +597,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ],
       ),
-
       body: Column(
         children: [
           // ✅ Messages Area
@@ -681,7 +675,6 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                   ),
                                 ),
-
                               _MessageBubble(
                                 text: _getMessageText(msg),
                                 time: _formatTime(msgTime),

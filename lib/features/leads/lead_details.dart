@@ -12,6 +12,7 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -111,6 +112,9 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
         final existingCategory = widget.lead.category;
         if (existingCategory != null) {
           _selectedCategory = existingCategory;
+        } else if (_categories.isNotEmpty && _selectedCategory == null) {
+          // Optional: Auto select first if none is selected
+          // _selectedCategory = _categories[0]["id"];
         }
 
         setState(() {});
@@ -120,6 +124,133 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
     } finally {
       setState(() => _isCategoryLoading = false);
     }
+  }
+
+  void _showAddCategoryModal() {
+    final TextEditingController newCategoryCtrl = TextEditingController();
+    bool isLoading = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            final colorScheme = Theme.of(context).colorScheme;
+            return Dialog(
+              backgroundColor: colorScheme.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Add Category",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: newCategoryCtrl,
+                      decoration: const InputDecoration(
+                        labelText: "Category Name",
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (_) {
+                        setModalState(() {});
+                      },
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Cancel"),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: newCategoryCtrl.text.trim().isEmpty ||
+                                    isLoading
+                                ? null
+                                : () async {
+                                    setModalState(() => isLoading = true);
+
+                                    try {
+                                      final userId = await UserStorageService()
+                                          .getUserId();
+
+                                      if (userId == null) {
+                                        Navigator.pop(context);
+                                        TopAlert.show(context,
+                                            "User not found. Login again",
+                                            isError: true);
+                                        return;
+                                      }
+
+                                      final response = await http.post(
+                                        Uri.parse(
+                                            "$_baseUrl/lead-category-create"),
+                                        headers: await _getHeaders(),
+                                        body: jsonEncode({
+                                          "user_id": userId,
+                                          "category":
+                                              newCategoryCtrl.text.trim(),
+                                        }),
+                                      );
+
+                                      final data = jsonDecode(response.body);
+
+                                      if (!context.mounted) return;
+                                      Navigator.pop(context);
+
+                                      TopAlert.show(
+                                        context,
+                                        data["message"] ??
+                                            "Something went wrong",
+                                        isSuccess: data["status"] == true,
+                                        isError: data["status"] != true,
+                                      );
+
+                                      if (data["status"] == true) {
+                                        _fetchCategories();
+                                      }
+                                    } catch (e) {
+                                      Navigator.pop(context);
+                                      TopAlert.show(context, "Error: $e",
+                                          isError: true);
+                                    }
+                                  },
+                            child: isLoading
+                                ? SizedBox(
+                                    height: 18,
+                                    width: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: colorScheme.onPrimary,
+                                    ),
+                                  )
+                                : const Text("Add"),
+                          ),
+                        ),
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -961,9 +1092,8 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                         await launchUrl(uri,
                             mode: LaunchMode.externalApplication);
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Cannot open website")),
-                        );
+                        TopAlert.show(context, "Cannot open website",
+                            isError: true);
                       }
                     }
                   : null,
@@ -1194,53 +1324,74 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                   ..._buildMobiles(),
                   Padding(
                     padding: const EdgeInsets.only(bottom: 14),
-                    child: _isCategoryLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : DropdownButtonFormField<int>(
-                            initialValue: _selectedCategory,
-                            decoration: InputDecoration(
-                              labelText: "Category",
-                              labelStyle: TextStyle(
-                                  color: colorScheme.onSurfaceVariant),
-                              filled: true,
-                              fillColor: isDark
-                                  ? colorScheme.surfaceContainerHighest
-                                  : colorScheme.surface,
-                              contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 14),
-                              enabledBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: isDark
-                                    ? BorderSide.none
-                                    : BorderSide(
-                                        color: colorScheme.outlineVariant),
-                              ),
-                              focusedBorder: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                borderSide: BorderSide(
-                                  color: colorScheme.primary,
-                                  width: 1.6,
-                                ),
-                              ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              "  Category",
+                              style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 14),
                             ),
-                            dropdownColor: isDark
-                                ? colorScheme.surfaceContainerHighest
-                                : null,
-                            style: TextStyle(
-                                color: colorScheme.onSurface, fontSize: 14),
-                            items:
-                                _categories.map<DropdownMenuItem<int>>((item) {
-                              return DropdownMenuItem<int>(
-                                value: item["id"],
-                                child: Text(item["category"]),
-                              );
-                            }).toList(),
-                            onChanged: (value) {
-                              setState(() {
-                                _selectedCategory = value;
-                              });
-                            },
-                          ),
+                            IconButton(
+                              icon: Icon(Icons.add_circle_outline,
+                                  color: colorScheme.primary),
+                              onPressed: _showAddCategoryModal,
+                              tooltip: "Add Category",
+                            ),
+                          ],
+                        ),
+                        // const SizedBox(height: 4),
+                        _isCategoryLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : DropdownButtonFormField<int>(
+                                initialValue: _selectedCategory,
+                                decoration: InputDecoration(
+                                  hintText: "Select Category",
+                                  filled: true,
+                                  fillColor: isDark
+                                      ? colorScheme.surfaceContainerHighest
+                                      : colorScheme.surface,
+                                  contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 14, vertical: 14),
+                                  enabledBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: isDark
+                                        ? BorderSide.none
+                                        : BorderSide(
+                                            color: colorScheme.outlineVariant),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: colorScheme.primary,
+                                      width: 1.6,
+                                    ),
+                                  ),
+                                ),
+                                dropdownColor: isDark
+                                    ? colorScheme.surfaceContainerHighest
+                                    : null,
+                                style: TextStyle(
+                                    color: colorScheme.onSurface, fontSize: 14),
+                                items: _categories
+                                    .map<DropdownMenuItem<int>>((item) {
+                                  return DropdownMenuItem<int>(
+                                    value: item["id"],
+                                    child: Text(item["category"]),
+                                  );
+                                }).toList(),
+                                onChanged: (value) {
+                                  setState(() {
+                                    _selectedCategory = value;
+                                  });
+                                },
+                              ),
+                      ],
+                    ),
                   ),
                 ]),
 
@@ -1521,13 +1672,9 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
 
     if (success) {
       Navigator.pop(context, true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("✅ Lead Updated Successfully")),
-      );
+      TopAlert.show(context, "Lead Updated Successfully", isSuccess: true);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("❌ Update Failed")),
-      );
+      TopAlert.show(context, "Lead Update Failed!", isError: true);
     }
   }
 }

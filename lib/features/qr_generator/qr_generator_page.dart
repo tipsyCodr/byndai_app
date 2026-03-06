@@ -6,6 +6,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
+import 'package:gridcard/widgets/top_alert.dart';
 
 // ignore: avoid_web_libraries_in_flutter
 // import 'dart:html' as html;
@@ -87,10 +88,8 @@ class _QrGeneratorPageState extends State<QrGeneratorPage> {
         debugPrint("Capture Error: $e");
         setState(() => _isGenerating = false);
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-                content: Text("Preview rendering failed. Please try again.")),
-          );
+          TopAlert.show(context, "Preview rendering failed. Please try again.",
+              isError: true);
         }
       }
     });
@@ -109,9 +108,7 @@ class _QrGeneratorPageState extends State<QrGeneratorPage> {
 
   Future<void> _downloadQr() async {
     if (_generatedImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Processing image, please wait...")),
-      );
+      TopAlert.show(context, "Processing image, please wait...");
       return;
     }
 

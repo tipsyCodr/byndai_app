@@ -9,6 +9,7 @@ import './report_page.dart';
 import '../business_feed/business_feed_page.dart';
 import './industry_icon_mapper.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class HomePostCard extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -119,20 +120,12 @@ class _HomePostCardState extends State<HomePostCard> {
   // SHOW SNACKBAR
   // =========================
   void _showSnackBar(String message, Color backgroundColor) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: TextStyle(color: Theme.of(context).colorScheme.onError),
-        ),
-        backgroundColor: backgroundColor,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
+    if (!mounted) return;
+    final isError = backgroundColor == Colors.red ||
+        backgroundColor == Theme.of(context).colorScheme.error;
+    final isSuccess = backgroundColor == Colors.green;
+
+    TopAlert.show(context, message, isError: isError, isSuccess: isSuccess);
   }
 
   // =========================

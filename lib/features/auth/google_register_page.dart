@@ -139,10 +139,8 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
   void _sendOtp() async {
     final mobile = _phoneController.text.trim();
     if (mobile.length != 10) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text("Please enter a valid 10-digit mobile number")),
-      );
+      TopAlert.show(context, "Please enter a valid 10-digit mobile number",
+          isError: true);
       return;
     }
 
@@ -177,9 +175,7 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
 
   Future<bool> _verifyOtpAndRegister(String mobile, String otp) async {
     if (otp.length != 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Enter a valid 4-digit OTP")),
-      );
+      TopAlert.show(context, "Enter a valid 4-digit OTP", isError: true);
       return false;
     }
 

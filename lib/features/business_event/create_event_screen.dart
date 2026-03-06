@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class CreateEventScreen extends StatefulWidget {
   final VoidCallback onEventCreated;
@@ -269,21 +270,11 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
+    TopAlert.show(context, message, isError: true);
   }
 
   void _showSuccess(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
+    TopAlert.show(context, message, isSuccess: true);
   }
 
   // ================= IMAGE PICKER =================
@@ -307,9 +298,7 @@ class _CreateEventScreenState extends State<CreateEventScreen> {
         _selectedImages.add(null);
       });
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum 5 images allowed')),
-      );
+      TopAlert.show(context, 'Maximum 5 images allowed', isError: true);
     }
   }
 

@@ -270,8 +270,7 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
   void _showSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+    TopAlert.show(context, message, isError: true);
   }
 
   void _showLoaderDialog() {

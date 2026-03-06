@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
+import 'package:gridcard/widgets/top_alert.dart';
 
 class KeywordsTab extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
@@ -39,9 +40,8 @@ class _KeywordsTabState extends State<KeywordsTab> {
       final userId = await UserStorageService().getUserId();
       if (userId == null) {
         setState(() => isLoading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("User not found. Please login again.")),
-        );
+        TopAlert.show(context, "User not found. Please login again.",
+            isError: true);
         return;
       }
 
@@ -63,14 +63,10 @@ class _KeywordsTabState extends State<KeywordsTab> {
         });
       } else {
         final msg = data["message"] ?? "Failed to fetch keywords";
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isError: true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
     } finally {
       setState(() => isLoading = false);
     }
@@ -92,22 +88,16 @@ class _KeywordsTabState extends State<KeywordsTab> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final msg = data["message"] ?? "Keyword saved successfully";
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isSuccess: true);
 
         // refresh list
         await fetchKeywords();
       } else {
         final msg = data["message"] ?? "Something went wrong";
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isError: true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
     }
   }
 
@@ -131,21 +121,15 @@ class _KeywordsTabState extends State<KeywordsTab> {
       if (response.statusCode == 200) {
         final msg = data["message"] ?? "Keyword updated successfully";
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isSuccess: true);
 
         await fetchKeywords();
       } else {
         final msg = data["message"] ?? "Update failed";
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isError: true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
     }
   }
 
@@ -161,9 +145,7 @@ class _KeywordsTabState extends State<KeywordsTab> {
       if (response.statusCode == 200) {
         final msg = data["message"] ?? "Keyword deleted successfully";
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isSuccess: true);
 
         // remove instantly from UI
         setState(() {
@@ -171,14 +153,10 @@ class _KeywordsTabState extends State<KeywordsTab> {
         });
       } else {
         final msg = data["message"] ?? "Delete failed";
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isError: true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
     }
   }
 
@@ -274,10 +252,8 @@ class _KeywordsTabState extends State<KeywordsTab> {
                           final title = keywordController.text.trim();
 
                           if (title.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                  content: Text("Please enter keyword")),
-                            );
+                            TopAlert.show(context, "Please enter keyword",
+                                isError: true);
                             return;
                           }
 

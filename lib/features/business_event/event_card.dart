@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
@@ -7,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 import './image_viewer_screen.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 import 'edit_event_screen.dart'; // ✅ Edit Screen import करें
 
 class EventCard extends StatefulWidget {
@@ -56,13 +56,8 @@ class _EventCardState extends State<EventCard> {
             eventData: widget.event,
             onEventUpdated: () {
               // Callback when event is updated
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Event updated successfully!'),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 2),
-                ),
-              );
+              TopAlert.show(context, 'Event updated successfully!',
+                  isSuccess: true);
 
               // Trigger the update callback if provided
               widget.onUpdated?.call();
@@ -78,12 +73,7 @@ class _EventCardState extends State<EventCard> {
     final eventId = widget.event['id'];
 
     if (eventId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Event ID not found!"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      TopAlert.show(context, "Event ID not found!", isError: true);
       return;
     }
 
@@ -148,31 +138,17 @@ class _EventCardState extends State<EventCard> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 && data['status'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(data['message'] ?? "Event deleted successfully"),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        TopAlert.show(context, data['message'] ?? "Event deleted successfully",
+            isSuccess: true);
 
         // ✅ Call the delete callback to refresh UI
         widget.onDeleted?.call();
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(data['message'] ?? "Failed to delete event"),
-            backgroundColor: Colors.red,
-          ),
-        );
+        TopAlert.show(context, data['message'] ?? "Failed to delete event",
+            isError: true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error: ${e.toString()}"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      TopAlert.show(context, "Error: ${e.toString()}", isError: true);
     }
   }
 
@@ -245,12 +221,7 @@ class _EventCardState extends State<EventCard> {
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Could not launch $url'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      TopAlert.show(context, 'Could not launch $url', isError: true);
     }
   }
 

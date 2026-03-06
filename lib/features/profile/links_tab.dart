@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
+import 'package:gridcard/widgets/top_alert.dart';
 
 class LinksTab extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
@@ -66,19 +67,14 @@ class _LinksTabState extends State<LinksTab> {
             savedLinks = list.map((e) => Map<String, dynamic>.from(e)).toList();
           });
         } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(data["message"] ?? "Failed to load links")),
-          );
+          TopAlert.show(context, data["message"] ?? "Failed to load links",
+              isError: true);
         }
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Failed: ${response.statusCode}")),
-        );
+        TopAlert.show(context, "Failed: ${response.statusCode}", isError: true);
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
     } finally {
       setState(() => isPageLoading = false);
     }
@@ -105,9 +101,7 @@ class _LinksTabState extends State<LinksTab> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final msg = data["message"] ?? "Link saved successfully";
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isSuccess: true);
 
         // Response se new data add kar do
         if (data["data"] != null) {
@@ -122,15 +116,11 @@ class _LinksTabState extends State<LinksTab> {
         return true;
       } else {
         final msg = data["message"] ?? "Something went wrong";
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isError: true);
         return false;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
       return false;
     }
   }
@@ -157,9 +147,7 @@ class _LinksTabState extends State<LinksTab> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final msg = data["message"] ?? "Link updated successfully";
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isSuccess: true);
 
         // list update
         if (data["data"] != null) {
@@ -178,15 +166,11 @@ class _LinksTabState extends State<LinksTab> {
         return true;
       } else {
         final msg = data["message"] ?? "Something went wrong";
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isError: true);
         return false;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
       return false;
     }
   }
@@ -203,9 +187,7 @@ class _LinksTabState extends State<LinksTab> {
       if (response.statusCode == 200) {
         final msg = data["message"] ?? "Deleted successfully";
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isSuccess: true);
 
         setState(() {
           savedLinks.removeWhere((e) => e["id"] == id);
@@ -214,15 +196,11 @@ class _LinksTabState extends State<LinksTab> {
         return true;
       } else {
         final msg = data["message"] ?? "Something went wrong";
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg)),
-        );
+        TopAlert.show(context, msg, isError: true);
         return false;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
       return false;
     }
   }
@@ -414,17 +392,14 @@ class _LinksTabState extends State<LinksTab> {
                   ? null
                   : () async {
                       if (selectedPlatform == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                              content: Text("Please select platform")),
-                        );
+                        TopAlert.show(context, "Please select platform",
+                            isError: true);
                         return;
                       }
 
                       if (linkController.text.trim().isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text("Please enter link")),
-                        );
+                        TopAlert.show(context, "Please enter link",
+                            isError: true);
                         return;
                       }
 

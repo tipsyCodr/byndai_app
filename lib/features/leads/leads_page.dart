@@ -12,6 +12,7 @@ import './lead_chat_page.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import './manage_category_page.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class LeadsPage extends StatefulWidget {
   const LeadsPage({super.key});
@@ -150,12 +151,9 @@ class _LeadsPageState extends State<LeadsPage> {
 
                                       if (userId == null) {
                                         Navigator.pop(context);
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                              content: Text(
-                                                  "User not found. Login again")),
-                                        );
+                                        TopAlert.show(context,
+                                            "User not found. Login again",
+                                            isError: true);
                                         return;
                                       }
 
@@ -166,7 +164,7 @@ class _LeadsPageState extends State<LeadsPage> {
                                         body: jsonEncode({
                                           "user_id": userId,
                                           "category": categoryCtrl.text.trim(),
-                                        }),
+                                        }), 
                                       );
 
                                       final data = jsonDecode(response.body);
@@ -174,12 +172,12 @@ class _LeadsPageState extends State<LeadsPage> {
                                       if (!context.mounted) return;
                                       Navigator.pop(context);
 
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(
-                                          content: Text(data["message"] ??
-                                              "Something went wrong"),
-                                        ),
+                                      TopAlert.show(
+                                        context,
+                                        data["message"] ??
+                                            "Something went wrong",
+                                        isSuccess: data["status"] == true,
+                                        isError: data["status"] != true,
                                       );
 
                                       if (data["status"] == true) {
@@ -187,10 +185,8 @@ class _LeadsPageState extends State<LeadsPage> {
                                       }
                                     } catch (e) {
                                       Navigator.pop(context);
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        SnackBar(content: Text("Error: $e")),
-                                      );
+                                      TopAlert.show(context, "Error: $e",
+                                          isError: true);
                                     }
                                   },
                             child: isLoading
@@ -486,9 +482,8 @@ class _LeadsPageState extends State<LeadsPage> {
               final success = await provider.deleteLead(leadId);
 
               if (success) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("🗑 Lead deleted successfully")),
-                );
+                TopAlert.show(context, "🗑 Lead deleted successfully",
+                    isSuccess: true);
                 // Refresh scanned leads list
                 if (_currentUserId != null) {
                   context.read<LeadProviders>().fetchLeadsByUserId(
@@ -497,9 +492,7 @@ class _LeadsPageState extends State<LeadsPage> {
                       );
                 }
               } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("❌ Delete failed")),
-                );
+                TopAlert.show(context, "❌ Delete failed", isError: true);
               }
             },
           ),
@@ -738,506 +731,532 @@ class _LeadsPageState extends State<LeadsPage> {
     }
 
     if (!provider.isLoading && provider.leads.isEmpty) {
-      return const Center(
-        child: Text(
-          "No Data Found",
-          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-        ),
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return RefreshIndicator(
+            onRefresh: () async {
+              await _fetchLeadCategories();
+              await _loadUserIdAndFetchLeads();
+            },
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: const Center(
+                  child: Text(
+                    "No Data Found",
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       );
     }
 
-    return ListView.builder(
-      controller: _scrollCtrl,
-      padding: const EdgeInsets.only(bottom: 110),
-      itemCount: provider.leads.length,
-      itemBuilder: (_, i) {
-        final lead = provider.leads[i];
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _fetchLeadCategories();
+        await _loadUserIdAndFetchLeads();
+      },
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        controller: _scrollCtrl,
+        padding: const EdgeInsets.only(bottom: 110),
+        itemCount: provider.leads.length,
+        itemBuilder: (_, i) {
+          final lead = provider.leads[i];
 
-        return InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => LeadDetailsPage(lead: lead),
-              ),
-            );
-          },
-          child: Card(
-            elevation: 1.2,
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            // child: Padding(
-            //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            //   child: Row(
-            //     crossAxisAlignment: CrossAxisAlignment.start,
-            //     children: [
-            //       Expanded(
-            //         child: Column(
-            //           crossAxisAlignment: CrossAxisAlignment.start,
-            //           children: [
-            //             // Text(
-            //             //   lead.name ?? "",
-            //             //   maxLines: 1,
-            //             //   overflow: TextOverflow.ellipsis,
-            //             //   style: const TextStyle(
-            //             //       fontSize: 14.5, fontWeight: FontWeight.w600),
-            //             // ),
-            //             Row(
-            //               crossAxisAlignment: CrossAxisAlignment.start,
-            //               children: [
-            //                 // ✅ LEFT SIDE — NAME
-            //                 Expanded(
-            //                   child: Text(
-            //                     lead.name ?? "",
-            //                     style: const TextStyle(
-            //                       fontSize: 16,
-            //                       fontWeight: FontWeight.w600,
-            //                     ),
-            //                     overflow: TextOverflow.ellipsis,
-            //                   ),
-            //                 ),
+          return InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => LeadDetailsPage(lead: lead),
+                ),
+              );
+            },
+            child: Card(
+              elevation: 1.2,
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+              // child: Padding(
+              //   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              //   child: Row(
+              //     crossAxisAlignment: CrossAxisAlignment.start,
+              //     children: [
+              //       Expanded(
+              //         child: Column(
+              //           crossAxisAlignment: CrossAxisAlignment.start,
+              //           children: [
+              //             // Text(
+              //             //   lead.name ?? "",
+              //             //   maxLines: 1,
+              //             //   overflow: TextOverflow.ellipsis,
+              //             //   style: const TextStyle(
+              //             //       fontSize: 14.5, fontWeight: FontWeight.w600),
+              //             // ),
+              //             Row(
+              //               crossAxisAlignment: CrossAxisAlignment.start,
+              //               children: [
+              //                 // ✅ LEFT SIDE — NAME
+              //                 Expanded(
+              //                   child: Text(
+              //                     lead.name ?? "",
+              //                     style: const TextStyle(
+              //                       fontSize: 16,
+              //                       fontWeight: FontWeight.w600,
+              //                     ),
+              //                     overflow: TextOverflow.ellipsis,
+              //                   ),
+              //                 ),
 
-            //                 // ✅ RIGHT SIDE — CHAT + MENU
-            //                 Row(
-            //                   mainAxisSize: MainAxisSize.min,
-            //                   children: [
-            //                     // CHAT ICON
-            //                     IconButton(
-            //                       visualDensity: VisualDensity.compact,
-            //                       padding: EdgeInsets.zero,
-            //                       constraints: const BoxConstraints(),
-            //                       icon: const Icon(
-            //                         Icons.chat_bubble_outline,
-            //                         size: 18,
-            //                         color: Colors.green,
-            //                       ),
-            //                       onPressed: () async {
-            //                         final session = await UserStorageService()
-            //                             .loadSession();
-            //                         final viewerUserId = session.user?.id;
+              //                 // ✅ RIGHT SIDE — CHAT + MENU
+              //                 Row(
+              //                   mainAxisSize: MainAxisSize.min,
+              //                   children: [
+              //                     // CHAT ICON
+              //                     IconButton(
+              //                       visualDensity: VisualDensity.compact,
+              //                       padding: EdgeInsets.zero,
+              //                       constraints: const BoxConstraints(),
+              //                       icon: const Icon(
+              //                         Icons.chat_bubble_outline,
+              //                         size: 18,
+              //                         color: Colors.green,
+              //                       ),
+              //                       onPressed: () async {
+              //                         final session = await UserStorageService()
+              //                             .loadSession();
+              //                         final viewerUserId = session.user?.id;
 
-            //                         Navigator.push(
-            //                           context,
-            //                           MaterialPageRoute(
-            //                             builder: (_) => LeadChatPage(
-            //                               lead: lead,
-            //                               viewerUserId: viewerUserId,
-            //                             ),
-            //                           ),
-            //                         );
-            //                       },
-            //                     ),
+              //                         Navigator.push(
+              //                           context,
+              //                           MaterialPageRoute(
+              //                             builder: (_) => LeadChatPage(
+              //                               lead: lead,
+              //                               viewerUserId: viewerUserId,
+              //                             ),
+              //                           ),
+              //                         );
+              //                       },
+              //                     ),
 
-            //                     // POPUP MENU
-            //                     PopupMenuButton<String>(
-            //                       padding: EdgeInsets.zero,
-            //                       icon: const Icon(
-            //                         CupertinoIcons.ellipsis_vertical,
-            //                         size: 18,
-            //                         color: Colors.grey,
-            //                       ),
-            //                       shape: RoundedRectangleBorder(
-            //                         borderRadius: BorderRadius.circular(12),
-            //                       ),
-            //                       onSelected: (value) async {
-            //                         if (value == 'edit') {
-            //                           Navigator.push(
-            //                             context,
-            //                             MaterialPageRoute(
-            //                               builder: (_) =>
-            //                                   LeadDetailsPage(lead: lead),
-            //                             ),
-            //                           );
-            //                         }
-            //                         if (value == 'delete') {
-            //                           _confirmDelete(lead.id!);
-            //                         }
-            //                       },
-            //                       itemBuilder: (context) => const [
-            //                         PopupMenuItem(
-            //                           value: 'edit',
-            //                           child: Row(
-            //                             children: [
-            //                               Icon(CupertinoIcons.pencil, size: 16),
-            //                               SizedBox(width: 8),
-            //                               Text("Edit"),
-            //                             ],
-            //                           ),
-            //                         ),
-            //                         PopupMenuItem(
-            //                           value: 'delete',
-            //                           child: Row(
-            //                             children: [
-            //                               Icon(CupertinoIcons.delete,
-            //                                   size: 16, color: Colors.red),
-            //                               SizedBox(width: 8),
-            //                               Text("Delete"),
-            //                             ],
-            //                           ),
-            //                         ),
-            //                       ],
-            //                     ),
-            //                   ],
-            //                 ),
-            //               ],
-            //             ),
-            //             const SizedBox(height: 2),
-            //             if ((lead.company_name ?? "").isNotEmpty)
-            //               Text(
-            //                 lead.company_name!,
-            //                 maxLines: 1,
-            //                 overflow: TextOverflow.ellipsis,
-            //                 style: TextStyle(
-            //                     fontSize: 12, color: Colors.grey.shade600),
-            //               ),
-            //             const SizedBox(height: 4),
-            //             Row(
-            //               children: [
-            //                 const Icon(CupertinoIcons.phone,
-            //                     size: 13, color: Colors.grey),
-            //                 const SizedBox(width: 4),
-            //                 Text(
-            //                   lead.mobile_no_1 ?? "",
-            //                   style: const TextStyle(fontSize: 12),
-            //                 ),
-            //               ],
-            //             ),
-            //             if ((lead.email ?? "").isNotEmpty) ...[
-            //               const SizedBox(height: 2),
-            //               Row(
-            //                 children: [
-            //                   const Icon(CupertinoIcons.mail,
-            //                       size: 13, color: Colors.grey),
-            //                   const SizedBox(width: 4),
-            //                   Expanded(
-            //                     child: Text(
-            //                       lead.email!,
-            //                       maxLines: 1,
-            //                       overflow: TextOverflow.ellipsis,
-            //                       style: const TextStyle(fontSize: 12),
-            //                     ),
-            //                   ),
-            //                 ],
-            //               ),
-            //             ],
-            //           ],
-            //         ),
-            //       ),
-            //       // Row(
-            //       //   mainAxisSize: MainAxisSize.min,
-            //       //   children: [
+              //                     // POPUP MENU
+              //                     PopupMenuButton<String>(
+              //                       padding: EdgeInsets.zero,
+              //                       icon: const Icon(
+              //                         CupertinoIcons.ellipsis_vertical,
+              //                         size: 18,
+              //                         color: Colors.grey,
+              //                       ),
+              //                       shape: RoundedRectangleBorder(
+              //                         borderRadius: BorderRadius.circular(12),
+              //                       ),
+              //                       onSelected: (value) async {
+              //                         if (value == 'edit') {
+              //                           Navigator.push(
+              //                             context,
+              //                             MaterialPageRoute(
+              //                               builder: (_) =>
+              //                                   LeadDetailsPage(lead: lead),
+              //                             ),
+              //                           );
+              //                         }
+              //                         if (value == 'delete') {
+              //                           _confirmDelete(lead.id!);
+              //                         }
+              //                       },
+              //                       itemBuilder: (context) => const [
+              //                         PopupMenuItem(
+              //                           value: 'edit',
+              //                           child: Row(
+              //                             children: [
+              //                               Icon(CupertinoIcons.pencil, size: 16),
+              //                               SizedBox(width: 8),
+              //                               Text("Edit"),
+              //                             ],
+              //                           ),
+              //                         ),
+              //                         PopupMenuItem(
+              //                           value: 'delete',
+              //                           child: Row(
+              //                             children: [
+              //                               Icon(CupertinoIcons.delete,
+              //                                   size: 16, color: Colors.red),
+              //                               SizedBox(width: 8),
+              //                               Text("Delete"),
+              //                             ],
+              //                           ),
+              //                         ),
+              //                       ],
+              //                     ),
+              //                   ],
+              //                 ),
+              //               ],
+              //             ),
+              //             const SizedBox(height: 2),
+              //             if ((lead.company_name ?? "").isNotEmpty)
+              //               Text(
+              //                 lead.company_name!,
+              //                 maxLines: 1,
+              //                 overflow: TextOverflow.ellipsis,
+              //                 style: TextStyle(
+              //                     fontSize: 12, color: Colors.grey.shade600),
+              //               ),
+              //             const SizedBox(height: 4),
+              //             Row(
+              //               children: [
+              //                 const Icon(CupertinoIcons.phone,
+              //                     size: 13, color: Colors.grey),
+              //                 const SizedBox(width: 4),
+              //                 Text(
+              //                   lead.mobile_no_1 ?? "",
+              //                   style: const TextStyle(fontSize: 12),
+              //                 ),
+              //               ],
+              //             ),
+              //             if ((lead.email ?? "").isNotEmpty) ...[
+              //               const SizedBox(height: 2),
+              //               Row(
+              //                 children: [
+              //                   const Icon(CupertinoIcons.mail,
+              //                       size: 13, color: Colors.grey),
+              //                   const SizedBox(width: 4),
+              //                   Expanded(
+              //                     child: Text(
+              //                       lead.email!,
+              //                       maxLines: 1,
+              //                       overflow: TextOverflow.ellipsis,
+              //                       style: const TextStyle(fontSize: 12),
+              //                     ),
+              //                   ),
+              //                 ],
+              //               ),
+              //             ],
+              //           ],
+              //         ),
+              //       ),
+              //       // Row(
+              //       //   mainAxisSize: MainAxisSize.min,
+              //       //   children: [
 
-            //       //     PopupMenuButton<String>(
-            //       //       padding: EdgeInsets.zero,
-            //       //       icon: const Icon(
-            //       //         CupertinoIcons.ellipsis_vertical,
-            //       //         size: 18,
-            //       //         color: Colors.grey,
-            //       //       ),
-            //       //       shape: RoundedRectangleBorder(
-            //       //         borderRadius: BorderRadius.circular(12),
-            //       //       ),
-            //       //       onSelected: (value) async {
-            //       //         if (value == 'edit') {
-            //       //           Navigator.push(
-            //       //             context,
-            //       //             MaterialPageRoute(
-            //       //               builder: (_) => LeadDetailsPage(lead: lead),
-            //       //             ),
-            //       //           );
-            //       //         }
-            //       //         if (value == 'delete') {
-            //       //           _confirmDelete(lead.id!);
-            //       //         }
-            //       //         if (value == 'chat') {
-            //       //           final session =
-            //       //               await UserStorageService().loadSession();
-            //       //           final viewerUserId = session.user?.id;
-            //       //           Navigator.push(
-            //       //             context,
-            //       //             MaterialPageRoute(
-            //       //               builder: (_) => LeadChatPage(
-            //       //                 lead: lead,
-            //       //                 viewerUserId: viewerUserId,
-            //       //               ),
-            //       //             ),
-            //       //           );
-            //       //         }
-            //       //       },
-            //       //       itemBuilder: (context) => [
-            //       //         const PopupMenuItem(
-            //       //           value: 'edit',
-            //       //           child: Row(
-            //       //             children: [
-            //       //               Icon(CupertinoIcons.pencil, size: 16),
-            //       //               SizedBox(width: 8),
-            //       //               Text("Edit"),
-            //       //             ],
-            //       //           ),
-            //       //         ),
-            //       //         const PopupMenuItem(
-            //       //           value: 'delete',
-            //       //           child: Row(
-            //       //             children: [
-            //       //               Icon(CupertinoIcons.delete,
-            //       //                   size: 16, color: Colors.red),
-            //       //               SizedBox(width: 8),
-            //       //               Text("Delete"),
-            //       //             ],
-            //       //           ),
-            //       //         ),
-            //       //         const PopupMenuItem(
-            //       //           value: 'chat',
-            //       //           child: Row(
-            //       //             children: [
-            //       //               Icon(Icons.chat_bubble_outline,
-            //       //                   size: 16, color: Colors.green),
-            //       //               SizedBox(width: 8),
-            //       //               Text("Chat"),
-            //       //             ],
-            //       //           ),
-            //       //         ),
-            //       //       ],
-            //       //     ),
-            //       //   ],
-            //       // ),
+              //       //     PopupMenuButton<String>(
+              //       //       padding: EdgeInsets.zero,
+              //       //       icon: const Icon(
+              //       //         CupertinoIcons.ellipsis_vertical,
+              //       //         size: 18,
+              //       //         color: Colors.grey,
+              //       //       ),
+              //       //       shape: RoundedRectangleBorder(
+              //       //         borderRadius: BorderRadius.circular(12),
+              //       //       ),
+              //       //       onSelected: (value) async {
+              //       //         if (value == 'edit') {
+              //       //           Navigator.push(
+              //       //             context,
+              //       //             MaterialPageRoute(
+              //       //               builder: (_) => LeadDetailsPage(lead: lead),
+              //       //             ),
+              //       //           );
+              //       //         }
+              //       //         if (value == 'delete') {
+              //       //           _confirmDelete(lead.id!);
+              //       //         }
+              //       //         if (value == 'chat') {
+              //       //           final session =
+              //       //               await UserStorageService().loadSession();
+              //       //           final viewerUserId = session.user?.id;
+              //       //           Navigator.push(
+              //       //             context,
+              //       //             MaterialPageRoute(
+              //       //               builder: (_) => LeadChatPage(
+              //       //                 lead: lead,
+              //       //                 viewerUserId: viewerUserId,
+              //       //               ),
+              //       //             ),
+              //       //           );
+              //       //         }
+              //       //       },
+              //       //       itemBuilder: (context) => [
+              //       //         const PopupMenuItem(
+              //       //           value: 'edit',
+              //       //           child: Row(
+              //       //             children: [
+              //       //               Icon(CupertinoIcons.pencil, size: 16),
+              //       //               SizedBox(width: 8),
+              //       //               Text("Edit"),
+              //       //             ],
+              //       //           ),
+              //       //         ),
+              //       //         const PopupMenuItem(
+              //       //           value: 'delete',
+              //       //           child: Row(
+              //       //             children: [
+              //       //               Icon(CupertinoIcons.delete,
+              //       //                   size: 16, color: Colors.red),
+              //       //               SizedBox(width: 8),
+              //       //               Text("Delete"),
+              //       //             ],
+              //       //           ),
+              //       //         ),
+              //       //         const PopupMenuItem(
+              //       //           value: 'chat',
+              //       //           child: Row(
+              //       //             children: [
+              //       //               Icon(Icons.chat_bubble_outline,
+              //       //                   size: 16, color: Colors.green),
+              //       //               SizedBox(width: 8),
+              //       //               Text("Chat"),
+              //       //             ],
+              //       //           ),
+              //       //         ),
+              //       //       ],
+              //       //     ),
+              //       //   ],
+              //       // ),
 
-            //       // Row(
-            //       //   mainAxisSize: MainAxisSize.min,
-            //       //   children: [
-            //       //     // ✅ DIRECT CHAT ICON
-            //       //     IconButton(
-            //       //       visualDensity: VisualDensity.compact,
-            //       //       padding: EdgeInsets.zero,
-            //       //       constraints: const BoxConstraints(),
-            //       //       icon: const Icon(
-            //       //         Icons.chat_bubble_outline,
-            //       //         size: 18,
-            //       //         color: Colors.green,
-            //       //       ),
-            //       //       onPressed: () async {
-            //       //         final session =
-            //       //             await UserStorageService().loadSession();
-            //       //         final viewerUserId = session.user?.id;
+              //       // Row(
+              //       //   mainAxisSize: MainAxisSize.min,
+              //       //   children: [
+              //       //     // ✅ DIRECT CHAT ICON
+              //       //     IconButton(
+              //       //       visualDensity: VisualDensity.compact,
+              //       //       padding: EdgeInsets.zero,
+              //       //       constraints: const BoxConstraints(),
+              //       //       icon: const Icon(
+              //       //         Icons.chat_bubble_outline,
+              //       //         size: 18,
+              //       //         color: Colors.green,
+              //       //       ),
+              //       //       onPressed: () async {
+              //       //         final session =
+              //       //             await UserStorageService().loadSession();
+              //       //         final viewerUserId = session.user?.id;
 
-            //       //         Navigator.push(
-            //       //           context,
-            //       //           MaterialPageRoute(
-            //       //             builder: (_) => LeadChatPage(
-            //       //               lead: lead,
-            //       //               viewerUserId: viewerUserId,
-            //       //             ),
-            //       //           ),
-            //       //         );
-            //       //       },
-            //       //     ),
+              //       //         Navigator.push(
+              //       //           context,
+              //       //           MaterialPageRoute(
+              //       //             builder: (_) => LeadChatPage(
+              //       //               lead: lead,
+              //       //               viewerUserId: viewerUserId,
+              //       //             ),
+              //       //           ),
+              //       //         );
+              //       //       },
+              //       //     ),
 
-            //       //     // ✅ POPUP MENU (Edit + Delete Only)
-            //       //     PopupMenuButton<String>(
-            //       //       padding: EdgeInsets.zero,
-            //       //       icon: const Icon(
-            //       //         CupertinoIcons.ellipsis_vertical,
-            //       //         size: 18,
-            //       //         color: Colors.grey,
-            //       //       ),
-            //       //       shape: RoundedRectangleBorder(
-            //       //         borderRadius: BorderRadius.circular(12),
-            //       //       ),
-            //       //       onSelected: (value) async {
-            //       //         if (value == 'edit') {
-            //       //           Navigator.push(
-            //       //             context,
-            //       //             MaterialPageRoute(
-            //       //               builder: (_) => LeadDetailsPage(lead: lead),
-            //       //             ),
-            //       //           );
-            //       //         }
-            //       //         if (value == 'delete') {
-            //       //           _confirmDelete(lead.id!);
-            //       //         }
-            //       //       },
-            //       //       itemBuilder: (context) => [
-            //       //         const PopupMenuItem(
-            //       //           value: 'edit',
-            //       //           child: Row(
-            //       //             children: [
-            //       //               Icon(CupertinoIcons.pencil, size: 16),
-            //       //               SizedBox(width: 8),
-            //       //               Text("Edit"),
-            //       //             ],
-            //       //           ),
-            //       //         ),
-            //       //         const PopupMenuItem(
-            //       //           value: 'delete',
-            //       //           child: Row(
-            //       //             children: [
-            //       //               Icon(CupertinoIcons.delete,
-            //       //                   size: 16, color: Colors.red),
-            //       //               SizedBox(width: 8),
-            //       //               Text("Delete"),
-            //       //             ],
-            //       //           ),
-            //       //         ),
-            //       //       ],
-            //       //     ),
-            //       //   ],
-            //       // ),
-            //     ],
-            //   ),
-            // ),
+              //       //     // ✅ POPUP MENU (Edit + Delete Only)
+              //       //     PopupMenuButton<String>(
+              //       //       padding: EdgeInsets.zero,
+              //       //       icon: const Icon(
+              //       //         CupertinoIcons.ellipsis_vertical,
+              //       //         size: 18,
+              //       //         color: Colors.grey,
+              //       //       ),
+              //       //       shape: RoundedRectangleBorder(
+              //       //         borderRadius: BorderRadius.circular(12),
+              //       //       ),
+              //       //       onSelected: (value) async {
+              //       //         if (value == 'edit') {
+              //       //           Navigator.push(
+              //       //             context,
+              //       //             MaterialPageRoute(
+              //       //               builder: (_) => LeadDetailsPage(lead: lead),
+              //       //             ),
+              //       //           );
+              //       //         }
+              //       //         if (value == 'delete') {
+              //       //           _confirmDelete(lead.id!);
+              //       //         }
+              //       //       },
+              //       //       itemBuilder: (context) => [
+              //       //         const PopupMenuItem(
+              //       //           value: 'edit',
+              //       //           child: Row(
+              //       //             children: [
+              //       //               Icon(CupertinoIcons.pencil, size: 16),
+              //       //               SizedBox(width: 8),
+              //       //               Text("Edit"),
+              //       //             ],
+              //       //           ),
+              //       //         ),
+              //       //         const PopupMenuItem(
+              //       //           value: 'delete',
+              //       //           child: Row(
+              //       //             children: [
+              //       //               Icon(CupertinoIcons.delete,
+              //       //                   size: 16, color: Colors.red),
+              //       //               SizedBox(width: 8),
+              //       //               Text("Delete"),
+              //       //             ],
+              //       //           ),
+              //       //         ),
+              //       //       ],
+              //       //     ),
+              //       //   ],
+              //       // ),
+              //     ],
+              //   ),
+              // ),
 
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// 🔥 TOP ROW — NAME + ACTIONS
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      /// NAME (LEFT)
-                      Expanded(
-                        child: Text(
-                          lead.name ?? "",
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 15.5,
-                            fontWeight: FontWeight.w600,
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// 🔥 TOP ROW — NAME + ACTIONS
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        /// NAME (LEFT)
+                        Expanded(
+                          child: Text(
+                            lead.name ?? "",
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 15.5,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
 
-                      /// CHAT ICON
-                      IconButton(
-                        visualDensity: VisualDensity.compact,
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        icon: const Icon(
-                          Icons.chat_bubble_outline,
-                          size: 19,
-                          color: Colors.green,
-                        ),
-                        onPressed: () async {
-                          final session =
-                              await UserStorageService().loadSession();
-                          final viewerUserId = session.user?.id;
+                        /// CHAT ICON
+                        IconButton(
+                          visualDensity: VisualDensity.compact,
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          icon: const Icon(
+                            Icons.chat_bubble_outline,
+                            size: 19,
+                            color: Colors.green,
+                          ),
+                          onPressed: () async {
+                            final session =
+                                await UserStorageService().loadSession();
+                            final viewerUserId = session.user?.id;
 
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => LeadChatPage(
-                                lead: lead,
-                                viewerUserId: viewerUserId,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      /// POPUP MENU
-                      PopupMenuButton<String>(
-                        padding: EdgeInsets.zero,
-                        icon: Icon(
-                          CupertinoIcons.ellipsis_vertical,
-                          size: 19,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        onSelected: (value) async {
-                          if (value == 'edit') {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => LeadDetailsPage(lead: lead),
+                                builder: (_) => LeadChatPage(
+                                  lead: lead,
+                                  viewerUserId: viewerUserId,
+                                ),
                               ),
                             );
-                          }
-                          if (value == 'delete') {
-                            _confirmDelete(lead.id!);
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Text("Edit"),
+                          },
+                        ),
+
+                        /// POPUP MENU
+                        PopupMenuButton<String>(
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            CupertinoIcons.ellipsis_vertical,
+                            size: 19,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
-                          PopupMenuItem(
-                            value: 'delete',
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          onSelected: (value) async {
+                            if (value == 'edit') {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => LeadDetailsPage(lead: lead),
+                                ),
+                              );
+                            }
+                            if (value == 'delete') {
+                              _confirmDelete(lead.id!);
+                            }
+                          },
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Text("Edit"),
+                            ),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text(
+                                "Delete",
+                                style: TextStyle(
+                                    color: Theme.of(context).colorScheme.error),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+
+                    /// 🔥 SMALL GAP (Reduced)
+                    const SizedBox(height: 4),
+
+                    /// COMPANY NAME
+                    if ((lead.company_name ?? "").isNotEmpty)
+                      Text(
+                        lead.company_name!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.5,
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+
+                    const SizedBox(height: 6),
+
+                    /// PHONE
+                    Row(
+                      children: [
+                        Icon(CupertinoIcons.phone,
+                            size: 13,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant),
+                        const SizedBox(width: 4),
+                        Text(
+                          lead.mobile_no_1 ?? "",
+                          style: const TextStyle(fontSize: 12.5),
+                        ),
+                      ],
+                    ),
+
+                    /// EMAIL
+                    if ((lead.email ?? "").isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(CupertinoIcons.mail,
+                              size: 13,
+                              color: Theme.of(context)
+                                  .colorScheme
+                                  .onSurfaceVariant),
+                          const SizedBox(width: 4),
+                          Expanded(
                             child: Text(
-                              "Delete",
-                              style: TextStyle(
-                                  color: Theme.of(context).colorScheme.error),
+                              lead.email!,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(fontSize: 12.5),
                             ),
                           ),
                         ],
                       ),
                     ],
-                  ),
-
-                  /// 🔥 SMALL GAP (Reduced)
-                  const SizedBox(height: 4),
-
-                  /// COMPANY NAME
-                  if ((lead.company_name ?? "").isNotEmpty)
-                    Text(
-                      lead.company_name!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12.5,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-
-                  const SizedBox(height: 6),
-
-                  /// PHONE
-                  Row(
-                    children: [
-                      Icon(CupertinoIcons.phone,
-                          size: 13,
-                          color:
-                              Theme.of(context).colorScheme.onSurfaceVariant),
-                      const SizedBox(width: 4),
-                      Text(
-                        lead.mobile_no_1 ?? "",
-                        style: const TextStyle(fontSize: 12.5),
-                      ),
-                    ],
-                  ),
-
-                  /// EMAIL
-                  if ((lead.email ?? "").isNotEmpty) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(CupertinoIcons.mail,
-                            size: 13,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            lead.email!,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12.5),
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
-                ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -1247,27 +1266,34 @@ class _LeadsPageState extends State<LeadsPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return SingleChildScrollView(
-      controller: _scrollCtrl,
-      child: DataTable(
-        columns: const [
-          DataColumn(label: Text("ID")),
-          DataColumn(label: Text("Name")),
-          DataColumn(label: Text("Company")),
-          DataColumn(label: Text("Mobile")),
-          DataColumn(label: Text("Email")),
-          DataColumn(label: Text("Address")),
-        ],
-        rows: provider.leads.map((lead) {
-          return DataRow(cells: [
-            DataCell(Text("${lead.id}")),
-            DataCell(Text(lead.name ?? "")),
-            DataCell(Text(lead.company_name ?? "")),
-            DataCell(Text(lead.mobile_no_1 ?? "")),
-            DataCell(Text(lead.email ?? "")),
-            DataCell(Text(lead.address ?? "")),
-          ]);
-        }).toList(),
+    return RefreshIndicator(
+      onRefresh: () async {
+        await _fetchLeadCategories();
+        await _loadUserIdAndFetchLeads();
+      },
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        controller: _scrollCtrl,
+        child: DataTable(
+          columns: const [
+            DataColumn(label: Text("ID")),
+            DataColumn(label: Text("Name")),
+            DataColumn(label: Text("Company")),
+            DataColumn(label: Text("Mobile")),
+            DataColumn(label: Text("Email")),
+            DataColumn(label: Text("Address")),
+          ],
+          rows: provider.leads.map((lead) {
+            return DataRow(cells: [
+              DataCell(Text("${lead.id}")),
+              DataCell(Text(lead.name ?? "")),
+              DataCell(Text(lead.company_name ?? "")),
+              DataCell(Text(lead.mobile_no_1 ?? "")),
+              DataCell(Text(lead.email ?? "")),
+              DataCell(Text(lead.address ?? "")),
+            ]);
+          }).toList(),
+        ),
       ),
     );
   }

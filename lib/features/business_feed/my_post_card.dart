@@ -9,6 +9,7 @@ import './report_page.dart';
 import './industry_icon_mapper.dart';
 import 'edit_post_page.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class MyPostCard extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -114,9 +115,8 @@ class _MyPostCardState extends State<MyPostCard> {
         if (json["status"] == true) {
           // Success – parent ko batao ki ye post delete ho gayi
           widget.onPostDeleted?.call(postId);
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(json["message"] ?? "Post deleted")),
-          );
+          TopAlert.show(context, json["message"] ?? "Post deleted",
+              isSuccess: true);
         } else {
           throw Exception(json["message"] ?? "Delete failed");
         }
@@ -125,9 +125,7 @@ class _MyPostCardState extends State<MyPostCard> {
       }
     } catch (e) {
       debugPrint("Delete error: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Failed to delete: $e")),
-      );
+      TopAlert.show(context, "Failed to delete: $e", isError: true);
     }
   }
 
@@ -182,20 +180,10 @@ class _MyPostCardState extends State<MyPostCard> {
   // SHOW SNACKBAR
   // =========================
   void _showSnackBar(String message, Color backgroundColor) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(color: Colors.white),
-        ),
-        backgroundColor: backgroundColor,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
+    if (!mounted) return;
+    final isError = backgroundColor == Colors.red;
+    final isSuccess = backgroundColor == Colors.green;
+    TopAlert.show(context, message, isError: isError, isSuccess: isSuccess);
   }
 
   // =========================

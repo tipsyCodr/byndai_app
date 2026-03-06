@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:gridcard/core/services/lead_provider.dart';
 import 'package:gridcard/models/customer_master_model.dart';
 import 'package:provider/provider.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class Preview extends StatefulWidget {
   final String imagePath;
@@ -448,16 +449,12 @@ class _PreviewState extends State<Preview> {
 
     if (context.mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Lead saved successfully!")),
-        );
+        TopAlert.show(context, "Lead saved successfully!", isSuccess: true);
         Navigator.pop(context); // Go back to camera
         Navigator.pop(context); // Go back to home/feed
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text("Failed to save lead. Please try again.")),
-        );
+        TopAlert.show(context, "Failed to save lead. Please try again.",
+            isError: true);
       }
     }
   }

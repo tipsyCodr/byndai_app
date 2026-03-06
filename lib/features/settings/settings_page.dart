@@ -2,8 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:gridcard/core/services/theme_provider.dart';
-import 'package:gridcard/features/profile/business_info_page.dart';
-import 'package:gridcard/features/profile/links_management_page.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:gridcard/features/profile/edit_profile_page.dart';
 import 'package:gridcard/features/settings/change_pin_page.dart';
@@ -15,9 +13,8 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import './about_dynamic_page.dart';
 import './privacy_dynamic_page.dart';
-import 'package:provider/provider.dart';
-import 'package:gridcard/core/services/profile_provider.dart';
 import './support_dynamic_page.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -178,10 +175,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
                 onTap: () async {
                   if (_userDetails == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Please wait, loading profile...")),
-                    );
+                    TopAlert.show(context, "Please wait, loading profile...");
                     return;
                   }
 
@@ -203,10 +197,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 subtitle: "Manage your digital presence",
                 onTap: () {
                   if (_userDetails == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                          content: Text("Please wait, loading profile...")),
-                    );
+                    TopAlert.show(context, "Please wait, loading profile...");
                     return;
                   }
 

@@ -1,4 +1,3 @@
-
 // import 'dart:convert';
 // import 'dart:io';
 
@@ -292,9 +291,6 @@
 //   }
 // }
 
-
-
-
 import 'dart:convert';
 import 'dart:io';
 
@@ -304,6 +300,7 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class AddProductPage extends StatefulWidget {
   final Map<String, dynamic>? product; // ✅ Add/Edit ke liye
@@ -392,16 +389,12 @@ class _AddProductPageState extends State<AddProductPage> {
     if (isLoading) return;
 
     if (nameCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Product name required")),
-      );
+      TopAlert.show(context, "Product name required", isError: true);
       return;
     }
 
     if (priceCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Product price required")),
-      );
+      TopAlert.show(context, "Product price required", isError: true);
       return;
     }
 
@@ -459,13 +452,13 @@ class _AddProductPageState extends State<AddProductPage> {
       if (streamedResponse.statusCode == 200 ||
           streamedResponse.statusCode == 201) {
         final msg = jsonData["message"] ??
-            (isEdit ? "Product updated successfully" : "Product created successfully");
+            (isEdit
+                ? "Product updated successfully"
+                : "Product created successfully");
 
         if (!mounted) return;
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg.toString())),
-        );
+        TopAlert.show(context, msg.toString(), isSuccess: true);
 
         await Future.delayed(const Duration(milliseconds: 700));
 
@@ -478,9 +471,7 @@ class _AddProductPageState extends State<AddProductPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
     } finally {
       if (mounted) setState(() => isLoading = false);
     }
@@ -542,10 +533,10 @@ class _AddProductPageState extends State<AddProductPage> {
                   children: [
                     const Text(
                       "Product Image",
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 10),
-
                     if (productImage != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
@@ -580,15 +571,15 @@ class _AddProductPageState extends State<AddProductPage> {
                           ),
                         ),
                       ),
-
                     const SizedBox(height: 12),
-
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
                         onPressed: _pickProductImage,
                         icon: const Icon(Icons.image),
-                        label: Text(isEdit ? "Change Product Image" : "Upload Product Image"),
+                        label: Text(isEdit
+                            ? "Change Product Image"
+                            : "Upload Product Image"),
                       ),
                     ),
                   ],

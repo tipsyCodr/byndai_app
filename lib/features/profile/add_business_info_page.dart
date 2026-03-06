@@ -7,6 +7,7 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class AddBusinessInfoPage extends StatefulWidget {
   final bool isEdit;
@@ -40,7 +41,7 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
   // Dropdown
   int? selectedIndustryId;
 
-  // user_id from storage
+  // user_id from storage....
   int? userId;
 
   // base url
@@ -99,9 +100,7 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Industries Error: $e")),
-      );
+      TopAlert.show(context, "Industries Error: $e", isError: true);
     } finally {
       if (mounted) setState(() => isIndustriesLoading = false);
     }
@@ -187,16 +186,12 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
     if (isLoading) return;
 
     if (legalNameCtrl.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Legal Name required")),
-      );
+      TopAlert.show(context, "Legal Name required", isError: true);
       return;
     }
 
     if (selectedIndustryId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Industry select karo")),
-      );
+      TopAlert.show(context, "Industry select karo", isError: true);
       return;
     }
 
@@ -266,9 +261,7 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
         final message = jsonData["message"] ?? "Success";
 
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message.toString())),
-        );
+        TopAlert.show(context, message.toString(), isSuccess: true);
 
         Future.delayed(const Duration(milliseconds: 600), () {
           if (mounted) Navigator.pop(context, true);
@@ -277,15 +270,11 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
         final msg = jsonData["message"] ?? "Something went wrong";
 
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(msg.toString())),
-        );
+        TopAlert.show(context, msg.toString(), isError: true);
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
-      );
+      TopAlert.show(context, "Error: $e", isError: true);
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

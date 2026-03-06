@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 import 'package:http/http.dart' as http;
 
 class DiscoverConnectionSuggest extends StatefulWidget {
@@ -351,24 +352,16 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                             if (!mounted) return;
 
                             if (errorMessage == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("✅ Connection request sent"),
-                                  backgroundColor: Colors.green,
-                                ),
-                              );
+                              TopAlert.show(context, "Connection request sent",
+                                  isSuccess: true);
 
                               // Optional: Button ko disable karne ke liye
                               setState(() {
                                 user["is_connected"] = true;
                               });
                             } else {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(errorMessage),
-                                  backgroundColor: Colors.red,
-                                ),
-                              );
+                              TopAlert.show(context, errorMessage,
+                                  isError: true);
                             }
                           },
                           child: Text(

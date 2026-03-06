@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 
 class PostDetailsPage extends StatefulWidget {
   final int postId;
@@ -309,20 +310,10 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   // SHOW SNACKBAR
   // =========================
   void _showSnackBar(String message, Color backgroundColor) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: const TextStyle(color: Colors.white),
-        ),
-        backgroundColor: backgroundColor,
-        duration: const Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-      ),
-    );
+    if (!mounted) return;
+    final isError = backgroundColor == Colors.red;
+    final isSuccess = backgroundColor == Colors.green;
+    TopAlert.show(context, message, isError: isError, isSuccess: isSuccess);
   }
 
   // =========================
