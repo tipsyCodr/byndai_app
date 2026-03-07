@@ -6,6 +6,8 @@ import 'package:http/http.dart' as http;
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'full_screen_image_viewer.dart';
+import './industry_icon_mapper.dart';
 
 class PostDetailsPage extends StatefulWidget {
   final int postId;
@@ -83,6 +85,19 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
       'Accept': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
+  }
+
+  void _openFullScreenImages(int initialIndex) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FullScreenImageViewer(
+          images: _images,
+          initialIndex: initialIndex,
+          baseUrl: _baseUrl,
+        ),
+      ),
+    );
   }
 
   // =========================
@@ -396,14 +411,22 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
         : const Color.fromARGB(255, 45, 47, 190); // original
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      // backgroundColor: Colors.black,
+      backgroundColor: isDark ? Colors.black : Colors.white,
       appBar: AppBar(
-        title:
-            const Text("Post Details", style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-        backgroundColor: Colors.black,
+        title: Text(
+          "Post Details",
+          style: TextStyle(
+            color: colorScheme.onSurface, // 👈 was Colors.black87
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        centerTitle: false,
+        // backgroundColor: Colors.black,
+        backgroundColor: colorScheme.surface, // 👈 was Colors.white
+        elevation: 1,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -430,10 +453,13 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                                   horizontal: 16, vertical: 12),
                               child: Row(
                                 children: [
-                                  const Text(
+                                  Text(
                                     "Comments",
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      // color: Colors.white,
+                                      color: isDark
+                                          ? Colors.white
+                                          : colorScheme.primary,
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -441,8 +467,11 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                                   const SizedBox(width: 8),
                                   Text(
                                     "(${_comments.length})",
-                                    style: const TextStyle(
-                                      color: Colors.white60,
+                                    style: TextStyle(
+                                      // color: Colors.white60,
+                                      color: isDark
+                                          ? Colors.white
+                                          : colorScheme.primary,
                                       fontSize: 16,
                                     ),
                                   ),
@@ -652,10 +681,21 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
         ? colorScheme.primary
         : const Color.fromARGB(255, 45, 47, 190); // original
 
+    final profilePicPath = user["profile_pic"];
+    final profilePicUrl =
+        profilePicPath != null ? "$_baseUrl/storage/$profilePicPath" : null;
+
     return Card(
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(
+          color: isDark ? Colors.grey.shade700 : colorScheme.primary,
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -664,10 +704,29 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
             // User Header
             Row(
               children: [
-                const CircleAvatar(
+                // const CircleAvatar(
+                //   radius: 18,
+                //   backgroundImage: AssetImage("assets/images/default_user.png"),
+                // ),
+
+                CircleAvatar(
                   radius: 18,
-                  backgroundImage: AssetImage("assets/images/default_user.png"),
+                  backgroundColor: Colors.grey.shade200,
+                  child: ClipOval(
+                    child: (profilePicUrl != null && profilePicUrl.isNotEmpty)
+                        ? Image.network(
+                            profilePicUrl,
+                            width: 36,
+                            height: 36,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(Icons.person, size: 22);
+                            },
+                          )
+                        : const Icon(Icons.person, size: 22),
+                  ),
                 ),
+
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -691,9 +750,19 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                     ],
                   ),
                 ),
-                const CircleAvatar(
+                // const CircleAvatar(
+                //   radius: 14,
+                //   backgroundImage: AssetImage("assets/images/default_logo.png"),
+                // ),
+
+                CircleAvatar(
                   radius: 14,
-                  backgroundImage: AssetImage("assets/images/default_logo.png"),
+                  backgroundColor: Colors.grey.shade200,
+                  child: Icon(
+                    IndustryIconMapper.getIcon(_postData["industry_icon"]),
+                    size: 16,
+                    color: const Color.fromARGB(255, 45, 47, 190),
+                  ),
                 ),
               ],
             ),
@@ -781,6 +850,46 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
   // =========================
   // IMAGE CAROUSEL
   // =========================
+  // Widget _buildImageCarousel() {
+  //   return SizedBox(
+  //     height: 210,
+  //     child: PageView.builder(
+  //       controller: _imageController,
+  //       itemCount: _images.length,
+  //       itemBuilder: (context, index) {
+  //         final media = _images[index];
+  //         final url = _fullUrl(media["media_url"] ?? "");
+
+  //         return Padding(
+  //           padding: const EdgeInsets.all(4),
+  //           child: ClipRRect(
+  //             borderRadius: BorderRadius.circular(14),
+  //             child: CachedNetworkImage(
+  //               imageUrl: url,
+  //               fit: BoxFit.cover,
+  //               width: double.infinity,
+  //               placeholder: (context, url) => Container(
+  //                 color: Colors.grey[200],
+  //                 child: const Center(child: CircularProgressIndicator()),
+  //               ),
+  //               errorWidget: (context, url, error) {
+  //                 debugPrint("IMAGE ERROR: $error");
+  //                 debugPrint("URL: $url");
+
+  //                 return Container(
+  //                   color: Colors.grey.shade200,
+  //                   alignment: Alignment.center,
+  //                   child: const Text("Image load failed"),
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
+
   Widget _buildImageCarousel() {
     return SizedBox(
       height: 210,
@@ -793,26 +902,28 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
 
           return Padding(
             padding: const EdgeInsets.all(4),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: CachedNetworkImage(
-                imageUrl: url,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
-                  child: const Center(child: CircularProgressIndicator()),
+            child: GestureDetector(
+              onTap: () {
+                _openFullScreenImages(index);
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[200],
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                  errorWidget: (context, url, error) {
+                    return Container(
+                      color: Colors.grey.shade200,
+                      alignment: Alignment.center,
+                      child: const Text("Image load failed"),
+                    );
+                  },
                 ),
-                errorWidget: (context, url, error) {
-                  debugPrint("IMAGE ERROR: $error");
-                  debugPrint("URL: $url");
-
-                  return Container(
-                    color: Colors.grey.shade200,
-                    alignment: Alignment.center,
-                    child: const Text("Image load failed"),
-                  );
-                },
               ),
             ),
           );
@@ -846,8 +957,17 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[900],
+        // color: Colors.grey[900],
+        color: isDark
+            ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
+            : Colors.white,
         borderRadius: BorderRadius.circular(12),
+        border: isDark
+            ? null
+            : Border.all(
+                color: colorScheme.primary,
+                width: 1,
+              ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -861,7 +981,9 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                 backgroundColor: Colors.grey[700],
                 child: Text(
                   fname.isNotEmpty ? fname[0].toUpperCase() : "U",
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(
+                    color: isDark ? Colors.white : colorScheme.primary,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),
@@ -871,8 +993,8 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                   children: [
                     Text(
                       fname,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : colorScheme.primary,
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -880,8 +1002,8 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                     const SizedBox(height: 2),
                     Text(
                       "@$userName • $createdAtHuman",
-                      style: const TextStyle(
-                        color: Colors.white60,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : colorScheme.primary,
                         fontSize: 12,
                       ),
                     ),
@@ -897,8 +1019,8 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
             padding: const EdgeInsets.only(left: 42), // Align with avatar
             child: Text(
               commentText,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: isDark ? Colors.white : colorScheme.primary,
                 fontSize: 14,
               ),
             ),
@@ -925,7 +1047,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                         "Reply",
                         style: TextStyle(
                           // color: Colors.blue[400],
-                          color: readMoreColor,
+                          color: isDark ? Colors.white : colorScheme.primary,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
@@ -945,13 +1067,13 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                         Icon(
                           Icons.arrow_forward_ios,
                           size: 14,
-                          color: Colors.white60,
+                          color: isDark ? Colors.white : colorScheme.primary,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           "$replyCount ${replyCount == 1 ? 'reply' : 'replies'}",
-                          style: const TextStyle(
-                            color: Colors.white60,
+                          style: TextStyle(
+                            color: isDark ? Colors.white : colorScheme.primary,
                             fontSize: 13,
                           ),
                         ),

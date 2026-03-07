@@ -10,6 +10,9 @@ import '../business_feed/business_feed_page.dart';
 import './industry_icon_mapper.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:photo_view/photo_view.dart';
+import 'package:photo_view/photo_view_gallery.dart';
+import './full_screen_image_viewer.dart';
 
 class HomePostCard extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -267,6 +270,19 @@ class _HomePostCardState extends State<HomePostCard> {
     }
   }
 
+  void _openFullScreenImages(int initialIndex) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => FullScreenImageViewer(
+          images: _images,
+          initialIndex: initialIndex,
+          baseUrl: _baseUrl,
+        ),
+      ),
+    );
+  }
+
   // =========================
   // REACTION API CALL
   // =========================
@@ -429,214 +445,57 @@ class _HomePostCardState extends State<HomePostCard> {
         ? colorScheme.primary
         : const Color.fromARGB(255, 45, 47, 190); // original
 
-    // return SizedBox(
-    //   height: 520,
-    //   child: Container(
-    //     margin: const EdgeInsets.symmetric(vertical: 8),
-    //     decoration: BoxDecoration(
-    //       color: isDark
-    //           ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
-    //           : const Color.fromARGB(255, 170, 169, 248),
-    //       borderRadius: BorderRadius.circular(20),
-    //       border: isDark
-    //           ? null
-    //           : Border.all(color: colorScheme.primary.withOpacity(0.1)),
-    //       boxShadow: isDark
-    //           ? []
-    //           : [
-    //               BoxShadow(
-    //                 color: Colors.black.withOpacity(0.05),
-    //                 blurRadius: 10,
-    //                 offset: const Offset(0, 4),
-    //               ),
-    //             ],
-    //     ),
-    //     child: Padding(
-    //       padding: const EdgeInsets.all(14),
-    //       child: Column(
-    //         crossAxisAlignment: CrossAxisAlignment.start,
-    //         children: [
-    //           Expanded(
-    //             child: SingleChildScrollView(
-    //               child: Column(
-    //                 crossAxisAlignment: CrossAxisAlignment.start,
-    //                 children: [
-    //                   // HEADER
-    //                   Row(
-    //                     children: [
-    //                       CircleAvatar(
-    //                         radius: 18,
-    //                         backgroundColor: colorScheme.surfaceVariant,
-    //                         child: ClipOval(
-    //                           child: (profilePicUrl != null &&
-    //                                   profilePicUrl.isNotEmpty)
-    //                               ? Image.network(
-    //                                   profilePicUrl,
-    //                                   width: 36,
-    //                                   height: 36,
-    //                                   fit: BoxFit.cover,
-    //                                   errorBuilder:
-    //                                       (context, error, stackTrace) {
-    //                                     return Icon(
-    //                                       Icons.person,
-    //                                       size: 22,
-    //                                       color: colorScheme.onSurface
-    //                                           .withOpacity(0.6),
-    //                                     );
-    //                                   },
-    //                                 )
-    //                               : Icon(
-    //                                   Icons.person,
-    //                                   size: 22,
-    //                                   color: colorScheme.onSurface
-    //                                       .withOpacity(0.6),
-    //                                 ),
-    //                         ),
-    //                       ),
-    //                       const SizedBox(width: 10),
-    //                       Expanded(
-    //                         child: Column(
-    //                           crossAxisAlignment: CrossAxisAlignment.start,
-    //                           children: [
-    //                             Text(
-    //                               fname,
-    //                               style: TextStyle(
-    //                                 fontSize: 15,
-    //                                 fontWeight: FontWeight.w700,
-    //                                 color: colorScheme.onSurface,
-    //                               ),
-    //                             ),
-    //                             const SizedBox(height: 2),
-    //                             Text(
-    //                               updatedAt,
-    //                               style: TextStyle(
-    //                                 fontSize: 12,
-    //                                 color:
-    //                                     colorScheme.onSurface.withOpacity(0.6),
-    //                               ),
-    //                             ),
-    //                           ],
-    //                         ),
-    //                       ),
-    //                       CircleAvatar(
-    //                         radius: 14,
-    //                         backgroundColor: colorScheme.surfaceVariant,
-    //                         child: Icon(
-    //                           IndustryIconMapper.getIcon(
-    //                               _postData["industry_icon"]),
-    //                           size: 16,
-    //                           color: colorScheme.primary,
-    //                         ),
-    //                       ),
-    //                     ],
-    //                   ),
-    //                   const SizedBox(height: 12),
-
-    //                   // TITLE
-    //                   if (title.isNotEmpty)
-    //                     Text(
-    //                       title,
-    //                       style: TextStyle(
-    //                         fontSize: 16,
-    //                         fontWeight: FontWeight.w800,
-    //                         color: colorScheme.onSurface,
-    //                       ),
-    //                     ),
-
-    //                   const SizedBox(height: 8),
-
-    //                   // DESCRIPTION
-    //                   if (description.isNotEmpty)
-    //                     Row(
-    //                       crossAxisAlignment: CrossAxisAlignment.start,
-    //                       children: [
-    //                         Icon(Icons.star,
-    //                             size: 18, color: colorScheme.primary),
-    //                         const SizedBox(width: 6),
-    //                         Expanded(
-    //                           child: Column(
-    //                             crossAxisAlignment: CrossAxisAlignment.start,
-    //                             children: [
-    //                               Text(
-    //                                 _getDisplayDescription(description),
-    //                                 style: TextStyle(
-    //                                     fontSize: 14,
-    //                                     height: 1.35,
-    //                                     color: colorScheme.onSurface),
-    //                               ),
-
-    //                               if (_shouldShowReadMore(description))
-    //                                 GestureDetector(
-    //                                   onTap: () {
-    //                                     Navigator.push(
-    //                                       context,
-    //                                       MaterialPageRoute(
-    //                                         builder: (_) => BusinessFeedPage(
-    //                                           selectedPostId: _postData["id"],
-    //                                         ),
-    //                                       ),
-    //                                     );
-    //                                   },
-    //                                   child: Padding(
-    //                                     padding: const EdgeInsets.only(
-    //                                         top:
-    //                                             4), // EdgeInsets can remain const
-    //                                     child: Text(
-    //                                       "...Read more",
-    //                                       style: TextStyle(
-    //                                         fontSize: 13,
-    //                                         fontWeight: FontWeight.w700,
-    //                                         color:
-    //                                             readMoreColor, // now valid because Padding is not const
-    //                                       ),
-    //                                     ),
-    //                                   ),
-    //                                 ),
-    //                             ],
-    //                           ),
-    //                         ),
-    //                       ],
-    //                     ),
-
-    //                   // IMAGES
-    //                   if (_images.isNotEmpty) ...[
-    //                     const SizedBox(height: 14),
-    //                     _buildImageCarousel(),
-    //                   ],
-    //                 ],
-    //               ),
-    //             ),
-    //           ),
-    //           const Divider(),
-    //           _buildFooter(),
-    //         ],
-    //       ),
-    //     ),
-    //   ),
-    // );
-
     return SizedBox(
-      height: 520,
+      height: 640,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
+        // decoration: BoxDecoration(
+        //   color: isDark
+        //       ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
+        //       : const Color.fromARGB(255, 170, 169, 248),
+        //   borderRadius: BorderRadius.circular(20),
+        //   border: isDark
+        //       ? null
+        //       : Border.all(color: colorScheme.primary.withOpacity(0.1)),
+        //   boxShadow: isDark
+        //       ? []
+        //       : [
+        //           BoxShadow(
+        //             color: Colors.black.withOpacity(0.05),
+        //             blurRadius: 10,
+        //             offset: const Offset(0, 4),
+        //           ),
+        //         ],
+        // ),
+
         decoration: BoxDecoration(
           color: isDark
               ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
-              : const Color.fromARGB(255, 170, 169, 248),
+              : Colors.white,
           borderRadius: BorderRadius.circular(20),
+          // border: isDark
+          //     ? null
+          //     : Border.all(
+          //         color: Colors.black.withOpacity(0.25),
+          //         width: 1.2,
+          //       ),
           border: isDark
               ? null
-              : Border.all(color: colorScheme.primary.withOpacity(0.1)),
+              : Border.all(
+                  color: colorScheme.primary,
+                  width: 1,
+                ),
           boxShadow: isDark
               ? []
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 6,
+                    offset: const Offset(0, 3),
                   ),
                 ],
         ),
+
         child: Padding(
           padding: const EdgeInsets.all(14),
           child: Column(
@@ -664,7 +523,10 @@ class _HomePostCardState extends State<HomePostCard> {
                           children: [
                             CircleAvatar(
                               radius: 18,
-                              backgroundColor: colorScheme.surfaceVariant,
+                              // backgroundColor: colorScheme.surfaceVariant,
+                              backgroundColor: isDark
+                                  ? colorScheme.surfaceVariant
+                                  : Colors.grey.shade200,
                               child: ClipOval(
                                 child: (profilePicUrl != null &&
                                         profilePicUrl.isNotEmpty)
@@ -709,7 +571,10 @@ class _HomePostCardState extends State<HomePostCard> {
                             ),
                             CircleAvatar(
                               radius: 14,
-                              backgroundColor: colorScheme.surfaceVariant,
+                              // backgroundColor: colorScheme.surfaceVariant,
+                              backgroundColor: isDark
+                                  ? colorScheme.surfaceVariant
+                                  : Colors.grey.shade200,
                               child: Icon(
                                 IndustryIconMapper.getIcon(
                                     _postData["industry_icon"]),
@@ -804,7 +669,7 @@ class _HomePostCardState extends State<HomePostCard> {
 
               // const Divider(),
 
-              /// FOOTER (no navigation)
+              /// FOOTER (no navigation)...
               _buildFooter(),
             ],
           ),
@@ -820,7 +685,7 @@ class _HomePostCardState extends State<HomePostCard> {
   Widget _buildImageCarousel() {
     final colorScheme = Theme.of(context).colorScheme;
     return SizedBox(
-      height: 210,
+      height: 264,
       child: PageView.builder(
         controller: _imageController,
         itemCount: _images.length,
@@ -830,29 +695,34 @@ class _HomePostCardState extends State<HomePostCard> {
 
           return Padding(
             padding: const EdgeInsets.all(4),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: CachedNetworkImage(
-                imageUrl: url,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                placeholder: (context, url) => Container(
-                  color: colorScheme.surfaceVariant,
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-                errorWidget: (context, url, error) {
-                  debugPrint("IMAGE ERROR: $error");
-                  debugPrint("URL: $url");
-                  return Container(
-                    color: colorScheme.surfaceVariant,
-                    alignment: Alignment.center,
-                    child: Text(
-                      "Image load failed",
-                      style: TextStyle(
-                          color: colorScheme.onSurface.withOpacity(0.6)),
+            child: GestureDetector(
+              onTap: () {
+                _openFullScreenImages(index);
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  color: colorScheme.surfaceVariant, // background fill
+                  child: CachedNetworkImage(
+                    imageUrl: url,
+                    fit: BoxFit.contain,
+                    width: double.infinity,
+                    height: double.infinity,
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(),
                     ),
-                  );
-                },
+                    errorWidget: (context, url, error) {
+                      return Center(
+                        child: Text(
+                          "Image load failed",
+                          style: TextStyle(
+                            color: colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           );

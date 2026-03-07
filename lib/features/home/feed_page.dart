@@ -588,7 +588,13 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+              // border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+              border: isDark
+                  ? Border.all(color: colorScheme.primary.withOpacity(0.1))
+                  : Border.all(
+                      color: colorScheme.primary,
+                      width: 1,
+                    ),
             ),
             child: FilledButton(
               style: FilledButton.styleFrom(
@@ -633,7 +639,13 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
               ? colorScheme.surfaceVariant.withOpacity(0.3)
               : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+          // border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+          border: isDark
+              ? Border.all(color: colorScheme.primary.withOpacity(0.1))
+              : Border.all(
+                  color: colorScheme.primary,
+                  width: 1,
+                ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -760,7 +772,13 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
               ? colorScheme.surfaceContainerHighest.withOpacity(0.3)
               : Colors.white,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+          // border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+          border: isDark
+              ? Border.all(color: colorScheme.primary.withOpacity(0.1))
+              : Border.all(
+                  color: colorScheme.primary,
+                  width: 1,
+                ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),

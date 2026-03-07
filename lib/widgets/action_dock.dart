@@ -20,8 +20,15 @@ class ActionDock extends StatelessWidget {
             ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
             : Colors.grey[100],
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-            color: colorScheme.onSurface.withOpacity(0.05), width: 0.5),
+        // border: Border.all(
+        //     color: colorScheme.onSurface.withOpacity(0.05), width: 0.5),
+        border: isDark
+            ? Border.all(
+                color: colorScheme.onSurface.withOpacity(0.05), width: 0.5)
+            : Border.all(
+                color: colorScheme.primary,
+                width: 1,
+              ),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
