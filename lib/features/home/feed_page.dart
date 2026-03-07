@@ -373,44 +373,44 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                 ),
               ),
               const SizedBox(height: 4),
-              const Text(
-                "Total Profile Views",
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 13,
-                ),
-              ),
+              // const Text(
+              //   "Total Profile Views",
+              //   style: TextStyle(
+              //     color: Colors.white70,
+              //     fontSize: 13,
+              //   ),
+              // ),
 
-              const SizedBox(height: 18),
+              // const SizedBox(height: 18),
 
               /// 📊 MINI STATS ROW
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  /// ⭐ Rating Card
-                  _miniStatCard(
-                    icon: Icons.star,
-                    value: _averageRating.toStringAsFixed(1),
-                    label: "Rating",
-                  ),
+              // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              //   children: [
+              //     /// ⭐ Rating Card
+              //     _miniStatCard(
+              //       icon: Icons.star,
+              //       value: _averageRating.toStringAsFixed(1),
+              //       label: "Rating",
+              //     ),
 
-                  /// 📝 Reviews Card
-                  _miniStatCard(
-                    icon: Icons.rate_review,
-                    value: _totalReviews.toString(),
-                    label: "Reviews",
-                  ),
+              //     /// 📝 Reviews Card
+              //     _miniStatCard(
+              //       icon: Icons.rate_review,
+              //       value: _totalReviews.toString(),
+              //       label: "Reviews",
+              //     ),
 
-                  /// ⏱ Time Spent Card
-                  _miniStatCard(
-                    icon: Icons.timer,
-                    value: "${_totalTimeSeconds}s",
-                    label: "Watch",
-                  ),
-                ],
-              ),
+              //     /// ⏱ Time Spent Card
+              //     _miniStatCard(
+              //       icon: Icons.timer,
+              //       value: "${_totalTimeSeconds}s",
+              //       label: "Watch",
+              //     ),
+              //   ],
+              // ),
 
-              const SizedBox(height: 24),
+              // const SizedBox(height: 24),
 
               /// 📈 PROFILE COMPLETION
               const Text(

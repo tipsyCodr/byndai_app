@@ -564,30 +564,7 @@ class _HomePostCardState extends State<HomePostCard> {
                                         height: 1.35,
                                         color: colorScheme.onSurface),
                                   ),
-                                  // if (_shouldShowReadMore(description))
-                                  //   GestureDetector(
-                                  //     onTap: () {
-                                  //       Navigator.push(
-                                  //         context,
-                                  //         MaterialPageRoute(
-                                  //           builder: (_) => BusinessFeedPage(
-                                  //             selectedPostId: _postData["id"],
-                                  //           ),
-                                  //         ),
-                                  //       );
-                                  //     },
-                                  //     child: const Padding(
-                                  //       padding: EdgeInsets.only(top: 4),
-                                  //       child: Text(
-                                  //         "...Read more",
-                                  //         style: TextStyle(
-                                  //           fontSize: 13,
-                                  //           fontWeight: FontWeight.w700,
-                                  //           color: readMoreColor, // 👈 will be replaced below
-                                  //         ),
-                                  //       ),
-                                  //     ),
-                                  //   ),
+                                  
 
                                   if (_shouldShowReadMore(description))
                                     GestureDetector(
