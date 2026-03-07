@@ -429,6 +429,192 @@ class _HomePostCardState extends State<HomePostCard> {
         ? colorScheme.primary
         : const Color.fromARGB(255, 45, 47, 190); // original
 
+    // return SizedBox(
+    //   height: 520,
+    //   child: Container(
+    //     margin: const EdgeInsets.symmetric(vertical: 8),
+    //     decoration: BoxDecoration(
+    //       color: isDark
+    //           ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
+    //           : const Color.fromARGB(255, 170, 169, 248),
+    //       borderRadius: BorderRadius.circular(20),
+    //       border: isDark
+    //           ? null
+    //           : Border.all(color: colorScheme.primary.withOpacity(0.1)),
+    //       boxShadow: isDark
+    //           ? []
+    //           : [
+    //               BoxShadow(
+    //                 color: Colors.black.withOpacity(0.05),
+    //                 blurRadius: 10,
+    //                 offset: const Offset(0, 4),
+    //               ),
+    //             ],
+    //     ),
+    //     child: Padding(
+    //       padding: const EdgeInsets.all(14),
+    //       child: Column(
+    //         crossAxisAlignment: CrossAxisAlignment.start,
+    //         children: [
+    //           Expanded(
+    //             child: SingleChildScrollView(
+    //               child: Column(
+    //                 crossAxisAlignment: CrossAxisAlignment.start,
+    //                 children: [
+    //                   // HEADER
+    //                   Row(
+    //                     children: [
+    //                       CircleAvatar(
+    //                         radius: 18,
+    //                         backgroundColor: colorScheme.surfaceVariant,
+    //                         child: ClipOval(
+    //                           child: (profilePicUrl != null &&
+    //                                   profilePicUrl.isNotEmpty)
+    //                               ? Image.network(
+    //                                   profilePicUrl,
+    //                                   width: 36,
+    //                                   height: 36,
+    //                                   fit: BoxFit.cover,
+    //                                   errorBuilder:
+    //                                       (context, error, stackTrace) {
+    //                                     return Icon(
+    //                                       Icons.person,
+    //                                       size: 22,
+    //                                       color: colorScheme.onSurface
+    //                                           .withOpacity(0.6),
+    //                                     );
+    //                                   },
+    //                                 )
+    //                               : Icon(
+    //                                   Icons.person,
+    //                                   size: 22,
+    //                                   color: colorScheme.onSurface
+    //                                       .withOpacity(0.6),
+    //                                 ),
+    //                         ),
+    //                       ),
+    //                       const SizedBox(width: 10),
+    //                       Expanded(
+    //                         child: Column(
+    //                           crossAxisAlignment: CrossAxisAlignment.start,
+    //                           children: [
+    //                             Text(
+    //                               fname,
+    //                               style: TextStyle(
+    //                                 fontSize: 15,
+    //                                 fontWeight: FontWeight.w700,
+    //                                 color: colorScheme.onSurface,
+    //                               ),
+    //                             ),
+    //                             const SizedBox(height: 2),
+    //                             Text(
+    //                               updatedAt,
+    //                               style: TextStyle(
+    //                                 fontSize: 12,
+    //                                 color:
+    //                                     colorScheme.onSurface.withOpacity(0.6),
+    //                               ),
+    //                             ),
+    //                           ],
+    //                         ),
+    //                       ),
+    //                       CircleAvatar(
+    //                         radius: 14,
+    //                         backgroundColor: colorScheme.surfaceVariant,
+    //                         child: Icon(
+    //                           IndustryIconMapper.getIcon(
+    //                               _postData["industry_icon"]),
+    //                           size: 16,
+    //                           color: colorScheme.primary,
+    //                         ),
+    //                       ),
+    //                     ],
+    //                   ),
+    //                   const SizedBox(height: 12),
+
+    //                   // TITLE
+    //                   if (title.isNotEmpty)
+    //                     Text(
+    //                       title,
+    //                       style: TextStyle(
+    //                         fontSize: 16,
+    //                         fontWeight: FontWeight.w800,
+    //                         color: colorScheme.onSurface,
+    //                       ),
+    //                     ),
+
+    //                   const SizedBox(height: 8),
+
+    //                   // DESCRIPTION
+    //                   if (description.isNotEmpty)
+    //                     Row(
+    //                       crossAxisAlignment: CrossAxisAlignment.start,
+    //                       children: [
+    //                         Icon(Icons.star,
+    //                             size: 18, color: colorScheme.primary),
+    //                         const SizedBox(width: 6),
+    //                         Expanded(
+    //                           child: Column(
+    //                             crossAxisAlignment: CrossAxisAlignment.start,
+    //                             children: [
+    //                               Text(
+    //                                 _getDisplayDescription(description),
+    //                                 style: TextStyle(
+    //                                     fontSize: 14,
+    //                                     height: 1.35,
+    //                                     color: colorScheme.onSurface),
+    //                               ),
+
+    //                               if (_shouldShowReadMore(description))
+    //                                 GestureDetector(
+    //                                   onTap: () {
+    //                                     Navigator.push(
+    //                                       context,
+    //                                       MaterialPageRoute(
+    //                                         builder: (_) => BusinessFeedPage(
+    //                                           selectedPostId: _postData["id"],
+    //                                         ),
+    //                                       ),
+    //                                     );
+    //                                   },
+    //                                   child: Padding(
+    //                                     padding: const EdgeInsets.only(
+    //                                         top:
+    //                                             4), // EdgeInsets can remain const
+    //                                     child: Text(
+    //                                       "...Read more",
+    //                                       style: TextStyle(
+    //                                         fontSize: 13,
+    //                                         fontWeight: FontWeight.w700,
+    //                                         color:
+    //                                             readMoreColor, // now valid because Padding is not const
+    //                                       ),
+    //                                     ),
+    //                                   ),
+    //                                 ),
+    //                             ],
+    //                           ),
+    //                         ),
+    //                       ],
+    //                     ),
+
+    //                   // IMAGES
+    //                   if (_images.isNotEmpty) ...[
+    //                     const SizedBox(height: 14),
+    //                     _buildImageCarousel(),
+    //                   ],
+    //                 ],
+    //               ),
+    //             ),
+    //           ),
+    //           const Divider(),
+    //           _buildFooter(),
+    //         ],
+    //       ),
+    //     ),
+    //   ),
+    // );
+
     return SizedBox(
       height: 520,
       child: Container(
@@ -456,159 +642,169 @@ class _HomePostCardState extends State<HomePostCard> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              /// 👇 CARD CLICK AREA
               Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // HEADER
-                      Row(
-                        children: [
-                          CircleAvatar(
-                            radius: 18,
-                            backgroundColor: colorScheme.surfaceVariant,
-                            child: ClipOval(
-                              child: (profilePicUrl != null &&
-                                      profilePicUrl.isNotEmpty)
-                                  ? Image.network(
-                                      profilePicUrl,
-                                      width: 36,
-                                      height: 36,
-                                      fit: BoxFit.cover,
-                                      errorBuilder:
-                                          (context, error, stackTrace) {
-                                        return Icon(
-                                          Icons.person,
-                                          size: 22,
-                                          color: colorScheme.onSurface
-                                              .withOpacity(0.6),
-                                        );
-                                      },
-                                    )
-                                  : Icon(
-                                      Icons.person,
-                                      size: 22,
-                                      color: colorScheme.onSurface
-                                          .withOpacity(0.6),
-                                    ),
-                            ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  fname,
-                                  style: TextStyle(
-                                    fontSize: 15,
-                                    fontWeight: FontWeight.w700,
-                                    color: colorScheme.onSurface,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  updatedAt,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color:
-                                        colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          CircleAvatar(
-                            radius: 14,
-                            backgroundColor: colorScheme.surfaceVariant,
-                            child: Icon(
-                              IndustryIconMapper.getIcon(
-                                  _postData["industry_icon"]),
-                              size: 16,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-
-                      // TITLE
-                      if (title.isNotEmpty)
-                        Text(
-                          title,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                            color: colorScheme.onSurface,
-                          ),
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => BusinessFeedPage(
+                          selectedPostId: _postData["id"],
                         ),
-
-                      const SizedBox(height: 8),
-
-                      // DESCRIPTION
-                      if (description.isNotEmpty)
+                      ),
+                    );
+                  },
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        /// HEADER
                         Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.star,
-                                size: 18, color: colorScheme.primary),
-                            const SizedBox(width: 6),
+                            CircleAvatar(
+                              radius: 18,
+                              backgroundColor: colorScheme.surfaceVariant,
+                              child: ClipOval(
+                                child: (profilePicUrl != null &&
+                                        profilePicUrl.isNotEmpty)
+                                    ? Image.network(
+                                        profilePicUrl,
+                                        width: 36,
+                                        height: 36,
+                                        fit: BoxFit.cover,
+                                      )
+                                    : Icon(
+                                        Icons.person,
+                                        size: 22,
+                                        color: colorScheme.onSurface
+                                            .withOpacity(0.6),
+                                      ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
                             Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _getDisplayDescription(description),
+                                    fname,
                                     style: TextStyle(
-                                        fontSize: 14,
-                                        height: 1.35,
-                                        color: colorScheme.onSurface),
-                                  ),
-                                  
-
-                                  if (_shouldShowReadMore(description))
-                                    GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (_) => BusinessFeedPage(
-                                              selectedPostId: _postData["id"],
-                                            ),
-                                          ),
-                                        );
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(
-                                            top:
-                                                4), // EdgeInsets can remain const
-                                        child: Text(
-                                          "...Read more",
-                                          style: TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w700,
-                                            color:
-                                                readMoreColor, // now valid because Padding is not const
-                                          ),
-                                        ),
-                                      ),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w700,
+                                      color: colorScheme.onSurface,
                                     ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    updatedAt,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: colorScheme.onSurface
+                                          .withOpacity(0.6),
+                                    ),
+                                  ),
                                 ],
+                              ),
+                            ),
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor: colorScheme.surfaceVariant,
+                              child: Icon(
+                                IndustryIconMapper.getIcon(
+                                    _postData["industry_icon"]),
+                                size: 16,
+                                color: colorScheme.primary,
                               ),
                             ),
                           ],
                         ),
 
-                      // IMAGES
-                      if (_images.isNotEmpty) ...[
-                        const SizedBox(height: 14),
-                        _buildImageCarousel(),
+                        const SizedBox(height: 12),
+
+                        /// TITLE
+                        if (title.isNotEmpty)
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+
+                        const SizedBox(height: 8),
+
+                        /// DESCRIPTION
+                        if (description.isNotEmpty)
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Icons.star,
+                                  size: 18, color: colorScheme.primary),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _getDisplayDescription(description),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        height: 1.35,
+                                        color: colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    if (_shouldShowReadMore(description))
+                                      GestureDetector(
+                                        onTap: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => BusinessFeedPage(
+                                                selectedPostId: _postData["id"],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: Padding(
+                                          padding:
+                                              const EdgeInsets.only(top: 4),
+                                          child: Text(
+                                            "...Read more",
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              fontWeight: FontWeight.w700,
+                                              color: readMoreColor,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+
+                        /// IMAGES
+                        if (_images.isNotEmpty) ...[
+                          const SizedBox(height: 14),
+
+                          /// 👇 IMAGE CLICK DISABLED
+                          GestureDetector(
+                            onTap: () {},
+                            child: _buildImageCarousel(),
+                          ),
+                        ],
                       ],
-                    ],
+                    ),
                   ),
                 ),
               ),
-              const Divider(),
+
+              // const Divider(),
+
+              /// FOOTER (no navigation)
               _buildFooter(),
             ],
           ),
