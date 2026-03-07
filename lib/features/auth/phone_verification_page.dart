@@ -66,56 +66,10 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     }
   }
 
-  /// Verifies the entered OTP and navigates based on the auth state.
-  // Future<bool> _verifyOtp(String otp) async {
-  //   final mobile = _phoneController.text.trim();
-  //   if (otp.length != 4) {
-  //     _showSnackBar("Enter a valid 4-digit OTP");
-  //     return false;
-  //   }
+ 
 
-  //   _showLoaderDialog();
-  //   final auth = context.read<AuthProvider>();
-  //   final success = await auth.verifyOTP(mobile, otp);
 
-  //   if (!mounted) return false;
-  //   Navigator.pop(context); // Dismiss loader
-
-  //   Navigator.pop(context); // 👈 Loader pehle close karo
-
-  //   if (success && !auth.isAuthenticated) {
-  //     _showTopRightMessage("OTP verified successfully");
-  //   }
-
-  //   if (!success) {
-  //     // _showSnackBar("OTP verification failed. Try again.");
-  //     _showTopRightMessage("OTP verification failed", isError: true);
-  //     return false;
-  //   }
-
-  //   // Defer navigation until after the current frame to avoid context issues.
-  //   WidgetsBinding.instance.addPostFrameCallback((_) async {
-  //     if (!mounted) return;
-
-  //     // Re-read the provider state to be safe.
-  //     final currentAuth = context.read<AuthProvider>();
-
-  //     if (currentAuth.isAuthenticated) {
-  //       Navigator.pushReplacementNamed(context, RouteNames.home);
-  //     } else if (currentAuth.pendingIsNewUser) {
-  //       Navigator.pushReplacementNamed(context, RouteNames.register);
-  //     } else if (currentAuth.pendingProcess?.toLowerCase() == 'login') {
-  //       await _promptPinLogin(mobile);
-  //     } else {
-  //       // Fallback case
-  //       Navigator.pushReplacementNamed(context, RouteNames.login);
-  //     }
-  //   });
-
-  //   return true;
-  // }
-
-  Future<bool> _verifyOtp(String otp) async {
+  Future<bool> _verifyOtp(String otp, {bool isReset = false}) async {
     final mobile = _phoneController.text.trim();
     if (otp.length != 4) {
       _showSnackBar("Enter a valid 4-digit OTP");
@@ -131,18 +85,24 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
 
     if (!success) {
       _showTopRightMessage("OTP verification failed", isError: true);
-      return false; // OTP dialog stays open
+      return false;
     }
 
-    // Success
+    // OTP Success
     _showTopRightMessage("OTP verified successfully", isSuccess: true);
-    // OTP dialog will close automatically because we return true
 
-    // Defer navigation until after the current frame
+    /// 🔑 IF THIS OTP WAS FOR FORGOT PIN
+    if (isReset) {
+      await _handleNewPinSetup(mobile);
+      return true;
+    }
+
+    /// Normal OTP flow
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
       final currentAuth = context.read<AuthProvider>();
+
       if (currentAuth.isAuthenticated) {
         Navigator.pushReplacementNamed(context, RouteNames.home);
       } else if (currentAuth.pendingIsNewUser) {
@@ -248,7 +208,8 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
         type: SecureInputType.otp,
         title: "Enter Reset OTP",
         description: "An OTP has been sent to +91 $mobile",
-        onSubmit: (otp) => _verifyOtp(otp),
+        // onSubmit: (otp) => _verifyOtp(otp),
+        onSubmit: (otp) => _verifyOtp(otp, isReset: true),
       ),
     );
   }
@@ -549,3 +510,5 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     );
   }
 }
+
+
