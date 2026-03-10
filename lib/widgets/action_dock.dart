@@ -27,7 +27,7 @@ class ActionDock extends StatelessWidget {
                 color: colorScheme.onSurface.withOpacity(0.05), width: 0.5)
             : Border.all(
                 color: colorScheme.primary,
-                width: 1,
+                width: 0.2,
               ),
       ),
       child: Row(

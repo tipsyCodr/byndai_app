@@ -24,14 +24,22 @@ import 'package:gridcard/core/services/social_provider.dart';
 import '../../features/analitics/user_analitics_page.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 
+// class FeedPage extends StatefulWidget {
+//   const FeedPage({super.key});
+
+//   @override
+//   State<FeedPage> createState() => _FeedPageState();
+// }
+
 class FeedPage extends StatefulWidget {
   const FeedPage({super.key});
 
   @override
-  State<FeedPage> createState() => _FeedPageState();
+  FeedPageState createState() => FeedPageState();
 }
 
-class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
+// class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
+class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
@@ -52,6 +60,10 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
 
   List<Map<String, dynamic>> _latestPosts = [];
   bool _isLatestLoading = false;
+
+  Future<void> refreshFeed() async {
+    await _handleRefresh();
+  }
 
   Future<void> _uploadQrImage(
       String title, String link, Uint8List imageBytes) async {
@@ -593,7 +605,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                   ? Border.all(color: colorScheme.primary.withOpacity(0.1))
                   : Border.all(
                       color: colorScheme.primary,
-                      width: 1,
+                      width: 0.2,
                     ),
             ),
             child: FilledButton(
@@ -644,7 +656,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
               ? Border.all(color: colorScheme.primary.withOpacity(0.1))
               : Border.all(
                   color: colorScheme.primary,
-                  width: 1,
+                  width: 0.2,
                 ),
           boxShadow: [
             BoxShadow(
@@ -777,7 +789,7 @@ class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
               ? Border.all(color: colorScheme.primary.withOpacity(0.1))
               : Border.all(
                   color: colorScheme.primary,
-                  width: 1,
+                  width: 0.2,
                 ),
           boxShadow: [
             BoxShadow(

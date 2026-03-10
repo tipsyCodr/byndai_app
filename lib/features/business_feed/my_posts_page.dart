@@ -59,59 +59,6 @@ class _MyPostsPageState extends State<MyPostsPage> {
     };
   }
 
-  // Future<void> _fetchPosts({required int page}) async {
-  //   if (_isLoading || _userId == null) return;
-
-  //   setState(() => _isLoading = true);
-
-  //   try {
-  //     final headers = await _getHeaders();
-
-  //     Map<String, String> queryParams = {
-  //       "page": page.toString(),
-  //     };
-
-  //     if (_searchQuery.isNotEmpty) {
-  //       queryParams["search"] = _searchQuery;
-  //     }
-
-  //     // 🔥 IMPORTANT ADD THIS
-  //     if (_selectedIndustryId != null) {
-  //       queryParams["industry_id"] = _selectedIndustryId.toString();
-  //     }
-
-  //     final uri = Uri.parse("$_baseUrl/posts/user/$_userId")
-  //         .replace(queryParameters: queryParams);
-
-  //     final response = await http.get(uri, headers: headers);
-
-  //     if (response.statusCode == 200) {
-  //       final jsonData = jsonDecode(response.body);
-
-  //       final List<dynamic> dataList = jsonData["data"] ?? [];
-  //       final pagination = jsonData["pagination"] ?? {};
-
-  //       final List<Map<String, dynamic>> newPosts =
-  //           dataList.map((e) => Map<String, dynamic>.from(e)).toList();
-
-  //       setState(() {
-  //         if (page == 1) {
-  //           _posts.clear(); // 🔥 VERY IMPORTANT
-  //         }
-
-  //         _posts.addAll(newPosts);
-
-  //         _currentPage = pagination["current_page"] ?? 1;
-  //         _lastPage = pagination["last_page"] ?? 1;
-  //       });
-  //     }
-  //   } catch (e) {
-  //     debugPrint("MyPosts fetch error: $e");
-  //   } finally {
-  //     setState(() => _isLoading = false);
-  //   }
-  // }
-
   // MyPostsPage ke andar, _MyPostsPageState class mein ye method add karo
   void _handleBack() {
     if (_selectedIndustryId != null || _searchQuery.isNotEmpty) {
@@ -123,7 +70,8 @@ class _MyPostsPageState extends State<MyPostsPage> {
       });
       _fetchPosts(page: 1); // Unfiltered data load karo
     } else {
-      Navigator.pop(context); // Actual back navigation
+      // Navigator.pop(context); // Actual back navigation
+      Navigator.pop(context, true);
     }
   }
 
@@ -243,18 +191,23 @@ class _MyPostsPageState extends State<MyPostsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F6FA),
+      // backgroundColor: const Color(0xFFF5F6FA),
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        // backgroundColor: Colors.white,
+        backgroundColor: colorScheme.surface,
         elevation: 1,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.black87),
+          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
           onPressed: _handleBack, // 🔥 Custom handler
         ),
-        title: const Text(
+        title: Text(
           "My Posts",
-          style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+          style: TextStyle(
+              color: colorScheme.onSurface, fontWeight: FontWeight.w600),
         ),
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
@@ -276,12 +229,19 @@ class _MyPostsPageState extends State<MyPostsPage> {
               },
               decoration: InputDecoration(
                 hintText: "Search posts...",
-                prefixIcon: const Icon(Icons.search),
+                hintStyle: TextStyle(
+                    color: colorScheme.onSurface
+                        .withOpacity(0.6)), // 👈 was Colors.grey
+                filled: true,
+                fillColor: colorScheme.surface,
+                prefixIcon: Icon(Icons.search,
+                    color: colorScheme.onSurface.withOpacity(0.6)),
 
                 // 🔥 CLEAR BUTTON
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
-                        icon: const Icon(Icons.close),
+                        icon: Icon(Icons.close,
+                            color: colorScheme.onSurface.withOpacity(0.6)),
                         onPressed: () {
                           _searchController.clear();
                           setState(() {
@@ -293,12 +253,30 @@ class _MyPostsPageState extends State<MyPostsPage> {
                       )
                     : null,
 
-                filled: true,
-                fillColor: Colors.grey.shade100,
+                // filled: true,
+                // fillColor: Colors.grey.shade100,
                 contentPadding: const EdgeInsets.symmetric(vertical: 0),
-                border: OutlineInputBorder(
+                // border: OutlineInputBorder(
+                //   borderRadius: BorderRadius.circular(12),
+                //   borderSide: BorderSide(
+                //       color: colorScheme.onSurface.withOpacity(0.12),
+                //       width: 0.2,
+                //       ),
+
+                // ),
+                enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 0.2,
+                  ), // 👈 was Colors.grey.shade300
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: colorScheme.primary,
+                    width: 0.8,
+                  ), // 👈 was Colors.blueAccent
                 ),
               ),
             ),

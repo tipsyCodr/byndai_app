@@ -14,6 +14,7 @@ import 'package:gridcard/routes/route_names.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import '../qr_scan/profile_qr_code.dart';
 import 'dart:ui';
+import 'package:gridcard/config/app_config.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,6 +25,31 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   DateTime? _lastBackPressed;
+  String? _profileLogoUrl;
+
+  final GlobalKey<FeedPageState> _feedKey = GlobalKey<FeedPageState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileLogo();
+  }
+
+  Future<void> _loadProfileLogo() async {
+    final session = await UserStorageService().loadSession();
+
+    final masterUser = session.user?.masterUser;
+
+    final logo = masterUser?.profilePic;
+
+    if (logo != null && logo.isNotEmpty) {
+      setState(() {
+        _profileLogoUrl = "${AppConfig.apiProfileImg}/$logo";
+      });
+    }
+
+    debugPrint("🟦 FINAL PROFILE LOGO URL = $_profileLogoUrl");
+  }
 
   Future<void> _onPop(bool didPop, Object? result) async {
     if (didPop) return;
@@ -50,12 +76,22 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
 
   // Screens for each tab
-  final List<Widget> _screens = [
-    const FeedPage(),
-    const LeadsPage(),
-    const DiscoverPage(),
-    const SettingsPage(),
-  ];
+  // final List<Widget> _screens = [
+  //   // const FeedPage(),
+  //   FeedPage(key: _feedKey),
+  //   const LeadsPage(),
+  //   const DiscoverPage(),
+  //   const SettingsPage(),
+  // ];
+
+  List<Widget> _screens() {
+    return [
+      FeedPage(key: _feedKey),
+      const LeadsPage(),
+      const DiscoverPage(),
+      const SettingsPage(),
+    ];
+  }
 
   final List<String> _titles = [
     'Home',
@@ -64,8 +100,16 @@ class _HomePageState extends State<HomePage> {
     'Settings',
   ];
 
+  // void _onItemTapped(int index) {
+  //   setState(() => _selectedIndex = index);
+  // }
+
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
+
+    if (index == 0) {
+      _feedKey.currentState?.refreshFeed();
+    }
   }
 
   @override
@@ -106,8 +150,18 @@ class _HomePageState extends State<HomePage> {
           centerTitle: true,
           automaticallyImplyLeading: false,
           leading: IconButton(
-            icon:
-                Icon(Icons.account_circle_outlined, color: colorScheme.primary),
+            // icon:
+            //     Icon(Icons.account_circle_outlined, color: colorScheme.primary),
+            icon: CircleAvatar(
+              radius: 28,
+              backgroundColor: Colors.grey.shade200,
+              backgroundImage: (_profileLogoUrl != null)
+                  ? NetworkImage(_profileLogoUrl!)
+                  : null,
+              child: (_profileLogoUrl == null)
+                  ? Icon(Icons.person, color: colorScheme.primary)
+                  : null,
+            ),
             onPressed: () async {
               final userId = await UserStorageService().getUserId();
 
@@ -149,9 +203,16 @@ class _HomePageState extends State<HomePage> {
             ),
           ],
         ),
+        // body: Stack(
+        //   children: [
+        //     _screens[_selectedIndex],
+        //     _buildFloatingDock(),
+        //   ],
+        // ),
+
         body: Stack(
           children: [
-            _screens[_selectedIndex],
+            _screens()[_selectedIndex],
             _buildFloatingDock(),
           ],
         ),

@@ -272,7 +272,7 @@
 // }
 
 //===================================================================================
-
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:gridcard/routes/route_names.dart';
@@ -398,6 +398,41 @@ class _RegisterPageState extends State<RegisterPage> {
 
   // ================= REGISTER =================
 
+  // Future<void> _registerUser() async {
+  //   if (!(_formKey.currentState?.validate() ?? false)) return;
+
+  //   if (_isUsernameAvailable != true || _isEmailAvailable != true) return;
+
+  //   final auth = context.read<AuthProvider>();
+  //   final mobile = auth.pendingRegisterMobile;
+  //   final token = auth.pendingRegisterToken;
+
+  //   if (mobile == null || token == null) {
+  //     TopAlert.show(context, "Session expired. Please start again.",
+  //         isError: true);
+  //     Navigator.pushNamedAndRemoveUntil(
+  //         context, RouteNames.phone, (_) => false);
+  //     return;
+  //   }
+
+  //   final success = await auth.register({
+  //     'name': _nameController.text.trim(),
+  //     'user_name': _usernameController.text.trim(),
+  //     'email': _emailController.text.trim(),
+  //     'password': _passwordController.text.trim(),
+  //     'mobile': mobile,
+  //     'token': token,
+  //   });
+
+  //   if (!mounted) return;
+
+  //   if (success) {
+  //     Navigator.pushReplacementNamed(context, RouteNames.home);
+  //   } else {
+  //     TopAlert.show(context, "Registration failed", isError: true);
+  //   }
+  // }
+
   Future<void> _registerUser() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
@@ -415,14 +450,21 @@ class _RegisterPageState extends State<RegisterPage> {
       return;
     }
 
-    final success = await auth.register({
+    final requestData = {
       'name': _nameController.text.trim(),
       'user_name': _usernameController.text.trim(),
       'email': _emailController.text.trim(),
       'password': _passwordController.text.trim(),
       'mobile': mobile,
       'token': token,
-    });
+    };
+
+    // 👇 API call se pehle console me print
+    debugPrint("========== REGISTER REQUEST ==========");
+    debugPrint(jsonEncode(requestData));
+    debugPrint("=====================================");
+
+    final success = await auth.register(requestData);
 
     if (!mounted) return;
 
