@@ -209,12 +209,21 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
           PopupMenuButton<String>(
             icon: Icon(Icons.menu,
                 color: colorScheme.onSurface), // 👈 was Colors.black87
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == "my_posts") {
-                Navigator.push(
+                // Navigator.push(
+                //   context,
+                //   MaterialPageRoute(builder: (_) => const MyPostsPage()),
+                // );
+
+                final shouldRefresh = await Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const MyPostsPage()),
                 );
+
+                if (shouldRefresh == true) {
+                  _fetchPosts(page: 1);
+                }
               }
             },
             itemBuilder: (context) => [
@@ -226,16 +235,47 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
           ),
         ],
       ),
+      // floatingActionButton: FloatingActionButton(
+      //   backgroundColor: colorScheme.primary, // 👈 was Colors.blueAccent
+      //   onPressed: () {
+      //     Navigator.push(
+      //       context,
+      //       MaterialPageRoute(builder: (_) => PostCreationPage()),
+      //     );
+      //   },
+      //   child: Icon(Icons.add,
+      //       color: colorScheme.onPrimary), // 👈 was Colors.white
+      // ),
+
       floatingActionButton: FloatingActionButton(
-        backgroundColor: colorScheme.primary, // 👈 was Colors.blueAccent
-        onPressed: () {
-          Navigator.push(
+        backgroundColor: colorScheme.primary,
+        onPressed: () async {
+          // await Navigator.push(
+          //   context,
+          //   MaterialPageRoute(builder: (_) => PostCreationPage()),
+          // );
+
+          // // 🔄 Page par wapas aate hi latest posts fetch
+          // _fetchPosts(page: 1);
+
+          final createdPostId = await Navigator.push(
             context,
-            MaterialPageRoute(builder: (_) => PostCreationPage()),
+            MaterialPageRoute(builder: (_) => const PostCreationPage()),
           );
+
+          await _fetchPosts(page: 1);
+
+          if (createdPostId != null) {
+            final index = _posts.indexWhere((p) => p["id"] == createdPostId);
+
+            if (index > 0) {
+              final newPost = _posts.removeAt(index);
+              _posts.insert(0, newPost);
+              setState(() {});
+            }
+          }
         },
-        child: Icon(Icons.add,
-            color: colorScheme.onPrimary), // 👈 was Colors.white
+        child: Icon(Icons.add, color: colorScheme.onPrimary),
       ),
       body: Column(
         children: [
@@ -249,8 +289,8 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
             ),
             child: TextField(
               controller: _searchController,
-              style: TextStyle(
-                  color: colorScheme.onSurface), // 👈 was Colors.black87
+              // style: TextStyle(
+              //     color: colorScheme.onSurface), // 👈 was Colors.black87
               decoration: InputDecoration(
                 hintText: "Search posts...",
                 hintStyle: TextStyle(
@@ -281,13 +321,16 @@ class _BusinessFeedPageState extends State<BusinessFeedPage> {
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                      color: colorScheme.onSurface
-                          .withOpacity(0.12)), // 👈 was Colors.grey.shade300
+                    color: colorScheme.primary,
+                    width: 0.2,
+                  ), // 👈 was Colors.grey.shade300
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide: BorderSide(
-                      color: colorScheme.primary), // 👈 was Colors.blueAccent
+                    color: colorScheme.primary,
+                    width: 0.8,
+                  ), // 👈 was Colors.blueAccent
                 ),
               ),
               onChanged: (value) {

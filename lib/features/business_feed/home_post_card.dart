@@ -483,7 +483,7 @@ class _HomePostCardState extends State<HomePostCard> {
               ? null
               : Border.all(
                   color: colorScheme.primary,
-                  width: 1,
+                  width: 0.2,
                 ),
           boxShadow: isDark
               ? []

@@ -721,7 +721,7 @@ class _PostCardState extends State<PostCard> {
               ? BorderSide.none
               : BorderSide(
                   color: colorScheme.primary,
-                  width: 1,
+                  width: 0.2,
                 ),
         ),
         child: Padding(

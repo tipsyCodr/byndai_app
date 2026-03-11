@@ -406,9 +406,10 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
     final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
 
-    final readMoreColor = isDark
-        ? colorScheme.primary
-        : const Color.fromARGB(255, 45, 47, 190); // original
+    // final readMoreColor = isDark
+    //     ? colorScheme.primary
+    //     : const Color.fromARGB(255, 45, 47, 190); // original
+    final readMoreColor = colorScheme.primary;
 
     return Scaffold(
       // backgroundColor: Colors.black,
@@ -519,7 +520,8 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
               right: 0,
               bottom: 0,
               child: Container(
-                color: Colors.black.withOpacity(0.8),
+                // color: Colors.black.withOpacity(0.8),
+                color: isDark ? colorScheme.primary : Colors.white,
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -528,130 +530,300 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                     // Modal Header
                     Container(
                       padding: const EdgeInsets.all(8),
-                      color: Colors.grey[900],
+                      color: isDark ? colorScheme.primary : Colors.white,
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton(
-                            icon: const Icon(Icons.close, color: Colors.white),
-                            onPressed: _closeReplyModal,
-                          ),
-                          const SizedBox(width: 10),
-                          const Text(
-                            "Replying to",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                          // Text(
+                          //   "Replying to",
+                          //   style: TextStyle(
+                          //     color:
+                          //         isDark ? Colors.white : colorScheme.primary,
+                          //     fontSize: 16,
+                          //     fontWeight: FontWeight.w600,
+                          //   ),
+                          // ),
+
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: Text(
+                              "Replying to",
+                              style: TextStyle(
+                                color:
+                                    isDark ? Colors.white : colorScheme.primary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              Icons.close,
+                              color:
+                                  isDark ? Colors.white : colorScheme.primary,
+                            ),
+                            onPressed: _closeReplyModal,
                           ),
                         ],
                       ),
                     ),
 
                     // Original Comment
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      color: Colors.grey[900],
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 16,
-                            backgroundColor: Colors.grey[700],
-                            child: Text(
-                              _replyingToUserName.isNotEmpty
-                                  ? _replyingToUserName[0].toUpperCase()
-                                  : "U",
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _replyingToUserName,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 14,
-                                  ),
+                    // Container(
+                    //   padding: const EdgeInsets.all(8),
+                    //   decoration: BoxDecoration(
+                    //     color: isDark ? colorScheme.primary : Colors.white,
+                    //     borderRadius: BorderRadius.circular(20),
+                    //     border: isDark
+                    //         ? Border.all(
+                    //             color: Colors.white,
+                    //             width: 1,
+                    //           )
+                    //         : Border.all(
+                    //             color: colorScheme.primary,
+                    //             width: 1,
+                    //           ),
+                    //   ),
+                    //   child: Row(
+                    //     crossAxisAlignment: CrossAxisAlignment.start,
+                    //     children: [
+                    //       CircleAvatar(
+                    //         radius: 16,
+                    //         backgroundColor: isDark
+                    //             ? const Color.fromARGB(255, 43, 42, 42)
+                    //             : const Color.fromARGB(255, 138, 138, 138),
+                    //         child: Text(
+                    //           _replyingToUserName.isNotEmpty
+                    //               ? _replyingToUserName[0].toUpperCase()
+                    //               : "U",
+                    //           style: TextStyle(
+                    //               color: isDark
+                    //                   ? Colors.white
+                    //                   : colorScheme.primary),
+                    //         ),
+                    //       ),
+                    //       const SizedBox(width: 8),
+                    //       Expanded(
+                    //         child: Column(
+                    //           crossAxisAlignment: CrossAxisAlignment.start,
+                    //           children: [
+                    //             Text(
+                    //               _replyingToUserName,
+                    //               style: TextStyle(
+                    //                 color: isDark
+                    //                     ? Colors.white
+                    //                     : colorScheme.primary,
+                    //                 fontWeight: FontWeight.w600,
+                    //                 fontSize: 14,
+                    //               ),
+                    //             ),
+                    //             const SizedBox(height: 4),
+                    //             Text(
+                    //               _replyingToCommentText,
+                    //               style: TextStyle(
+                    //                 color: isDark
+                    //                     ? Colors.white
+                    //                     : colorScheme.primary,
+                    //                 fontSize: 14,
+                    //               ),
+                    //             ),
+                    //           ],
+                    //         ),
+                    //       ),
+                    //     ],
+                    //   ),
+                    // ),
+
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: isDark ? colorScheme.primary : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: isDark
+                              ? Border.all(
+                                  color: Colors.white,
+                                  width: 1,
+                                )
+                              : Border.all(
+                                  color: colorScheme.primary,
+                                  width: 1,
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _replyingToCommentText,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                  ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 16,
+                              backgroundColor: isDark
+                                  ? colorScheme.surfaceContainerHighest
+                                  : const Color.fromARGB(255, 138, 138, 138),
+                              child: Text(
+                                _replyingToUserName.isNotEmpty
+                                    ? _replyingToUserName[0].toUpperCase()
+                                    : "U",
+                                style: TextStyle(
+                                  color: isDark
+                                      ? Colors.white
+                                      : colorScheme.primary,
                                 ),
-                              ],
+                              ),
                             ),
-                          ),
-                        ],
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _replyingToUserName,
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white
+                                          : colorScheme.primary,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _replyingToCommentText,
+                                    style: TextStyle(
+                                      color: isDark
+                                          ? Colors.white
+                                          : colorScheme.primary,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
 
                     const SizedBox(height: 12),
 
                     // Reply Input in Modal
-                    Container(
+                    // Container(
+                    //   padding: const EdgeInsets.symmetric(horizontal: 8),
+                    //   child: Row(
+                    //     children: [
+                    //       Expanded(
+                    //         child: TextField(
+                    //           controller: _commentController,
+                    //           style: const TextStyle(
+                    //               color: Color.fromARGB(153, 10, 10, 10)),
+                    //           decoration: InputDecoration(
+                    //             hintText: "Write a reply...",
+                    //             hintStyle: const TextStyle(
+                    //                 color: Color.fromARGB(153, 10, 10, 10)),
+                    //             border: OutlineInputBorder(
+                    //               borderRadius: BorderRadius.circular(25),
+                    //               borderSide: BorderSide.none,
+                    //             ),
+                    //             filled: true,
+                    //             fillColor:
+                    //                 const Color.fromARGB(255, 236, 235, 235),
+                    //             contentPadding: const EdgeInsets.symmetric(
+                    //               horizontal: 16,
+                    //               vertical: 12,
+                    //             ),
+                    //             suffixIcon: _isPostingComment
+                    //                 ? const Padding(
+                    //                     padding: EdgeInsets.all(12),
+                    //                     child: SizedBox(
+                    //                       width: 20,
+                    //                       height: 20,
+                    //                       child: CircularProgressIndicator(
+                    //                           strokeWidth: 2),
+                    //                     ),
+                    //                   )
+                    //                 : null,
+                    //           ),
+                    //           maxLines: null,
+                    //           keyboardType: TextInputType.multiline,
+                    //           autofocus: true,
+                    //         ),
+                    //       ),
+                    //       const SizedBox(width: 8),
+                    //       if (!_isPostingComment)
+                    //         Container(
+                    //           decoration: BoxDecoration(
+                    //             color: readMoreColor,
+                    //             borderRadius: BorderRadius.circular(25),
+                    //           ),
+                    //           child: IconButton(
+                    //             icon:
+                    //                 const Icon(Icons.send, color: Colors.white),
+                    //             onPressed: _postComment,
+                    //           ),
+                    //         ),
+                    //     ],
+                    //   ),
+                    // ),
+
+                    Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _commentController,
-                              style: const TextStyle(color: Colors.white),
-                              decoration: InputDecoration(
-                                hintText: "Write a reply...",
-                                hintStyle:
-                                    const TextStyle(color: Colors.white60),
-                                border: OutlineInputBorder(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                controller: _commentController,
+                                style: const TextStyle(
+                                    color: Color.fromARGB(153, 10, 10, 10)),
+                                decoration: InputDecoration(
+                                  hintText: "Write a reply...",
+                                  hintStyle: const TextStyle(
+                                      color: Color.fromARGB(153, 10, 10, 10)),
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(25),
+                                    borderSide: BorderSide.none,
+                                  ),
+                                  filled: true,
+                                  fillColor:
+                                      const Color.fromARGB(255, 236, 235, 235),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 12,
+                                  ),
+                                  suffixIcon: _isPostingComment
+                                      ? const Padding(
+                                          padding: EdgeInsets.all(12),
+                                          child: SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                                strokeWidth: 2),
+                                          ),
+                                        )
+                                      : null,
+                                ),
+                                maxLines: null,
+                                keyboardType: TextInputType.multiline,
+                                autofocus: true,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (!_isPostingComment)
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: isDark ?colorScheme.surfaceContainerHighest : readMoreColor,
                                   borderRadius: BorderRadius.circular(25),
-                                  borderSide: BorderSide.none,
                                 ),
-                                filled: true,
-                                fillColor: Colors.grey[800],
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
+                                child: IconButton(
+                                  icon: const Icon(Icons.send,
+                                      color: Colors.white),
+                                  onPressed: _postComment,
                                 ),
-                                suffixIcon: _isPostingComment
-                                    ? const Padding(
-                                        padding: EdgeInsets.all(12),
-                                        child: SizedBox(
-                                          width: 20,
-                                          height: 20,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2),
-                                        ),
-                                      )
-                                    : null,
                               ),
-                              maxLines: null,
-                              keyboardType: TextInputType.multiline,
-                              autofocus: true,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          if (!_isPostingComment)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: readMoreColor,
-                                borderRadius: BorderRadius.circular(25),
-                              ),
-                              child: IconButton(
-                                icon:
-                                    const Icon(Icons.send, color: Colors.white),
-                                onPressed: _postComment,
-                              ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-
                     // const Spacer(),
                     const SizedBox(height: 12),
                   ],
@@ -693,7 +865,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
           color: isDark ? Colors.grey.shade700 : colorScheme.primary,
-          width: 1,
+          width: 0.2,
         ),
       ),
       child: Padding(
@@ -1096,13 +1268,14 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
     final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
 
-    final readMoreColor = isDark
-        ? colorScheme.primary
-        : const Color.fromARGB(255, 45, 47, 190); // original
+    final readMoreColor = colorScheme.primary;
+    // final readMoreColor = isDark
+    //     ? colorScheme.primary
+    //     : const Color.fromARGB(255, 45, 47, 190); // original
 
     return Container(
       padding: const EdgeInsets.all(12),
-      color: Colors.grey[900],
+      color: isDark ? Colors.grey[900] : Colors.white,
       child: Column(
         children: [
           Row(
@@ -1110,16 +1283,18 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
               Expanded(
                 child: TextField(
                   controller: _commentController,
-                  style: const TextStyle(color: Colors.white),
+                  style:
+                      const TextStyle(color: Color.fromARGB(255, 34, 34, 34)),
                   decoration: InputDecoration(
                     hintText: "Add a comment...",
-                    hintStyle: const TextStyle(color: Colors.white60),
+                    hintStyle:
+                        const TextStyle(color: Color.fromARGB(153, 41, 41, 41)),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(25),
                       borderSide: BorderSide.none,
                     ),
                     filled: true,
-                    fillColor: Colors.grey[800],
+                    fillColor: const Color.fromARGB(255, 236, 235, 235),
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 12,
@@ -1144,7 +1319,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                 Container(
                   decoration: BoxDecoration(
                     // color: Colors.blue,
-                    color: readMoreColor,
+                    color: isDark ? colorScheme.surfaceContainerHighest : readMoreColor,
                     borderRadius: BorderRadius.circular(25),
                   ),
                   child: IconButton(

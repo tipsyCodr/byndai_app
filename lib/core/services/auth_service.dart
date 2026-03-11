@@ -56,7 +56,7 @@ class AuthService {
 
       if (kDebugMode) {
         debugPrint('🔹 Status: ${response.statusCode}');
-        debugPrint('🔹 Response: ${response.body}');
+        debugPrint('🔹 Response_Data: ${response.body}');
       }
 
       final responseBody = jsonDecode(response.body);

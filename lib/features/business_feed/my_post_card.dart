@@ -10,6 +10,7 @@ import './industry_icon_mapper.dart';
 import 'edit_post_page.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'full_screen_image_viewer.dart';
 
 class MyPostCard extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -242,6 +243,23 @@ class _MyPostCardState extends State<MyPostCard> {
     _callSaveApi(updatedPostData, previousSaved, previousSavesCount);
   }
 
+  @override
+  void didUpdateWidget(covariant MyPostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.post != widget.post) {
+      setState(() {
+        _postData = Map<String, dynamic>.from(widget.post);
+
+        _myReaction = _postData["my"]?["reaction"] ?? "none";
+        _likesCount = _postData["counts"]?["likes"] ?? 0;
+        _dislikesCount = _postData["counts"]?["dislikes"] ?? 0;
+        _isSaved = _postData["my"]?["saved"] ?? false;
+        _savesCount = _postData["counts"]?["saves"] ?? 0;
+      });
+    }
+  }
+
   Future<void> _callSaveApi(
     Map<String, dynamic> updatedPostData,
     bool previousSaved,
@@ -461,11 +479,24 @@ class _MyPostCardState extends State<MyPostCard> {
 
     final updatedAt = _formatTime(_postData["updated_at"]?.toString());
 
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Card(
-      color: const Color(0xFFDCDEF7),
+      // color: const Color(0xFFDCDEF7),
+      color: isDark ? colorScheme.surfaceContainerHighest : Colors.white,
+
       elevation: 2,
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: isDark
+            ? BorderSide.none
+            : BorderSide(
+                color: colorScheme.primary,
+                width: 0.2,
+              ),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -503,10 +534,10 @@ class _MyPostCardState extends State<MyPostCard> {
                                 );
                               },
                             )
-                          : const Icon(
+                          : Icon(
                               Icons.person,
                               size: 22,
-                              color: Colors.grey,
+                              color: colorScheme.onSurface.withOpacity(0.6),
                             ),
                     ),
                   ),
@@ -555,7 +586,7 @@ class _MyPostCardState extends State<MyPostCard> {
                       child: Icon(
                         IndustryIconMapper.getIcon(_postData["industry_icon"]),
                         size: 16,
-                        color: Colors.blue.shade700,
+                        color: isDark ? Colors.white : colorScheme.primary,
                       ),
                     ),
                   ),
@@ -689,10 +720,12 @@ class _MyPostCardState extends State<MyPostCard> {
                                 _expandedDescription
                                     ? "Read less"
                                     : "...Read more",
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
-                                  color: Colors.blue,
+                                  color: isDark
+                                      ? Colors.white
+                                      : colorScheme.primary,
                                 ),
                               ),
                             ),
@@ -742,6 +775,46 @@ class _MyPostCardState extends State<MyPostCard> {
   // =========================
   // IMAGE CAROUSEL
   // =========================
+  // Widget _buildImageCarousel() {
+  //   return SizedBox(
+  //     height: 210,
+  //     child: PageView.builder(
+  //       controller: _imageController,
+  //       itemCount: _images.length,
+  //       itemBuilder: (context, index) {
+  //         final media = _images[index];
+  //         final url = _fullUrl(media["media_url"] ?? "");
+
+  //         return Padding(
+  //           padding: const EdgeInsets.all(4),
+  //           child: ClipRRect(
+  //             borderRadius: BorderRadius.circular(14),
+  //             child: CachedNetworkImage(
+  //               imageUrl: url,
+  //               fit: BoxFit.cover,
+  //               width: double.infinity,
+  //               placeholder: (context, url) => Container(
+  //                 color: Colors.grey[200],
+  //                 child: const Center(child: CircularProgressIndicator()),
+  //               ),
+  //               errorWidget: (context, url, error) {
+  //                 debugPrint("IMAGE ERROR: $error");
+  //                 debugPrint("URL: $url");
+
+  //                 return Container(
+  //                   color: Colors.grey.shade200,
+  //                   alignment: Alignment.center,
+  //                   child: const Text("Image load failed"),
+  //                 );
+  //               },
+  //             ),
+  //           ),
+  //         );
+  //       },
+  //     ),
+  //   );
+  // }
+
   Widget _buildImageCarousel() {
     return SizedBox(
       height: 210,
@@ -754,26 +827,37 @@ class _MyPostCardState extends State<MyPostCard> {
 
           return Padding(
             padding: const EdgeInsets.all(4),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: CachedNetworkImage(
-                imageUrl: url,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                placeholder: (context, url) => Container(
-                  color: Colors.grey[200],
-                  child: const Center(child: CircularProgressIndicator()),
+            child: GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => FullScreenImageViewer(
+                      images: _images,
+                      initialIndex: index,
+                      baseUrl: _baseUrl,
+                    ),
+                  ),
+                );
+              },
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[200],
+                    child: const Center(child: CircularProgressIndicator()),
+                  ),
+                  errorWidget: (context, url, error) {
+                    return Container(
+                      color: Colors.grey.shade200,
+                      alignment: Alignment.center,
+                      child: const Text("Image load failed"),
+                    );
+                  },
                 ),
-                errorWidget: (context, url, error) {
-                  debugPrint("IMAGE ERROR: $error");
-                  debugPrint("URL: $url");
-
-                  return Container(
-                    color: Colors.grey.shade200,
-                    alignment: Alignment.center,
-                    child: const Text("Image load failed"),
-                  );
-                },
               ),
             ),
           );

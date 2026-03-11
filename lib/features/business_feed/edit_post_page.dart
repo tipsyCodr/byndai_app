@@ -156,6 +156,81 @@ class _EditPostPageState extends State<EditPostPage> {
   }
 
   // ================= SUBMIT UPDATE =================
+  // Future<void> _updatePost() async {
+  //   // Validate industry
+  //   if (_selectedIndustryId == null) {
+  //     TopAlert.show(context, "Please select industry", isError: true);
+  //     return;
+  //   }
+
+  //   setState(() => _isLoading = true);
+
+  //   try {
+  //     final headers = await _getHeadersMultipart();
+  //     final postId = widget.post['id'];
+
+  //     var request = http.MultipartRequest(
+  //       "POST",
+  //       Uri.parse("${AppConfig.apiBaseUrl}/posts/update/$postId"),
+  //     );
+
+  //     request.headers.addAll(headers);
+
+  //     // Text fields
+  //     request.fields["title"] = _titleController.text;
+  //     request.fields["description"] = _descriptionController.text;
+  //     request.fields["industry_id"] = _selectedIndustryId.toString();
+
+  //     // Send IDs of existing images to keep (those not removed)
+  //     final keepImageIds =
+  //         _existingImages.map((img) => img['id'].toString()).toList();
+  //     for (var id in keepImageIds) {
+  //       request.fields["existing_images[]"] = id;
+  //     }
+
+  //     // Send new images as files
+  //     for (var image in _newImages) {
+  //       if (image != null) {
+  //         final bytes = await image.readAsBytes();
+  //         request.files.add(
+  //           http.MultipartFile.fromBytes(
+  //             "new_images[]",
+  //             bytes,
+  //             filename: image.name,
+  //           ),
+  //         );
+  //       }
+  //     }
+
+  //     // Send removed image IDs (optional, if backend needs explicit removal)
+  //     for (var id in _removedImageIds) {
+  //       request.fields["removed_images[]"] = id.toString();
+  //     }
+
+  //     final streamedResponse = await request.send();
+  //     final responseBody = await streamedResponse.stream.bytesToString();
+
+  //     if (streamedResponse.statusCode == 200) {
+  //       final jsonResponse = jsonDecode(responseBody);
+  //       if (jsonResponse["status"] == true) {
+  //         // Success - return updated post data
+  //         final updatedPost = jsonResponse["data"] ?? widget.post;
+  //         TopAlert.show(context, "Post updated successfully", isSuccess: true);
+  //         Navigator.pop(context, updatedPost);
+  //       } else {
+  //         throw Exception(jsonResponse["message"] ?? "Update failed");
+  //       }
+  //     } else {
+  //       throw Exception("Server error: ${streamedResponse.statusCode}");
+  //     }
+  //   } catch (e) {
+  //     debugPrint("Update error: $e");
+  //     TopAlert.show(context, "Failed to update: $e", isError: true);
+  //   } finally {
+  //     if (mounted) setState(() => _isLoading = false);
+  //   }
+  // }
+
   Future<void> _updatePost() async {
     // Validate industry
     if (_selectedIndustryId == null) {
@@ -181,11 +256,13 @@ class _EditPostPageState extends State<EditPostPage> {
       request.fields["description"] = _descriptionController.text;
       request.fields["industry_id"] = _selectedIndustryId.toString();
 
-      // Send IDs of existing images to keep (those not removed)
+      // Send IDs of existing images to keep
       final keepImageIds =
           _existingImages.map((img) => img['id'].toString()).toList();
       for (var id in keepImageIds) {
-        request.fields["existing_images[]"] = id;
+        request.files.add(
+          http.MultipartFile.fromString('existing_images[]', id),
+        );
       }
 
       // Send new images as files
@@ -194,7 +271,7 @@ class _EditPostPageState extends State<EditPostPage> {
           final bytes = await image.readAsBytes();
           request.files.add(
             http.MultipartFile.fromBytes(
-              "new_images[]",
+              'new_images[]',
               bytes,
               filename: image.name,
             ),
@@ -202,18 +279,40 @@ class _EditPostPageState extends State<EditPostPage> {
         }
       }
 
-      // Send removed image IDs (optional, if backend needs explicit removal)
+      // Send removed image IDs
       for (var id in _removedImageIds) {
-        request.fields["removed_images[]"] = id.toString();
+        request.files.add(
+          http.MultipartFile.fromString('removed_images[]', id.toString()),
+        );
       }
+
+      // ---------- DEBUGGING PRINTS ----------
+      debugPrint('========== UPDATE POST REQUEST ==========');
+      debugPrint('Post ID: $postId');
+      debugPrint('Title: ${_titleController.text}');
+      debugPrint('Description: ${_descriptionController.text}');
+      debugPrint('Industry ID: $_selectedIndustryId');
+      debugPrint('Existing images to keep: $keepImageIds');
+      debugPrint('New images count: ${_newImages.length}');
+      for (var img in _newImages) {
+        debugPrint('New image: ${img?.name}');
+      }
+      debugPrint('Removed image IDs: $_removedImageIds');
+      debugPrint('Total parts in request: ${request.files.length}');
+      for (var file in request.files) {
+        debugPrint('File field: ${file.field}, filename: ${file.filename}');
+      }
+      debugPrint('==========================================');
 
       final streamedResponse = await request.send();
       final responseBody = await streamedResponse.stream.bytesToString();
 
+      debugPrint('Response status: ${streamedResponse.statusCode}');
+      debugPrint('Response body: $responseBody');
+
       if (streamedResponse.statusCode == 200) {
         final jsonResponse = jsonDecode(responseBody);
         if (jsonResponse["status"] == true) {
-          // Success - return updated post data
           final updatedPost = jsonResponse["data"] ?? widget.post;
           TopAlert.show(context, "Post updated successfully", isSuccess: true);
           Navigator.pop(context, updatedPost);
@@ -234,13 +333,18 @@ class _EditPostPageState extends State<EditPostPage> {
   // ================= BUILD =================
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text('Edit Post', style: TextStyle(color: Colors.white)),
+        backgroundColor: colorScheme.surface,
+        title: Text(
+          'Edit Post',
+          style: TextStyle(color: colorScheme.onSurface),
+        ),
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -252,9 +356,12 @@ class _EditPostPageState extends State<EditPostPage> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[900],
-                borderRadius: BorderRadius.circular(12),
-              ),
+                  color: isDark ? colorScheme.surfaceContainerHighest : null,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: colorScheme.primary,
+                    width: 1,
+                  )),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -262,7 +369,7 @@ class _EditPostPageState extends State<EditPostPage> {
                   Text(
                     'Title',
                     style: TextStyle(
-                      color: Colors.grey[300],
+                      color: colorScheme.onSurface,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -270,17 +377,27 @@ class _EditPostPageState extends State<EditPostPage> {
                   const SizedBox(height: 8),
                   TextField(
                     controller: _titleController,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: colorScheme.onSurface),
                     decoration: InputDecoration(
                       hintText: "Enter post title",
-                      hintStyle: const TextStyle(color: Colors.white38),
+                      hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                      filled: true,
+                      fillColor:
+                          isDark ? colorScheme.surfaceContainerHighest : null,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.grey),
+                        borderSide: BorderSide(color: colorScheme.outline),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: colorScheme.outline),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.blueAccent),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary,
+                          width: 2,
+                        ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -295,7 +412,7 @@ class _EditPostPageState extends State<EditPostPage> {
                   Text(
                     'Description',
                     style: TextStyle(
-                      color: Colors.grey[300],
+                      color: colorScheme.onSurface,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
@@ -304,17 +421,27 @@ class _EditPostPageState extends State<EditPostPage> {
                   TextField(
                     controller: _descriptionController,
                     maxLines: 4,
-                    style: const TextStyle(color: Colors.white),
+                    style: TextStyle(color: colorScheme.onSurface),
                     decoration: InputDecoration(
                       hintText: "What's on your mind?",
-                      hintStyle: const TextStyle(color: Colors.white38),
+                      hintStyle: TextStyle(color: colorScheme.onSurfaceVariant),
+                      filled: true,
+                      fillColor:
+                          isDark ? colorScheme.surfaceContainerHighest : null,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.grey),
+                        borderSide: BorderSide(color: colorScheme.outline),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        borderSide: BorderSide(color: colorScheme.outline),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
-                        borderSide: const BorderSide(color: Colors.blueAccent),
+                        borderSide: BorderSide(
+                          color: colorScheme.primary,
+                          width: 2,
+                        ),
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 12,
@@ -329,12 +456,118 @@ class _EditPostPageState extends State<EditPostPage> {
                   Text(
                     'Industry *',
                     style: TextStyle(
-                      color: Colors.grey[300],
+                      color: colorScheme.onSurface,
                       fontSize: 14,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   const SizedBox(height: 8),
+
+                  // GestureDetector(
+                  //   onTap: _isIndustryLoading
+                  //       ? null
+                  //       : () {
+                  //           if (_industryOptions.isEmpty) {
+                  //             TopAlert.show(context, "No industries found",
+                  //                 isError: true);
+                  //             return;
+                  //           }
+
+                  //           showDialog(
+                  //             context: context,
+                  //             builder: (context) => AlertDialog(
+                  //               backgroundColor: Colors.grey[900],
+                  //               title: const Text(
+                  //                 'Select Industry',
+                  //                 style: TextStyle(color: Colors.white),
+                  //               ),
+                  //               content: SizedBox(
+                  //                 width: double.maxFinite,
+                  //                 child: ListView.builder(
+                  //                   shrinkWrap: true,
+                  //                   itemCount: _industryOptions.length,
+                  //                   itemBuilder: (context, index) {
+                  //                     final industry = _industryOptions[index];
+                  //                     return ListTile(
+                  //                       title: Text(
+                  //                         industry['name'],
+                  //                         style: const TextStyle(
+                  //                             color: Colors.white),
+                  //                       ),
+                  //                       trailing: _selectedIndustryId ==
+                  //                               industry['id']
+                  //                           ? const Icon(Icons.check,
+                  //                               color: Colors.blueAccent)
+                  //                           : null,
+                  //                       onTap: () {
+                  //                         setState(() {
+                  //                           _selectedIndustryId =
+                  //                               industry['id'];
+                  //                           _selectedIndustryName =
+                  //                               industry['name'];
+                  //                         });
+                  //                         Navigator.pop(context);
+                  //                       },
+                  //                     );
+                  //                   },
+                  //                 ),
+                  //               ),
+                  //             ),
+                  //           );
+                  //         },
+                  //   child: Container(
+                  //     padding: const EdgeInsets.symmetric(
+                  //       horizontal: 12,
+                  //       vertical: 14,
+                  //     ),
+                  //     decoration: BoxDecoration(
+                  //       border: Border.all(
+                  //         color: _selectedIndustryId != null
+                  //             ? Colors.blueAccent
+                  //             : Colors.grey,
+                  //         width: _selectedIndustryId != null ? 2 : 1,
+                  //       ),
+                  //       borderRadius: BorderRadius.circular(8),
+                  //     ),
+                  //     child: Row(
+                  //       children: [
+                  //         Icon(
+                  //           Icons.category,
+                  //           color: _selectedIndustryId != null
+                  //               ? Colors.blueAccent
+                  //               : Colors.grey,
+                  //         ),
+                  //         const SizedBox(width: 12),
+                  //         Expanded(
+                  //           child: Text(
+                  //             _isIndustryLoading
+                  //                 ? "Loading industries..."
+                  //                 : (_selectedIndustryName ??
+                  //                     'Select Industry'),
+                  //             style: TextStyle(
+                  //               color: _selectedIndustryId != null
+                  //                   ? Colors.white
+                  //                   : Colors.white38,
+                  //               fontSize: 16,
+                  //             ),
+                  //           ),
+                  //         ),
+                  //         if (_isIndustryLoading)
+                  //           const SizedBox(
+                  //             width: 18,
+                  //             height: 18,
+                  //             child: CircularProgressIndicator(strokeWidth: 2),
+                  //           )
+                  //         else
+                  //           const Icon(
+                  //             Icons.arrow_drop_down,
+                  //             color: Colors.grey,
+                  //           ),
+                  //       ],
+                  //     ),
+                  //   ),
+                  // ),
+
                   GestureDetector(
                     onTap: _isIndustryLoading
                         ? null
@@ -389,38 +622,36 @@ class _EditPostPageState extends State<EditPostPage> {
                           },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 14,
-                      ),
+                          horizontal: 12, vertical: 16),
                       decoration: BoxDecoration(
+                        color:
+                            isDark ? colorScheme.surfaceContainerHighest : null,
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                           color: _selectedIndustryId != null
-                              ? Colors.blueAccent
-                              : Colors.grey,
-                          width: _selectedIndustryId != null ? 2 : 1,
+                              ? colorScheme.primary
+                              : colorScheme.outline,
                         ),
-                        borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.category,
                             color: _selectedIndustryId != null
-                                ? Colors.blueAccent
-                                : Colors.grey,
+                                ? colorScheme.primary
+                                : colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(width: 12),
+                          const SizedBox(width: 10),
                           Expanded(
                             child: Text(
                               _isIndustryLoading
                                   ? "Loading industries..."
                                   : (_selectedIndustryName ??
-                                      'Select Industry'),
+                                      "Select Industry"),
                               style: TextStyle(
                                 color: _selectedIndustryId != null
-                                    ? Colors.white
-                                    : Colors.white38,
-                                fontSize: 16,
+                                    ? colorScheme.onSurface
+                                    : colorScheme.onSurfaceVariant,
                               ),
                             ),
                           ),
@@ -431,9 +662,9 @@ class _EditPostPageState extends State<EditPostPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           else
-                            const Icon(
-                              Icons.arrow_drop_down,
-                              color: Colors.grey,
+                            Icon(
+                              Icons.keyboard_arrow_down,
+                              color: colorScheme.onSurfaceVariant,
                             ),
                         ],
                       ),
@@ -443,21 +674,45 @@ class _EditPostPageState extends State<EditPostPage> {
                   const SizedBox(height: 24),
 
                   // Images Section
-                  Text(
-                    'Images',
-                    style: TextStyle(
-                      color: Colors.grey[300],
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  // Text(
+                  //   'Images',
+                  //   style: TextStyle(
+                  //     color: colorScheme.onSurface,
+                  //     fontSize: 16,
+                  //     fontWeight: FontWeight.w600,
+                  //   ),
+                  // ),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Images',
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _pickNewImage,
+                        icon: Icon(
+                          Icons.add,
+                          color: colorScheme.primary,
+                        ),
+                        tooltip: "Add Image",
+                      ),
+                    ],
                   ),
+
                   const SizedBox(height: 12),
 
                   // Existing images
                   if (_existingImages.isNotEmpty) ...[
-                    const Text(
+                    Text(
                       'Current Images',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                      style:
+                          TextStyle(color: colorScheme.onSurface, fontSize: 14),
                     ),
                     const SizedBox(height: 8),
                     ..._existingImages.asMap().entries.map((entry) {
@@ -467,8 +722,14 @@ class _EditPostPageState extends State<EditPostPage> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.grey[850],
+                          color: isDark
+                              ? colorScheme.surfaceContainerHighest
+                              : null,
                           borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: colorScheme.primary,
+                            width: 1,
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -491,7 +752,9 @@ class _EditPostPageState extends State<EditPostPage> {
                             Expanded(
                               child: Text(
                                 'Image ${index + 1}',
-                                style: const TextStyle(color: Colors.white),
+                                style: TextStyle(
+                                  color: colorScheme.onSurface,
+                                ),
                               ),
                             ),
                             IconButton(
@@ -507,9 +770,10 @@ class _EditPostPageState extends State<EditPostPage> {
                   // New images
                   if (_newImages.isNotEmpty) ...[
                     const SizedBox(height: 16),
-                    const Text(
+                    Text(
                       'New Images',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                      style:
+                          TextStyle(color: colorScheme.onSurface, fontSize: 14),
                     ),
                     const SizedBox(height: 8),
                     ..._newImages.asMap().entries.map((entry) {
@@ -519,9 +783,14 @@ class _EditPostPageState extends State<EditPostPage> {
                         margin: const EdgeInsets.only(bottom: 12),
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: Colors.grey[850],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                            color: isDark
+                                ? colorScheme.surfaceContainerHighest
+                                : null,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: colorScheme.primary,
+                              width: 1,
+                            )),
                         child: Row(
                           children: [
                             ClipRRect(
@@ -567,7 +836,9 @@ class _EditPostPageState extends State<EditPostPage> {
                             Expanded(
                               child: Text(
                                 'New Image ${index + 1}',
-                                style: const TextStyle(color: Colors.white),
+                                style: TextStyle(
+                                  color: colorScheme.onSurface,
+                                ),
                               ),
                             ),
                             IconButton(
@@ -581,17 +852,17 @@ class _EditPostPageState extends State<EditPostPage> {
                   ],
 
                   // Add image button
-                  const SizedBox(height: 16),
-                  ElevatedButton.icon(
-                    onPressed: _pickNewImage,
-                    icon: const Icon(Icons.add_photo_alternate),
-                    label: const Text('Add Image'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
-                      minimumSize: const Size(double.infinity, 45),
-                    ),
-                  ),
+                  // const SizedBox(height: 16),
+                  // ElevatedButton.icon(
+                  //   onPressed: _pickNewImage,
+                  //   icon: const Icon(Icons.add_photo_alternate),
+                  //   label: const Text('Add Image'),
+                  //   style: ElevatedButton.styleFrom(
+                  //     backgroundColor: colorScheme.primary,
+                  //     foregroundColor: colorScheme.onPrimary,
+                  //     minimumSize: const Size(double.infinity, 45),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
@@ -604,8 +875,8 @@ class _EditPostPageState extends State<EditPostPage> {
         margin: const EdgeInsets.only(bottom: 20, right: 20),
         child: FloatingActionButton.extended(
           onPressed: _isLoading ? null : _updatePost,
-          backgroundColor: Colors.blueAccent,
-          foregroundColor: Colors.white,
+          backgroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onPrimary,
           icon: _isLoading
               ? const CupertinoActivityIndicator(color: Colors.white)
               : const Icon(Icons.save),
@@ -630,12 +901,3 @@ class _EditPostPageState extends State<EditPostPage> {
     }
   }
 }
-
-
-
-
-
-
-
-
-
