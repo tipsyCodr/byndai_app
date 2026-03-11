@@ -2,7 +2,7 @@ name: gridcard
 description: A new Flutter project.
 publish_to: 'none' # Remove if publishing to pub.dev
 
-version: 1.0.9+9
+version: 1.0.10+10
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -48,6 +48,8 @@ dependencies:
   firebase_crashlytics: ^5.0.8
   firebase_auth: ^6.2.0
   google_sign_in: ^7.2.0
+  firebase_messaging: ^16.0.5
+  flutter_local_notifications: ^18.0.1
 
 
   
