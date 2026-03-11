@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/models/login_response.dart';
@@ -249,4 +250,27 @@ class AuthService {
 
     return null;
   }
+
+  /// Sync FCM token with backend
+  static Future<void> updateFCMToken(String fcmToken) async {
+    final token = await _storage.read(key: 'token');
+    if (token == null) return;
+
+    final url = Uri.parse('$_baseUrl/update-fcm-token');
+    try {
+      await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'fcm_token': fcmToken}),
+      );
+    } catch (e) {
+      debugPrint('🚨 Error updating FCM token: $e');
+    }
+  }
+
+  static const _storage = FlutterSecureStorage();
 }

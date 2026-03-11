@@ -15,7 +15,8 @@ import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
-import 'dart:async';
+import 'package:gridcard/core/services/notification_service.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:ui';
 import 'firebase_options.dart';
 
@@ -38,6 +39,10 @@ void main() async {
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };
+
+  // Initialize Notifications
+  await NotificationService.initialize();
+  FirebaseMessaging.onBackgroundMessage(NotificationService.firebaseMessagingBackgroundHandler);
 
   // Load session BEFORE running app to determine initial route
   debugPrint('[MAIN] Checking for existing session...');
