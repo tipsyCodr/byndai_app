@@ -19,6 +19,7 @@ class ProfilePage extends StatefulWidget {
   final int? viewerUserId;
   final String? fromConnectionTab; // 'pending', 'sent', or null
   final bool isConnected; // true if viewer is already connected
+  final bool fromSuggestion;
 
   const ProfilePage({
     super.key,
@@ -27,6 +28,7 @@ class ProfilePage extends StatefulWidget {
     this.viewerUserId,
     this.fromConnectionTab,
     this.isConnected = false,
+    this.fromSuggestion = false,
   });
 
   @override
@@ -38,6 +40,9 @@ class _ProfilePageState extends State<ProfilePage> {
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
   static const String _imgBaseUrl = AppConfig.apiProfileImg;
+
+  String _requestStatus = "none";
+  bool _isCheckingConnection = false;
 
   // ================= PROFILE VIEW TRACKING =================
   DateTime? _profileOpenTime;
@@ -79,6 +84,39 @@ class _ProfilePageState extends State<ProfilePage> {
       'Accept': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
+  }
+
+  Future<void> _checkConnectionStatus() async {
+    try {
+      setState(() => _isCheckingConnection = true);
+
+      final token = await UserStorageService().getToken();
+
+      final res = await http.post(
+        Uri.parse("$_baseUrl/connection/status"),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          if (token != null) "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({
+          "viewerUserId": widget.viewerUserId,
+          "profileUserId": widget.userId,
+        }),
+      );
+
+      final jsonData = jsonDecode(res.body);
+
+      if (res.statusCode == 200) {
+        setState(() {
+          _requestStatus = jsonData["request_status"] ?? "none";
+        });
+      }
+    } catch (e) {
+      debugPrint("connection status error $e");
+    } finally {
+      setState(() => _isCheckingConnection = false);
+    }
   }
 
   Future<void> _trackProfileLinkClick(String platform) async {
@@ -263,17 +301,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
       final headers = await _getHeaders();
       final url = Uri.parse("$_baseUrl/products-by-user/$targetUserId");
-      
+
       debugPrint("🟦 PRODUCTS FETCH URL: $url");
-      
+
       final response = await http.get(url, headers: headers);
-      
+
       debugPrint("🟦 PRODUCTS API STATUS: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         debugPrint("🟦 PRODUCTS JSON: ${jsonEncode(jsonData)}");
-        
+
         if (jsonData["status"] == true) {
           final dataObject = jsonData["data"];
           // Handle both paginated and direct list responses
@@ -283,7 +321,7 @@ class _ProfilePageState extends State<ProfilePage> {
           } else if (dataObject is List) {
             fetchedProducts = dataObject;
           }
-          
+
           if (mounted) {
             setState(() {
               _products = fetchedProducts;
@@ -292,7 +330,8 @@ class _ProfilePageState extends State<ProfilePage> {
           }
         }
       } else {
-        debugPrint("🔴 Error fetching products: ${response.statusCode} ${response.body}");
+        debugPrint(
+            "🔴 Error fetching products: ${response.statusCode} ${response.body}");
       }
     } catch (e) {
       debugPrint("🔴 EXCEPTION in _fetchProducts(): $e");
@@ -402,6 +441,72 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // ================= LIFECYCLE =================
+
+  Widget _buildConnectionButton() {
+    if (!widget.fromSuggestion) {
+      return _existingButtonWidget(); // 👈 पुराना logic
+    }
+
+    if (_isCheckingConnection) {
+      return const Padding(
+        padding: EdgeInsets.all(20),
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_requestStatus == "none") {
+      return _connectButton();
+    }
+
+    if (_requestStatus == "received") {
+      return _acceptButton();
+    }
+
+    if (_requestStatus == "sent") {
+      return _removeButton();
+    }
+
+    return _connectButton();
+  }
+
+  Widget _connectButton() {
+    return ElevatedButton(
+      onPressed: () async {
+        if (widget.userId == null) return;
+
+        final error = await _sendConnectionRequest(widget.userId!);
+
+        if (error == null) {
+          TopAlert.show(context, "Connection request sent", isSuccess: true);
+          _checkConnectionStatus();
+        } else {
+          TopAlert.show(context, error, isError: true);
+        }
+      },
+      child: const Text("Connect"),
+    );
+  }
+
+  Widget _acceptButton() {
+    return ElevatedButton(
+      onPressed: () async {
+        await _acceptPendingRequest();
+        _checkConnectionStatus();
+      },
+      child: const Text("Accept"),
+    );
+  }
+
+  Widget _removeButton() {
+    return ElevatedButton(
+      onPressed: () async {
+        await _removeSentRequest();
+        _checkConnectionStatus();
+      },
+      child: const Text("Remove"),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -421,6 +526,10 @@ class _ProfilePageState extends State<ProfilePage> {
       _fetchAverageRating();
       debugPrint("🟢 USER DETAILS JSON 121: ${jsonEncode(_userDetails)}");
     });
+
+    if (widget.fromSuggestion) {
+      _checkConnectionStatus();
+    }
   }
 
   @override
@@ -489,8 +598,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
     return "";
   }
-
-
 
   // ================== SOCIAL ICONS HELPERS ==================
   IconData? _getIconForName(String name) {
@@ -1054,6 +1161,38 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  Widget _existingButtonWidget() {
+    final connection = _userDetails?['connection'] as Map<String, dynamic>?;
+
+    return ElevatedButton(
+      onPressed: () async {
+        if (widget.fromConnectionTab == 'pending' ||
+            _isIncomingPendingRequest(connection)) {
+          _acceptPendingRequest();
+        } else if (widget.fromConnectionTab == 'sent' ||
+            _isOutgoingPendingRequest(connection)) {
+          _removeSentRequest();
+        } else {
+          if (widget.userId == null) return;
+
+          final error = await _sendConnectionRequest(widget.userId!);
+
+          if (error == null) {
+            TopAlert.show(context, "Connection request sent", isSuccess: true);
+            _fetchUserDetails();
+          } else {
+            TopAlert.show(context, error, isError: true);
+          }
+        }
+      },
+      child: Text(
+        _getConnectionActionLabel(
+          _userDetails?['connection'] as Map<String, dynamic>?,
+        ),
+      ),
+    );
+  }
+
   // ================= NEW: ACCEPT PENDING REQUEST =================
   Future<void> _acceptPendingRequest() async {
     final int? senderId = widget.userId;
@@ -1078,7 +1217,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (response.statusCode == 200 && jsonData['status'] == true) {
         TopAlert.show(context, jsonData['message'] ?? 'Accepted',
             isSuccess: true);
-        
+
         // Refresh UI
         await _fetchUserDetails();
       } else {
@@ -1114,7 +1253,7 @@ class _ProfilePageState extends State<ProfilePage> {
       if (response.statusCode == 200 && jsonData['status'] == true) {
         TopAlert.show(context, jsonData['message'] ?? 'Removed',
             isSuccess: true);
-        
+
         // Refresh UI
         await _fetchUserDetails();
       } else {
@@ -1192,8 +1331,7 @@ class _ProfilePageState extends State<ProfilePage> {
     final int? connectionStatus =
         _parseConnectionStatus(connectionData as Map<String, dynamic>?);
 
-    final bool isAlreadyConnected =
-        widget.isConnected || connectionStatus == 2;
+    final bool isAlreadyConnected = widget.isConnected || connectionStatus == 2;
 
     final apiMasterUser = _userDetails?['master_user'];
 
@@ -1463,50 +1601,53 @@ class _ProfilePageState extends State<ProfilePage> {
                                       width: 1,
                                     ),
                             ),
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                final connection =
-                                    _userDetails?['connection'] as Map<String, dynamic>?;
+                            // child: ElevatedButton(
+                            //   onPressed: () async {
+                            //     final connection = _userDetails?['connection']
+                            //         as Map<String, dynamic>?;
 
-                                if (widget.fromConnectionTab == 'pending' ||
-                                    _isIncomingPendingRequest(connection)) {
-                                  _acceptPendingRequest();
-                                } else if (widget.fromConnectionTab == 'sent' ||
-                                    _isOutgoingPendingRequest(connection)) {
-                                  _removeSentRequest();
-                                } else {
-                                  if (widget.userId == null) return;
+                            //     if (widget.fromConnectionTab == 'pending' ||
+                            //         _isIncomingPendingRequest(connection)) {
+                            //       _acceptPendingRequest();
+                            //     } else if (widget.fromConnectionTab == 'sent' ||
+                            //         _isOutgoingPendingRequest(connection)) {
+                            //       _removeSentRequest();
+                            //     } else {
+                            //       if (widget.userId == null) return;
 
-                                  final error =
-                                      await _sendConnectionRequest(widget.userId!);
+                            //       final error = await _sendConnectionRequest(
+                            //           widget.userId!);
 
-                                  if (error == null) {
-                                    TopAlert.show(
-                                        context, "✅ Connection request sent",
-                                        isSuccess: true);
-                                    _fetchUserDetails();
-                                  } else {
-                                    TopAlert.show(context, error, isError: true);
-                                  }
-                                }
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: colorScheme.primary,
-                                foregroundColor: colorScheme.onPrimary,
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                              ),
-                              child: Text(
-                                _getConnectionActionLabel(
-                                  _userDetails?['connection']
-                                      as Map<String, dynamic>?,
-                                ),
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            ),
+                            //       if (error == null) {
+                            //         TopAlert.show(
+                            //             context, "✅ Connection request sent",
+                            //             isSuccess: true);
+                            //         _fetchUserDetails();
+                            //       } else {
+                            //         TopAlert.show(context, error,
+                            //             isError: true);
+                            //       }
+                            //     }
+                            //   },
+                            //   style: ElevatedButton.styleFrom(
+                            //     backgroundColor: colorScheme.primary,
+                            //     foregroundColor: colorScheme.onPrimary,
+                            //     padding:
+                            //         const EdgeInsets.symmetric(vertical: 14),
+                            //     shape: RoundedRectangleBorder(
+                            //       borderRadius: BorderRadius.circular(14),
+                            //     ),
+                            //   ),
+                            //   child: Text(
+                            //     _getConnectionActionLabel(
+                            //       _userDetails?['connection']
+                            //           as Map<String, dynamic>?,
+                            //     ),
+                            //     style: const TextStyle(fontSize: 12),
+                            //   ),
+                            // ),
+
+                            child: _buildConnectionButton(),
                           ),
                         ],
                       ),
@@ -1818,11 +1959,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                                   errorBuilder: (context, error,
                                                           stackTrace) =>
                                                       Container(
-                                                        height: 120,
-                                                        color: Colors.grey[300],
-                                                        child: const Icon(Icons
-                                                            .image_not_supported),
-                                                      ),
+                                                    height: 120,
+                                                    color: Colors.grey[300],
+                                                    child: const Icon(Icons
+                                                        .image_not_supported),
+                                                  ),
                                                 )
                                               : Container(
                                                   height: 120,
