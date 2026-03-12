@@ -5,6 +5,7 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/models/login_response.dart';
 import 'package:gridcard/models/user_model.dart';
 import 'package:http/http.dart' as http;
+import 'package:gridcard/core/services/user_storage_service.dart';
 
 class AuthService {
   static const String _baseUrl = AppConfig.apiBaseUrl;
@@ -248,5 +249,26 @@ class AuthService {
     }
 
     return null;
+  }
+
+  /// Sync FCM token with backend
+  static Future<void> updateFCMToken(String fcmToken) async {
+    final token = await UserStorageService().getToken();
+    if (token == null) return;
+
+    final url = Uri.parse('$_baseUrl/update-fcm-token');
+    try {
+      await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({'fcm_token': fcmToken}),
+      );
+    } catch (e) {
+      debugPrint('🚨 Error updating FCM token: $e');
+    }
   }
 }

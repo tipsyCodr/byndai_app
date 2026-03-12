@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -59,7 +60,19 @@ class AuthProvider extends ChangeNotifier {
       _user = session.user;
       _isAuthenticated = true;
       debugPrint('Auth: ✅ Session restored from main()');
+      _syncFCMToken(); // Sync token on app start
       notifyListeners();
+    }
+  }
+
+  Future<void> _syncFCMToken() async {
+    try {
+      String? token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        AuthService.updateFCMToken(token);
+      }
+    } catch (e) {
+      debugPrint('🚨 Error getting FCM token for sync: $e');
     }
   }
 
@@ -291,12 +304,14 @@ class AuthProvider extends ChangeNotifier {
         _user = session.user;
         _isAuthenticated = true;
         debugPrint("Auth: ✅ Session restored via isValid");
+        _syncFCMToken();
       }
       // ✅ EXTRA HARDENING fallback (THIS is the part you asked about)
       else if (session.token != null && session.user != null) {
         _user = session.user;
         _isAuthenticated = true;
         debugPrint("Auth: ⚠️ Session restored via fallback");
+        _syncFCMToken();
       }
       // ❌ No session
       else {
@@ -319,6 +334,7 @@ class AuthProvider extends ChangeNotifier {
     _isAuthenticated = true;
     await _storageService.saveSession(response);
     await _clearPendingState();
+    _syncFCMToken(); // Sync token after successful login
     // Fluttertoast.showToast(msg: message);
   }
 
