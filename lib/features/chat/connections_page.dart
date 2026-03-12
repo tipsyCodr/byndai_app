@@ -550,6 +550,8 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     try {
       if (fromTab == "pending") {
         setState(() => isLoading = true);
+      } else if (fromTab == "accepted") {
+        setState(() => acceptedLoading = true);
       } else {
         setState(() => sentLoading = true);
       }
@@ -570,6 +572,9 @@ class _ConnectionsPageState extends State<ConnectionsPage>
         setState(() {
           if (fromTab == "pending") {
             pendingConnections.removeAt(index);
+          } else if (fromTab == "accepted") {
+            acceptedFriends.removeAt(index);
+            _acceptedCount = (_acceptedCount - 1).clamp(0, 999999);
           } else {
             sentRequests.removeAt(index);
             _sentCount = (_sentCount - 1).clamp(0, 999999);
@@ -592,6 +597,8 @@ class _ConnectionsPageState extends State<ConnectionsPage>
       if (!mounted) return;
       if (fromTab == "pending") {
         setState(() => isLoading = false);
+      } else if (fromTab == "accepted") {
+        setState(() => acceptedLoading = false);
       } else {
         setState(() => sentLoading = false);
       }
@@ -871,19 +878,13 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
                                 const SizedBox(height: 12),
 
-                                // Divider(
-                                //   color: colorScheme.outline.withOpacity(0.2),
-                                // ),
-
-                                // const SizedBox(height: 12),
-
                                 /// Bottom Buttons
                                 Row(
                                   children: [
                                     /// Chat Button
                                     Expanded(
                                       child: ElevatedButton.icon(
-                                        icon: Icon(Icons.chat_bubble_outline,
+                                        icon: const Icon(Icons.chat_bubble_outline,
                                             size: 18),
                                         label: const Text("Chat"),
                                         style: ElevatedButton.styleFrom(
@@ -930,59 +931,86 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                             return;
                                           }
 
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ChatScreen(
-                                          chatId: chatId,
-                                          receiverId: receiverId,
-                                          receiverName: item['fname'] ?? "User",
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
-                                PopupMenuButton<String>(
-                                  icon: const Icon(Icons.more_vert,
-                                      color: Colors.white),
-                                  onSelected: (value) async {
-                                    if (value == 'view') {
-                                      final session = await UserStorageService().loadSession();
-                                      final viewerId = session.user?.id;
-                                      if (!mounted) return;
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => ProfilePage(
-                                            userId: int.tryParse(item['friend_id'].toString()),
-                                            viewerUserId: viewerId,
-                                            isConnected: true,
-                                          ),
-                                        ),
-                                      );
-                                    }
-                                  },
-                                  itemBuilder: (context) => const [
-                                    PopupMenuItem(
-                                      value: 'view',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.visibility),
-                                          SizedBox(width: 8),
-                                          Text('View'),
-                                        ],
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => ChatScreen(
+                                                chatId: chatId,
+                                                receiverId: receiverId,
+                                                receiverName: item['fname'] ?? "User",
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ),
-                                    PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.delete,
-                                              color: Colors.redAccent),
-                                          SizedBox(width: 8),
-                                          Text('Delete'),
-                                        ],
-                                      ),
+                                    PopupMenuButton<String>(
+                                      icon: Icon(Icons.more_vert,
+                                          color: colorScheme.onSurface
+                                              .withOpacity(0.6)),
+                                      onSelected: (value) async {
+                                        if (value == 'view') {
+                                          final session =
+                                              await UserStorageService()
+                                                  .loadSession();
+                                          final viewerId = session.user?.id;
+                                          if (!mounted) return;
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => ProfilePage(
+                                                userId: int.tryParse(
+                                                    item['friend_id']
+                                                        .toString()),
+                                                viewerUserId: viewerId,
+                                                isConnected: true,
+                                              ),
+                                            ),
+                                          );
+                                        } else if (value == 'delete') {
+                                          final session =
+                                              await UserStorageService()
+                                                  .loadSession();
+                                          final viewerId = session.user?.id;
+                                          if (viewerId == null) return;
+
+                                          final friendId = int.tryParse(
+                                              item['friend_id'].toString());
+                                          if (friendId == null) return;
+
+                                          // status 2 means they are already connected
+                                          await deleteConnectionRequest(
+                                            senderId: viewerId,
+                                            receiverId: friendId,
+                                            status: 2,
+                                            fromTab: "accepted",
+                                            index: index,
+                                          );
+                                        }
+                                      },
+                                      itemBuilder: (context) => const [
+                                        PopupMenuItem(
+                                          value: 'view',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.visibility),
+                                              SizedBox(width: 8),
+                                              Text('View'),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.delete,
+                                                  color: Colors.redAccent),
+                                              SizedBox(width: 8),
+                                              Text('Delete'),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -1468,9 +1496,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                 //   color: colorScheme.outline.withOpacity(0.2),
                                 // ),
 
-                                // const SizedBox(height: 12),
-
-                                /// Bottom Buttons
+                                                  /// Bottom Buttons
                                 Row(
                                   children: [
                                     /// View Button
@@ -1489,58 +1515,69 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                               await UserStorageService()
                                                   .loadSession();
                                           final senderId = session.user?.id;
-
                                           if (senderId == null) return;
 
                                           final receiverId =
-                                              item['receiver_id'];
-                                          final profileUserId = int.tryParse(
-                                              receiverId.toString());
-                                          if (profileUserId == null) return;
+                                              int.tryParse(item['receiver_id'].toString());
+                                          if (receiverId == null) return;
 
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ProfilePage(
-                                        userId: profileUserId,
-                                        viewerUserId: senderId,
-                                        fromConnectionTab: 'sent',
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => ProfilePage(
+                                                userId: receiverId,
+                                                viewerUserId: senderId,
+                                                fromConnectionTab: 'sent',
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: const Text("View"),
                                       ),
                                     ),
-                                  );
-                                }
 
-                                if (value == "cancel") {
-                                  await deleteConnectionRequest(
-                                    senderId: senderId,
-                                    receiverId: receiverId,
-                                    status: status,
-                                    fromTab: "sent",
-                                    index: index,
-                                  );
-                                }
-                              },
-                              itemBuilder: (context) => const [
-                                PopupMenuItem(
-                                  value: 'view',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.visibility),
-                                      SizedBox(width: 8),
-                                      Text('View'),
-                                    ],
-                                  ),
-                                ),
-                                PopupMenuItem(
-                                  value: 'cancel',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.delete,
-                                          color: Colors.redAccent),
-                                      SizedBox(width: 8),
-                                      Text('Cancel'),
-                                    ],
-                                  ),
+                                    const SizedBox(width: 10),
+
+                                    /// Remove Button
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        style: OutlinedButton.styleFrom(
+                                          side: BorderSide(
+                                            color: colorScheme.outline,
+                                            width: 0.2,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          final session =
+                                              await UserStorageService()
+                                                  .loadSession();
+                                          final senderId = session.user?.id;
+                                          if (senderId == null) return;
+
+                                          final receiverId = int.tryParse(
+                                              item['receiver_id'].toString());
+                                          final status = int.tryParse(
+                                              item['status'].toString());
+
+                                          if (receiverId == null ||
+                                              status == null) return;
+
+                                          await deleteConnectionRequest(
+                                            senderId: senderId,
+                                            receiverId: receiverId,
+                                            status: status,
+                                            fromTab: "sent",
+                                            index: index,
+                                          );
+                                        },
+                                        child: const Text("Remove"),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),

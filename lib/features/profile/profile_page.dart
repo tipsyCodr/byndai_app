@@ -254,26 +254,45 @@ class _ProfilePageState extends State<ProfilePage> {
     try {
       final int? targetUserId =
           widget.userId ?? await UserStorageService().getUserId();
-      if (targetUserId == null) return;
+      if (targetUserId == null) {
+        debugPrint("🟠 targetUserId is null for _fetchProducts");
+        return;
+      }
 
-      setState(() => _isLoadingProducts = true);
+      if (mounted) setState(() => _isLoadingProducts = true);
 
       final headers = await _getHeaders();
       final url = Uri.parse("$_baseUrl/products-by-user/$targetUserId");
+      
+      debugPrint("🟦 PRODUCTS FETCH URL: $url");
+      
       final response = await http.get(url, headers: headers);
+      
+      debugPrint("🟦 PRODUCTS API STATUS: ${response.statusCode}");
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
+        debugPrint("🟦 PRODUCTS JSON: ${jsonEncode(jsonData)}");
+        
         if (jsonData["status"] == true) {
           final dataObject = jsonData["data"];
-          if (dataObject != null && dataObject["data"] != null) {
-            if (mounted) {
-              setState(() {
-                _products = dataObject["data"] as List;
-              });
-            }
+          // Handle both paginated and direct list responses
+          List fetchedProducts = [];
+          if (dataObject is Map && dataObject["data"] != null) {
+            fetchedProducts = dataObject["data"] as List;
+          } else if (dataObject is List) {
+            fetchedProducts = dataObject;
+          }
+          
+          if (mounted) {
+            setState(() {
+              _products = fetchedProducts;
+            });
+            debugPrint("🟢 SET STATE PRODUCTS: ${_products.length} items");
           }
         }
+      } else {
+        debugPrint("🔴 Error fetching products: ${response.statusCode} ${response.body}");
       }
     } catch (e) {
       debugPrint("🔴 EXCEPTION in _fetchProducts(): $e");
@@ -429,36 +448,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return "";
   }
 
-  Future<String?> _sendConnectionRequest(int receiverId) async {
-    final url = Uri.parse("$_baseUrl/connection-create");
 
-    try {
-      final response = await http.post(
-        url,
-        headers: await _getHeaders(),
-        body: jsonEncode({
-          "receiver_id": receiverId,
-        }),
-      );
-
-      final data = jsonDecode(response.body);
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        return null; // success
-      }
-
-      if (response.statusCode == 422) {
-        if (data['errors'] != null && data['errors']['receiver_id'] != null) {
-          return data['errors']['receiver_id'][0];
-        }
-        return data['message'] ?? "Validation error";
-      }
-
-      return data['message'] ?? "Something went wrong";
-    } catch (e) {
-      return "Server error, please try again";
-    }
-  }
 
   // ================== SOCIAL ICONS HELPERS ==================
   IconData? _getIconForName(String name) {
@@ -1024,28 +1014,103 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // ================= NEW: ACCEPT PENDING REQUEST =================
   Future<void> _acceptPendingRequest() async {
-    if (widget.userId == null || widget.viewerUserId == null) return;
+    final int? senderId = widget.userId;
+    final int? receiverId = widget.viewerUserId;
+
+    if (senderId == null || receiverId == null) return;
+
     try {
       final url = Uri.parse("$_baseUrl/connection-request/update-status");
       final response = await http.post(
         url,
         headers: await _getHeaders(),
         body: jsonEncode({
-          "sender_id": widget.userId,
-          "receiver_id": widget.viewerUserId,
+          "sender_id": senderId,
+          "receiver_id": receiverId,
           "status": 2, // accepted
         }),
       );
+
       final jsonData = jsonDecode(response.body);
+
       if (response.statusCode == 200 && jsonData['status'] == true) {
         TopAlert.show(context, jsonData['message'] ?? 'Accepted',
             isSuccess: true);
-        Navigator.pop(context); // go back to connections page
+        
+        // Refresh UI
+        await _fetchUserDetails();
       } else {
         TopAlert.show(context, jsonData['message'] ?? 'Failed', isError: true);
       }
     } catch (e) {
+      debugPrint("🔴 ERROR _acceptPendingRequest(): $e");
       TopAlert.show(context, 'Network error', isError: true);
+    }
+  }
+
+  // ================= NEW: REMOVE SENT REQUEST =================
+  Future<void> _removeSentRequest() async {
+    final int? senderId = widget.viewerUserId;
+    final int? receiverId = widget.userId;
+
+    if (senderId == null || receiverId == null) return;
+
+    try {
+      final url = Uri.parse("$_baseUrl/connection-request/delete");
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "sender_id": senderId,
+          "receiver_id": receiverId,
+          "status": 0, // connection status
+        }),
+      );
+
+      final jsonData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && jsonData['status'] == true) {
+        TopAlert.show(context, jsonData['message'] ?? 'Removed',
+            isSuccess: true);
+        
+        // Refresh UI
+        await _fetchUserDetails();
+      } else {
+        TopAlert.show(context, jsonData['message'] ?? 'Failed', isError: true);
+      }
+    } catch (e) {
+      debugPrint("🔴 ERROR _removeSentRequest(): $e");
+      TopAlert.show(context, 'Network error', isError: true);
+    }
+  }
+
+  // ================= NEW: SEND CONNECTION REQUEST =================
+  Future<String?> _sendConnectionRequest(int profileId) async {
+    try {
+      final viewerId =
+          widget.viewerUserId ?? await UserStorageService().getUserId();
+      if (viewerId == null) return "User not logged in";
+
+      // Consistently use connection-create as per codebase pattern
+      final url = Uri.parse("$_baseUrl/connection-create");
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "receiver_id": profileId,
+        }),
+      );
+
+      final jsonData = jsonDecode(response.body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (jsonData['status'] == true) return null;
+        return null; // Some endpoints might not return status true but still 200/201
+      } else {
+        return jsonData['message'] ?? "Failed to send request";
+      }
+    } catch (e) {
+      debugPrint("🔴 ERROR _sendConnectionRequest(): $e");
+      return "Network error";
     }
   }
 
@@ -1067,33 +1132,6 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     );
-  }
-  // ================= NEW: REMOVE SENT REQUEST =================
-
-  Future<void> _removeSentRequest() async {
-    if (widget.userId == null || widget.viewerUserId == null) return;
-    try {
-      final url = Uri.parse("$_baseUrl/connection-request/delete");
-      final response = await http.post(
-        url,
-        headers: await _getHeaders(),
-        body: jsonEncode({
-          "sender_id": widget.viewerUserId,
-          "receiver_id": widget.userId,
-          "status": 1, // pending request
-        }),
-      );
-      final jsonData = jsonDecode(response.body);
-      if (response.statusCode == 200 && jsonData['status'] == true) {
-        TopAlert.show(context, jsonData['message'] ?? 'Removed',
-            isSuccess: true);
-        Navigator.pop(context);
-      } else {
-        TopAlert.show(context, jsonData['message'] ?? 'Failed', isError: true);
-      }
-    } catch (e) {
-      TopAlert.show(context, 'Network error', isError: true);
-    }
   }
 
   // ================= BUILD =================
@@ -1386,15 +1424,17 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             child: ElevatedButton(
                               onPressed: () async {
+                                final connection = _userDetails?['connection'];
+                                final int? status = connection != null ? int.tryParse(connection['status'].toString()) : null;
+                                final String? receiverId = connection?['receiver_id']?.toString();
+                                final String? senderId = connection?['sender_id']?.toString();
+                                final String viewerIdStr = widget.viewerUserId.toString();
+
                                 if (widget.fromConnectionTab == 'pending' ||
-                                    (_userDetails?['connection']?['status'] == 0 &&
-                                        _userDetails?['connection']?['receiver_id'] ==
-                                            widget.viewerUserId)) {
+                                    (status == 0 && receiverId == viewerIdStr)) {
                                   _acceptPendingRequest();
                                 } else if (widget.fromConnectionTab == 'sent' ||
-                                    (_userDetails?['connection']?['status'] == 0 &&
-                                        _userDetails?['connection']?['sender_id'] ==
-                                            widget.viewerUserId)) {
+                                    (status == 0 && senderId == viewerIdStr)) {
                                   _removeSentRequest();
                                 } else {
                                   if (widget.userId == null) return;
@@ -1422,20 +1462,23 @@ class _ProfilePageState extends State<ProfilePage> {
                                 ),
                               ),
                                 child: Text(
-                                  (widget.fromConnectionTab == 'pending' ||
-                                          (_userDetails?['connection']?['status'] == 0 &&
-                                              _userDetails?['connection']?['receiver_id']
-                                                      .toString() ==
-                                                  widget.viewerUserId.toString()))
-                                      ? 'Accept'
-                                      : (widget.fromConnectionTab == 'sent' ||
-                                              (_userDetails?['connection']?['status'] ==
-                                                      0 &&
-                                                  _userDetails?['connection']?['sender_id']
-                                                          .toString() ==
-                                                      widget.viewerUserId.toString()))
-                                          ? 'Remove'
-                                          : 'Connect',
+                                  (() {
+                                    final connection = _userDetails?['connection'];
+                                    final int? status = connection != null ? int.tryParse(connection['status'].toString()) : null;
+                                    final String? receiverId = connection?['receiver_id']?.toString();
+                                    final String? senderId = connection?['sender_id']?.toString();
+                                    final String viewerIdStr = widget.viewerUserId.toString();
+
+                                    if (widget.fromConnectionTab == 'pending' ||
+                                        (status == 0 && receiverId == viewerIdStr)) {
+                                      return 'Accept';
+                                    } else if (widget.fromConnectionTab == 'sent' ||
+                                        (status == 0 && senderId == viewerIdStr)) {
+                                      return 'Remove';
+                                    } else {
+                                      return 'Connect';
+                                    }
+                                  })(),
                                   style: const TextStyle(fontSize: 12),
                                 ),
                             ),
