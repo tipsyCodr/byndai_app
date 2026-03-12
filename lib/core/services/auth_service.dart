@@ -1,11 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/models/login_response.dart';
 import 'package:gridcard/models/user_model.dart';
 import 'package:http/http.dart' as http;
+import 'package:gridcard/core/services/user_storage_service.dart';
 
 class AuthService {
   static const String _baseUrl = AppConfig.apiBaseUrl;
@@ -253,7 +253,7 @@ class AuthService {
 
   /// Sync FCM token with backend
   static Future<void> updateFCMToken(String fcmToken) async {
-    final token = await _storage.read(key: 'token');
+    final token = await UserStorageService().getToken();
     if (token == null) return;
 
     final url = Uri.parse('$_baseUrl/update-fcm-token');
@@ -271,6 +271,4 @@ class AuthService {
       debugPrint('🚨 Error updating FCM token: $e');
     }
   }
-
-  static const _storage = FlutterSecureStorage();
 }
