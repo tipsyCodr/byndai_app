@@ -552,6 +552,8 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     try {
       if (fromTab == "pending") {
         setState(() => isLoading = true);
+      } else if (fromTab == "accepted") {
+        setState(() => acceptedLoading = true);
       } else {
         setState(() => sentLoading = true);
       }
@@ -572,6 +574,9 @@ class _ConnectionsPageState extends State<ConnectionsPage>
         setState(() {
           if (fromTab == "pending") {
             pendingConnections.removeAt(index);
+          } else if (fromTab == "accepted") {
+            acceptedFriends.removeAt(index);
+            _acceptedCount = (_acceptedCount - 1).clamp(0, 999999);
           } else {
             sentRequests.removeAt(index);
             _sentCount = (_sentCount - 1).clamp(0, 999999);
@@ -594,6 +599,8 @@ class _ConnectionsPageState extends State<ConnectionsPage>
       if (!mounted) return;
       if (fromTab == "pending") {
         setState(() => isLoading = false);
+      } else if (fromTab == "accepted") {
+        setState(() => acceptedLoading = false);
       } else {
         setState(() => sentLoading = false);
       }
@@ -873,19 +880,13 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
                                 const SizedBox(height: 12),
 
-                                // Divider(
-                                //   color: colorScheme.outline.withOpacity(0.2),
-                                // ),
-
-                                // const SizedBox(height: 12),
-
                                 /// Bottom Buttons
                                 Row(
                                   children: [
                                     /// Chat Button
                                     Expanded(
                                       child: ElevatedButton.icon(
-                                        icon: Icon(Icons.chat_bubble_outline,
+                                        icon: const Icon(Icons.chat_bubble_outline,
                                             size: 18),
                                         label: const Text("Chat"),
                                         style: ElevatedButton.styleFrom(
@@ -938,155 +939,80 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                               builder: (_) => ChatScreen(
                                                 chatId: chatId,
                                                 receiverId: receiverId,
-                                                receiverName:
-                                                    item['fname'] ?? "User",
+                                                receiverName: item['fname'] ?? "User",
                                               ),
                                             ),
                                           );
                                         },
                                       ),
                                     ),
-
-                                    const SizedBox(width: 8),
-
-                                    /// Delete Button
-                                    Expanded(
-                                      child: OutlinedButton.icon(
-                                        icon: const Icon(Icons.delete,
-                                            size: 18, color: Colors.red),
-                                        label: const Text("Delete"),
-                                        style: OutlinedButton.styleFrom(
-                                          side: BorderSide(
-                                            color: Colors.redAccent,
-                                            width: 0.2,
-                                          ),
-                                          foregroundColor: Colors.redAccent,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                        ),
-
-                                        // onPressed: () async {
-                                        //   debugPrint('ACTION: delete');
-                                        //   debugPrint(
-                                        //       'USER DATA: ${jsonEncode(item)}');
-
-                                        //   final session =
-                                        //       await UserStorageService()
-                                        //           .loadSession();
-                                        //   final userId = session.user?.id;
-
-                                        //   final friendId = int.tryParse(
-                                        //       item['friend_id'].toString());
-
-                                        //   final jsonOutput = {
-                                        //     "friend_id": friendId,
-                                        //     "user_id": userId,
-                                        //   };
-
-                                        //   debugPrint(
-                                        //       "DELETE DATA: ${jsonEncode(jsonOutput)}");
-                                        // },
-
-                                        onPressed: () async {
+                                    PopupMenuButton<String>(
+                                      icon: Icon(Icons.more_vert,
+                                          color: colorScheme.onSurface
+                                              .withOpacity(0.6)),
+                                      onSelected: (value) async {
+                                        if (value == 'view') {
                                           final session =
                                               await UserStorageService()
                                                   .loadSession();
-                                          final userId = session.user?.id;
-                                          final friendId = int.tryParse(
-                                              item['friend_id'].toString());
-
-                                          if (userId == null ||
-                                              friendId == null) {
-                                            debugPrint(
-                                                "Missing user or friend id");
-                                            return;
-                                          }
-
-                                          // 1. Confirm Dialog
-                                          final confirm =
-                                              await showDialog<bool>(
-                                            context: context,
-                                            builder: (ctx) => AlertDialog(
-                                              title: const Text(
-                                                  "Remove Connection"),
-                                              content: const Text(
-                                                  "Are you sure you want to remove this connection?"),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(ctx, false),
-                                                  child: const Text("Cancel"),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () =>
-                                                      Navigator.pop(ctx, true),
-                                                  child: const Text("Remove",
-                                                      style: TextStyle(
-                                                          color: Colors.red)),
-                                                ),
-                                              ],
+                                          final viewerId = session.user?.id;
+                                          if (!mounted) return;
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => ProfilePage(
+                                                userId: int.tryParse(
+                                                    item['friend_id']
+                                                        .toString()),
+                                                viewerUserId: viewerId,
+                                                isConnected: true,
+                                              ),
                                             ),
                                           );
+                                        } else if (value == 'delete') {
+                                          final session =
+                                              await UserStorageService()
+                                                  .loadSession();
+                                          final viewerId = session.user?.id;
+                                          if (viewerId == null) return;
 
-                                          if (confirm != true) return;
+                                          final friendId = int.tryParse(
+                                              item['friend_id'].toString());
+                                          if (friendId == null) return;
 
-                                          // 2. Show loading (optional but good UX)
-                                          setState(
-                                              () => acceptedLoading = true);
-
-                                          try {
-                                            // 3. API Call
-                                            final url =
-                                                "$_baseUrl/connections/remove"; // ✅ your DELETE endpoint
-                                            final response =
-                                                await _deleteRequest(url, {
-                                              "user_id": userId,
-                                              "friend_id": friendId,
-                                            });
-
-                                            final jsonData =
-                                                jsonDecode(response.body);
-
-                                            if (response.statusCode == 200 &&
-                                                jsonData['status'] == true) {
-                                              // 4. Success: remove locally and update count
-                                              setState(() {
-                                                acceptedFriends.removeAt(index);
-                                                _acceptedCount =
-                                                    (_acceptedCount - 1)
-                                                        .clamp(0, 999999);
-                                              });
-
-                                              TopAlert.show(
-                                                context,
-                                                jsonData['message'] ??
-                                                    "Connection removed",
-                                                isSuccess: true,
-                                              );
-                                            } else {
-                                              TopAlert.show(
-                                                context,
-                                                jsonData['message'] ??
-                                                    "Failed to remove",
-                                                isError: true,
-                                              );
-                                            }
-                                          } catch (e) {
-                                            TopAlert.show(
-                                                context, "Network error",
-                                                isError: true);
-                                            debugPrint(
-                                                "Remove connection error: $e");
-                                          } finally {
-                                            if (mounted) {
-                                              setState(() =>
-                                                  acceptedLoading = false);
-                                            }
-                                          }
-                                        },
-                                      ),
+                                          // status 2 means they are already connected
+                                          await deleteConnectionRequest(
+                                            senderId: viewerId,
+                                            receiverId: friendId,
+                                            status: 2,
+                                            fromTab: "accepted",
+                                            index: index,
+                                          );
+                                        }
+                                      },
+                                      itemBuilder: (context) => const [
+                                        PopupMenuItem(
+                                          value: 'view',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.visibility),
+                                              SizedBox(width: 8),
+                                              Text('View'),
+                                            ],
+                                          ),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'delete',
+                                          child: Row(
+                                            children: [
+                                              Icon(Icons.delete,
+                                                  color: Colors.redAccent),
+                                              SizedBox(width: 8),
+                                              Text('Delete'),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
@@ -1572,9 +1498,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                 //   color: colorScheme.outline.withOpacity(0.2),
                                 // ),
 
-                                // const SizedBox(height: 12),
-
-                                /// Bottom Buttons
+                                                  /// Bottom Buttons
                                 Row(
                                   children: [
                                     /// View Button
@@ -1593,21 +1517,19 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                               await UserStorageService()
                                                   .loadSession();
                                           final senderId = session.user?.id;
-
                                           if (senderId == null) return;
 
                                           final receiverId =
-                                              item['receiver_id'];
-                                          final profileUserId = int.tryParse(
-                                              receiverId.toString());
-                                          if (profileUserId == null) return;
+                                              int.tryParse(item['receiver_id'].toString());
+                                          if (receiverId == null) return;
 
                                           Navigator.push(
                                             context,
                                             MaterialPageRoute(
                                               builder: (_) => ProfilePage(
-                                                userId: profileUserId,
+                                                userId: receiverId,
                                                 viewerUserId: senderId,
+                                                fromConnectionTab: 'sent',
                                               ),
                                             ),
                                           );
@@ -1618,7 +1540,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
                                     const SizedBox(width: 10),
 
-                                    /// Cancel Button
+                                    /// Remove Button
                                     Expanded(
                                       child: OutlinedButton(
                                         style: OutlinedButton.styleFrom(
@@ -1636,12 +1558,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                               await UserStorageService()
                                                   .loadSession();
                                           final senderId = session.user?.id;
-
                                           if (senderId == null) return;
-
-                                          // final receiverId =
-                                          //     item['receiver_id'];
-                                          // final status = item['status'];
 
                                           final receiverId = int.tryParse(
                                               item['receiver_id'].toString());
@@ -1659,7 +1576,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                             index: index,
                                           );
                                         },
-                                        child: const Text("Cancel"),
+                                        child: const Text("Remove"),
                                       ),
                                     ),
                                   ],
