@@ -1029,7 +1029,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     );
   }
 
-  // ================= PENDING UI (UPDATED) =================
+  // ================= PENDING UI (UPDATED) ==========================================
   Widget _buildPendingListUpdated() {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
