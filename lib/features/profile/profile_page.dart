@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/profile_provider.dart';
@@ -67,6 +66,10 @@ class _ProfilePageState extends State<ProfilePage> {
   double _avgRating = 0.0;
   int _totalReviews = 0;
   bool _isLoadingAvgRating = false;
+
+  // ================= PRODUCTS SECTION =================
+  bool _isLoadingProducts = false;
+  List _products = [];
 
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {
@@ -246,6 +249,65 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
+  // ================= FETCH PRODUCTS =================
+  Future<void> _fetchProducts() async {
+    try {
+      final int? targetUserId =
+          widget.userId ?? await UserStorageService().getUserId();
+      if (targetUserId == null) return;
+
+      setState(() => _isLoadingProducts = true);
+
+      final headers = await _getHeaders();
+      final url = Uri.parse("$_baseUrl/products-by-user/$targetUserId");
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        if (jsonData["status"] == true) {
+          final dataObject = jsonData["data"];
+          if (dataObject != null && dataObject["data"] != null) {
+            if (mounted) {
+              setState(() {
+                _products = dataObject["data"] as List;
+              });
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("🔴 EXCEPTION in _fetchProducts(): $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingProducts = false);
+    }
+  }
+
+  /// Constructs full image URL from relative path
+  String _getFullProductImageUrl(Map<String, dynamic> product) {
+    try {
+      if (product['product_image'] != null &&
+          (product['product_image'] as List).isNotEmpty) {
+        var imagePath =
+            product['product_image'][0]['product_images'] as String?;
+        if (imagePath != null && imagePath.isNotEmpty) {
+          if (imagePath.startsWith('http')) return imagePath;
+          if (imagePath.startsWith('/')) imagePath = imagePath.substring(1);
+
+          String base = _baseUrl;
+          if (base.endsWith('/api')) {
+            base = base.substring(0, base.length - 4);
+          }
+          if (base.endsWith('/')) base = base.substring(0, base.length - 1);
+
+          return '$base/$imagePath';
+        }
+      }
+    } catch (e) {
+      debugPrint('Error constructing image URL: $e');
+    }
+    return '';
+  }
+
   // ================= AVG RATING =================
   Future<void> _fetchAverageRating() async {
     if (_isLoadingAvgRating) return;
@@ -330,6 +392,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
       await _fetchMasterLinks();
       await _fetchUserDetails();
+      await _fetchProducts();
 
       // existing provider call (as it is)
       context.read<ProfileProvider>().fetchAllProfileData();
@@ -1041,10 +1104,17 @@ class _ProfilePageState extends State<ProfilePage> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // ✅ VIEWER MODE CHECK
     final bool isViewerMode = widget.viewerUserId != null &&
         widget.userId != null &&
         widget.viewerUserId != widget.userId;
+
+    final connectionData = _userDetails?['connection'];
+    final int? connectionStatus = connectionData != null
+        ? int.tryParse(connectionData['status'].toString())
+        : null;
+
+    final bool isAlreadyConnected =
+        widget.isConnected || connectionStatus == 2;
 
     final apiMasterUser = _userDetails?['master_user'];
 
@@ -1226,10 +1296,9 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
 
                   /// ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) ==================
-                  if (isViewerMode && !widget.isConnected)
+                  if (isViewerMode && !isAlreadyConnected)
                     Padding(
-                      padding:
-                          const EdgeInsets.all(16), // ✅ 16 padding applied here
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         children: [
                           const SizedBox(height: 14),
@@ -1260,25 +1329,29 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             child: ElevatedButton(
                               onPressed: () async {
-                                if (widget.fromConnectionTab == 'pending') {
+                                if (widget.fromConnectionTab == 'pending' ||
+                                    (_userDetails?['connection']?['status'] == 0 &&
+                                        _userDetails?['connection']?['receiver_id'] ==
+                                            widget.viewerUserId)) {
                                   _acceptPendingRequest();
-                                } else if (widget.fromConnectionTab == 'sent') {
+                                } else if (widget.fromConnectionTab == 'sent' ||
+                                    (_userDetails?['connection']?['status'] == 0 &&
+                                        _userDetails?['connection']?['sender_id'] ==
+                                            widget.viewerUserId)) {
                                   _removeSentRequest();
                                 } else {
                                   if (widget.userId == null) return;
 
-                                  final error = await _sendConnectionRequest(
-                                      widget.userId!);
+                                  final error =
+                                      await _sendConnectionRequest(widget.userId!);
 
                                   if (error == null) {
                                     TopAlert.show(
                                         context, "✅ Connection request sent",
                                         isSuccess: true);
-
-                                    Navigator.pop(context, true);
+                                    _fetchUserDetails();
                                   } else {
-                                    TopAlert.show(context, error,
-                                        isError: true);
+                                    TopAlert.show(context, error, isError: true);
                                   }
                                 }
                               },
@@ -1291,22 +1364,31 @@ class _ProfilePageState extends State<ProfilePage> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                              child: Text(
-                                widget.fromConnectionTab == 'pending'
-                                    ? 'Accept'
-                                    : widget.fromConnectionTab == 'sent'
-                                        ? 'Remove'
-                                        : 'Connect',
-                                style: const TextStyle(fontSize: 12),
-                              ),
+                                child: Text(
+                                  (widget.fromConnectionTab == 'pending' ||
+                                          (_userDetails?['connection']?['status'] == 0 &&
+                                              _userDetails?['connection']?['receiver_id']
+                                                      .toString() ==
+                                                  widget.viewerUserId.toString()))
+                                      ? 'Accept'
+                                      : (widget.fromConnectionTab == 'sent' ||
+                                              (_userDetails?['connection']?['status'] ==
+                                                      0 &&
+                                                  _userDetails?['connection']?['sender_id']
+                                                          .toString() ==
+                                                      widget.viewerUserId.toString()))
+                                          ? 'Remove'
+                                          : 'Connect',
+                                  style: const TextStyle(fontSize: 12),
+                                ),
                             ),
                           ),
                         ],
                       ),
                     ),
 
-                  // ================= REST UI (ONLY FOR SELF OR CONNECTED USERS) =================
-                  if (!isViewerMode || widget.isConnected) ...[
+                  // ================= REST UI (ALWAYS SHOWN) =================
+                  if (true) ...[
                     /// ================= SOCIAL LINKS SECTION ==================
                     if (!_isLoadingMasterLinks && _masterLinks.isNotEmpty)
                       Padding(
@@ -1528,6 +1610,121 @@ class _ProfilePageState extends State<ProfilePage> {
                             _buildRatingsSection(),
 
                             // const SizedBox(height: 12), // spacing after section
+                          ],
+                        ),
+                      ),
+
+                    /// ================= PRODUCTS SECTION ==================
+                    if (_products.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Products & Services',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 240,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _products.length,
+                                itemBuilder: (context, index) {
+                                  final p =
+                                      _products[index] as Map<String, dynamic>;
+                                  final imageUrl = _getFullProductImageUrl(p);
+                                  return Container(
+                                    width: 180,
+                                    margin: const EdgeInsets.only(right: 12),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? colorScheme.surfaceContainerHighest
+                                          : Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: colorScheme.onSurface
+                                              .withOpacity(0.05)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              const BorderRadius.vertical(
+                                                  top: Radius.circular(12)),
+                                          child: imageUrl.isNotEmpty
+                                              ? Image.network(
+                                                  imageUrl,
+                                                  height: 120,
+                                                  width: 180,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error,
+                                                          stackTrace) =>
+                                                      Container(
+                                                        height: 120,
+                                                        color: Colors.grey[300],
+                                                        child: const Icon(Icons
+                                                            .image_not_supported),
+                                                      ),
+                                                )
+                                              : Container(
+                                                  height: 120,
+                                                  color: Colors.grey[300],
+                                                  child:
+                                                      const Icon(Icons.image),
+                                                ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                p["product_name"] ?? "-",
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                "₹ ${p["product_price"] ?? "0"}",
+                                                style: const TextStyle(
+                                                  color: Colors.green,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                p["description"] ?? "",
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: colorScheme.onSurface
+                                                      .withOpacity(0.6),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 16),
                           ],
                         ),
                       ),

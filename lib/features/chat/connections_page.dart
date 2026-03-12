@@ -860,10 +860,22 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                 PopupMenuButton<String>(
                                   icon: const Icon(Icons.more_vert,
                                       color: Colors.white),
-                                  onSelected: (value) {
-                                    debugPrint('ACTION: $value');
-                                    debugPrint(
-                                        'USER DATA: ${jsonEncode(item)}');
+                                  onSelected: (value) async {
+                                    if (value == 'view') {
+                                      final session = await UserStorageService().loadSession();
+                                      final viewerId = session.user?.id;
+                                      if (!mounted) return;
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ProfilePage(
+                                            userId: int.tryParse(item['friend_id'].toString()),
+                                            viewerUserId: viewerId,
+                                            isConnected: true,
+                                          ),
+                                        ),
+                                      );
+                                    }
                                   },
                                   itemBuilder: (context) => const [
                                     PopupMenuItem(
@@ -1220,6 +1232,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                       builder: (_) => ProfilePage(
                                         userId: profileUserId,
                                         viewerUserId: senderId,
+                                        fromConnectionTab: 'sent',
                                       ),
                                     ),
                                   );
