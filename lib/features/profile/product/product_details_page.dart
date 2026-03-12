@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ProductDetailsPage extends StatelessWidget {
   final Map<String, dynamic> product;
@@ -19,6 +20,7 @@ class ProductDetailsPage extends StatelessWidget {
     final category = (product['category_name'] ?? '-').toString();
     final stock = (product['stock'] ?? 0).toString();
     final tags = (product['tags'] ?? '-').toString();
+    final List links = product['product_link'] ?? [];
 
     return Scaffold(
       backgroundColor: Colors.grey.shade100,
@@ -199,7 +201,7 @@ class ProductDetailsPage extends StatelessWidget {
                     ),
 
                   const SizedBox(height: 14),
-                  
+
                   // Tags Card
                   Container(
                     width: double.infinity,
@@ -257,6 +259,73 @@ class ProductDetailsPage extends StatelessWidget {
                     ),
                   ),
 
+// Product Links
+                  if (links.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Product Links",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          const SizedBox(height: 10),
+                          Column(
+                            children: links.map((link) {
+                              final title = (link['title'] ?? '').toString();
+                              final url = (link['links'] ?? '').toString();
+
+                              return Card(
+                                elevation: 0,
+                                margin: const EdgeInsets.only(bottom: 8),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: Colors.grey.shade300),
+                                ),
+                                child: ListTile(
+                                  leading: const Icon(Icons.link),
+                                  title: Text(
+                                    title,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600),
+                                  ),
+                                  subtitle: Text(
+                                    url,
+                                    style:
+                                        TextStyle(color: Colors.grey.shade700),
+                                  ),
+                                  onTap: () async {
+                                    final uri = Uri.parse(url);
+
+                                    if (await canLaunchUrl(uri)) {
+                                      await launchUrl(uri);
+                                    }
+                                  },
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 22),
                 ],
               ),

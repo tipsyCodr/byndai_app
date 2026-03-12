@@ -25,31 +25,31 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   DateTime? _lastBackPressed;
-  String? _profileLogoUrl;
+  // String? _profileLogoUrl;
 
   final GlobalKey<FeedPageState> _feedKey = GlobalKey<FeedPageState>();
 
   @override
   void initState() {
     super.initState();
-    _loadProfileLogo();
+    // _loadProfileLogo();
   }
 
-  Future<void> _loadProfileLogo() async {
-    final session = await UserStorageService().loadSession();
+  // Future<void> _loadProfileLogo() async {
+  //   final session = await UserStorageService().loadSession();
 
-    final masterUser = session.user?.masterUser;
+  //   final masterUser = session.user?.masterUser;
 
-    final logo = masterUser?.profilePic;
+  //   final logo = masterUser?.profilePic;
 
-    if (logo != null && logo.isNotEmpty) {
-      setState(() {
-        _profileLogoUrl = "${AppConfig.apiProfileImg}/$logo";
-      });
-    }
+  //   if (logo != null && logo.isNotEmpty) {
+  //     setState(() {
+  //       _profileLogoUrl = "${AppConfig.apiProfileImg}/$logo";
+  //     });
+  //   }
 
-    debugPrint("🟦 FINAL PROFILE LOGO URL = $_profileLogoUrl");
-  }
+  //   debugPrint("🟦 FINAL PROFILE LOGO URL = $_profileLogoUrl");
+  // }
 
   Future<void> _onPop(bool didPop, Object? result) async {
     if (didPop) return;
@@ -133,6 +133,12 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+
+    final logoUrl = user?.masterUser?.profilePic != null
+        ? "${AppConfig.apiProfileImg}/${user!.masterUser!.profilePic}"
+        : null;
     return PopScope<Object?>(
       canPop: false, // disable default popping
       onPopInvokedWithResult: _onPop,
@@ -152,16 +158,26 @@ class _HomePageState extends State<HomePage> {
           leading: IconButton(
             // icon:
             //     Icon(Icons.account_circle_outlined, color: colorScheme.primary),
+            // icon: CircleAvatar(
+            //   radius: 28,
+            //   backgroundColor: Colors.grey.shade200,
+            //   backgroundImage: (_profileLogoUrl != null)
+            //       ? NetworkImage(_profileLogoUrl!)
+            //       : null,
+            //   child: (_profileLogoUrl == null)
+            //       ? Icon(Icons.person, color: colorScheme.primary)
+            //       : null,
+            // ),
+
             icon: CircleAvatar(
               radius: 28,
               backgroundColor: Colors.grey.shade200,
-              backgroundImage: (_profileLogoUrl != null)
-                  ? NetworkImage(_profileLogoUrl!)
-                  : null,
-              child: (_profileLogoUrl == null)
+              backgroundImage: logoUrl != null ? NetworkImage(logoUrl) : null,
+              child: logoUrl == null
                   ? Icon(Icons.person, color: colorScheme.primary)
                   : null,
             ),
+
             onPressed: () async {
               final userId = await UserStorageService().getUserId();
 
@@ -220,12 +236,61 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Widget _buildFloatingDock() {
+  //   final colorScheme = Theme.of(context).colorScheme;
+  //   final isDark = Theme.of(context).brightness == Brightness.dark;
+
+  //   return Positioned(
+  //     bottom: 12, // 🔥 closer to bottom
+  //     left: 16,
+  //     right: 16,
+  //     child: ClipRRect(
+  //       borderRadius: BorderRadius.circular(26),
+  //       child: BackdropFilter(
+  //         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+  //         child: Container(
+  //           height: 56, // 🔥 compact height
+  //           decoration: BoxDecoration(
+  //             color: isDark
+  //                 ? colorScheme.surfaceContainerHighest.withOpacity(0.9)
+  //                 : const Color(0xFF21254A).withOpacity(0.92),
+  //             borderRadius: BorderRadius.circular(26),
+  //             border:
+  //                 Border.all(color: Colors.white.withOpacity(0.08), width: 0.5),
+  //             boxShadow: [
+  //               BoxShadow(
+  //                 color: Colors.black.withOpacity(0.18),
+  //                 blurRadius: 14,
+  //                 offset: const Offset(0, 6),
+  //               ),
+  //             ],
+  //           ),
+  //           child: Row(
+  //             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+  //             children: [
+  //               _buildDockItem(0, CupertinoIcons.home),
+  //               _buildDockItem(1, CupertinoIcons.news),
+  //               _buildDockItem(2, CupertinoIcons.compass),
+  //               _buildDockItem(3, CupertinoIcons.settings),
+  //             ],
+  //           ),
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _buildFloatingDock() {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final authProvider = Provider.of<AuthProvider>(context);
+    final user = authProvider.user;
+    final profilePicUrl = user?.masterUser?.profilePic != null
+        ? "${AppConfig.apiProfileImg}/${user!.masterUser!.profilePic}"
+        : null;
 
     return Positioned(
-      bottom: 12, // 🔥 closer to bottom
+      bottom: 12,
       left: 16,
       right: 16,
       child: ClipRRect(
@@ -233,7 +298,7 @@ class _HomePageState extends State<HomePage> {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
           child: Container(
-            height: 56, // 🔥 compact height
+            height: 56,
             decoration: BoxDecoration(
               color: isDark
                   ? colorScheme.surfaceContainerHighest.withOpacity(0.9)
@@ -255,7 +320,8 @@ class _HomePageState extends State<HomePage> {
                 _buildDockItem(0, CupertinoIcons.home),
                 _buildDockItem(1, CupertinoIcons.news),
                 _buildDockItem(2, CupertinoIcons.compass),
-                _buildDockItem(3, CupertinoIcons.settings),
+                _buildDockItem(3, CupertinoIcons.settings,
+                    imageUrl: profilePicUrl),
               ],
             ),
           ),
@@ -264,29 +330,66 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDockItem(int index, IconData icon) {
+  // Widget _buildDockItem(int index, IconData icon) {
+  //   final isSelected = _selectedIndex == index;
+
+  //   return Expanded(
+  //     // 🔥 equal spacing + bigger tap zone
+  //     child: GestureDetector(
+  //       onTap: () => _onItemTapped(index),
+  //       behavior: HitTestBehavior.opaque, // 🔥 full tap area active
+  //       child: AnimatedContainer(
+  //         duration: const Duration(milliseconds: 220),
+  //         curve: Curves.easeOut,
+  //         height: 40, // 🔥 bigger height
+  //         margin: const EdgeInsets.symmetric(horizontal: 4),
+  //         decoration: BoxDecoration(
+  //           color: isSelected
+  //               ? Colors.white.withOpacity(0.15)
+  //               : Colors.transparent,
+  //           borderRadius: BorderRadius.circular(28), // 🔥 rounded rectangle
+  //         ),
+  //         child: Icon(
+  //           icon,
+  //           color: isSelected ? Colors.white : Colors.white60,
+  //           size: 24,
+  //         ),
+  //       ),
+  //     ),
+  //   );
+  // }
+
+  Widget _buildDockItem(int index, IconData icon, {String? imageUrl}) {
     final isSelected = _selectedIndex == index;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Expanded(
-      // 🔥 equal spacing + bigger tap zone
       child: GestureDetector(
         onTap: () => _onItemTapped(index),
-        behavior: HitTestBehavior.opaque, // 🔥 full tap area active
+        behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOut,
-          height: 40, // 🔥 bigger height
+          height: 40,
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color: isSelected
                 ? Colors.white.withOpacity(0.15)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(28), // 🔥 rounded rectangle
+            borderRadius: BorderRadius.circular(28),
           ),
-          child: Icon(
-            icon,
-            color: isSelected ? Colors.white : Colors.white60,
-            size: 24,
+          child: Center(
+            child: (index == 3 && imageUrl != null)
+                ? CircleAvatar(
+                    radius: 16,
+                    backgroundImage: NetworkImage(imageUrl),
+                    backgroundColor: Colors.transparent,
+                  )
+                : Icon(
+                    icon,
+                    color: isSelected ? Colors.white : Colors.white60,
+                    size: 24,
+                  ),
           ),
         ),
       ),

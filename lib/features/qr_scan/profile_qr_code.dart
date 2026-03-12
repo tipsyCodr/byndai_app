@@ -72,7 +72,8 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
     final isPortrait = size.height > size.width;
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
-
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     // Check if user is available
     if (user == null) {
       return Scaffold(
@@ -80,7 +81,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
           backgroundColor: Theme.of(context).colorScheme.surface,
           elevation: 1,
           leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios_new_rounded,
+            icon: Icon(Icons.arrow_back,
                 color: Theme.of(context).colorScheme.onSurface),
             onPressed: () => Navigator.pop(context),
           ),
@@ -152,7 +153,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
         backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 1,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
+          icon: Icon(Icons.arrow_back,
               color: Theme.of(context).colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
@@ -188,97 +189,97 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      SizedBox(height: isPortrait ? 20 : 40),
+                      // SizedBox(height: isPortrait ? 20 : 20),
 
                       // Profile Info
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        margin: const EdgeInsets.only(bottom: 32),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .surfaceContainerHighest
-                              .withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                              color:
-                                  Theme.of(context).colorScheme.outlineVariant),
-                        ),
-                        child: Row(
-                          children: [
-                            // Profile Avatar
-                            Container(
-                              width: 60,
-                              height: 60,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: Colors.blue[100],
-                                image:
-                                    user.masterUser?.toJson()['profile_pic'] !=
-                                            null
-                                        ? DecorationImage(
-                                            image: NetworkImage(user.masterUser!
-                                                .toJson()['profile_pic']!),
-                                            fit: BoxFit.cover,
-                                          )
-                                        : const DecorationImage(
-                                            image: AssetImage(
-                                                'assets/profile_placeholder.png'),
-                                            fit: BoxFit.cover,
-                                          ),
-                              ),
-                              child: user.masterUser?.toJson()['profile_pic'] ==
-                                      null
-                                  ? const Icon(
-                                      Icons.person,
-                                      color: Colors.blue,
-                                      size: 30,
-                                    )
-                                  : null,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    userName,
-                                    style: const TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  if (user.masterUser?.toJson()['desg'] != null)
-                                    Text(
-                                      user.masterUser!.toJson()['desg']!,
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    userMobile,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    userEmail,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // Container(
+                      //   padding: const EdgeInsets.all(16),
+                      //   margin: const EdgeInsets.only(bottom: 32),
+                      //   decoration: BoxDecoration(
+                      //     color: Theme.of(context)
+                      //         .colorScheme
+                      //         .surfaceContainerHighest
+                      //         .withOpacity(0.5),
+                      //     borderRadius: BorderRadius.circular(16),
+                      //     border: Border.all(
+                      //         color:
+                      //             Theme.of(context).colorScheme.outlineVariant),
+                      //   ),
+                      //   child: Row(
+                      //     children: [
+                      //       // Profile Avatar
+                      //       Container(
+                      //         width: 60,
+                      //         height: 60,
+                      //         decoration: BoxDecoration(
+                      //           shape: BoxShape.circle,
+                      //           color: Colors.blue[100],
+                      //           image:
+                      //               user.masterUser?.toJson()['profile_pic'] !=
+                      //                       null
+                      //                   ? DecorationImage(
+                      //                       image: NetworkImage(user.masterUser!
+                      //                           .toJson()['profile_pic']!),
+                      //                       fit: BoxFit.cover,
+                      //                     )
+                      //                   : const DecorationImage(
+                      //                       image: AssetImage(
+                      //                           'assets/profile_placeholder.png'),
+                      //                       fit: BoxFit.cover,
+                      //                     ),
+                      //         ),
+                      //         child: user.masterUser?.toJson()['profile_pic'] ==
+                      //                 null
+                      //             ? const Icon(
+                      //                 Icons.person,
+                      //                 color: Colors.blue,
+                      //                 size: 30,
+                      //               )
+                      //             : null,
+                      //       ),
+                      //       const SizedBox(width: 16),
+                      //       Expanded(
+                      //         child: Column(
+                      //           crossAxisAlignment: CrossAxisAlignment.start,
+                      //           children: [
+                      //             Text(
+                      //               userName,
+                      //               style: const TextStyle(
+                      //                 fontSize: 18,
+                      //                 fontWeight: FontWeight.w600,
+                      //               ),
+                      //             ),
+                      //             const SizedBox(height: 4),
+                      //             if (user.masterUser?.toJson()['desg'] != null)
+                      //               Text(
+                      //                 user.masterUser!.toJson()['desg']!,
+                      //                 style: TextStyle(
+                      //                   fontSize: 14,
+                      //                   color: Colors.grey[600],
+                      //                 ),
+                      //               ),
+                      //             const SizedBox(height: 4),
+                      //             Text(
+                      //               userMobile,
+                      //               style: TextStyle(
+                      //                 fontSize: 14,
+                      //                 color: Colors.grey[600],
+                      //               ),
+                      //             ),
+                      //             const SizedBox(height: 4),
+                      //             Text(
+                      //               userEmail,
+                      //               style: TextStyle(
+                      //                 fontSize: 12,
+                      //                 color: Colors.grey[600],
+                      //               ),
+                      //             ),
+                      //           ],
+                      //         ),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
 
                       // Tab Selection
                       Container(
@@ -307,9 +308,13 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                       vertical: 12, horizontal: 16),
                                   decoration: BoxDecoration(
                                     color: _selectedTab == 0
-                                        ? Colors.blue
+                                        ? colorScheme.primary
                                         : Colors.transparent,
                                     borderRadius: BorderRadius.circular(25),
+                                    border: Border.all(
+                                      color: colorScheme.primary,
+                                      width: 0.2,
+                                    ),
                                   ),
                                   child: Center(
                                     child: Text(
@@ -328,7 +333,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                 ),
                               ),
                             ),
-
+                            const SizedBox(width: 10),
                             // Add to Contact Tab (Full data)
                             Expanded(
                               child: GestureDetector(
@@ -342,9 +347,13 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                       vertical: 12, horizontal: 16),
                                   decoration: BoxDecoration(
                                     color: _selectedTab == 1
-                                        ? Colors.blue
+                                        ? colorScheme.primary
                                         : Colors.transparent,
                                     borderRadius: BorderRadius.circular(25),
+                                    border: Border.all(
+                                      color: colorScheme.primary,
+                                      width: 0.2,
+                                    ),
                                   ),
                                   child: Center(
                                     child: Text(
@@ -382,8 +391,9 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                             ),
                           ],
                           border: Border.all(
-                              color:
-                                  Theme.of(context).colorScheme.outlineVariant),
+                            color: Theme.of(context).colorScheme.outlineVariant,
+                            width: 0.2,
+                          ),
                         ),
                         child: Column(
                           children: [
@@ -499,7 +509,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                 border: Border(
                   top: BorderSide(
                       color: Theme.of(context).colorScheme.outlineVariant,
-                      width: 1),
+                      width: 0.2),
                 ),
               ),
               child: Row(
@@ -511,15 +521,15 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                         _showScanDialog(context, _selectedTab);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
+                        backgroundColor: colorScheme.primary,
+                        foregroundColor: colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                         ),
                         elevation: 0,
                       ),
-                      child: const Row(
+                      child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.qr_code_scanner, size: 20),
@@ -527,6 +537,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                           Text(
                             'Scan',
                             style: TextStyle(
+                              color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -554,10 +565,14 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
+                          side: BorderSide(
+                            color: colorScheme.primary,
+                          ),
                         ),
                         side: BorderSide(
-                            color:
-                                Theme.of(context).colorScheme.outlineVariant),
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                          width: 0.2,
+                        ),
                       ),
                       child: const Row(
                         mainAxisAlignment: MainAxisAlignment.center,

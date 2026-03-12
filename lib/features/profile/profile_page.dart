@@ -858,7 +858,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
         border: Border.all(
           color: cs.outlineVariant,
-          width: 1,
+          width: 0.4,
         ),
       ),
       child: Column(
@@ -1123,38 +1123,95 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
 
                         /// BACK BUTTON
+
                         Positioned(
-                          top: MediaQuery.of(context).padding.top + 12,
-                          left: 16,
+                          // top: MediaQuery.of(context).padding.top + 12,
+                          // left: 12,
                           child: GestureDetector(
                             onTap: () => Navigator.pop(context),
-                            child: const Icon(
-                              Icons.arrow_back_ios,
-                              color: Colors.white,
-                              size: 24,
+                            child: Container(
+                              width: 56,
+                              height: 56,
+                              alignment: Alignment.center,
+                              color: Colors.transparent,
+                              child: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                                size: 24,
+                              ),
                             ),
                           ),
                         ),
 
                         /// EDIT BUTTON (ONLY OWNER)
+                        // if (!isViewerMode)
+                        //   Positioned(
+                        //     // top: MediaQuery.of(context).padding.top + 8,
+                        //     right: 12,
+                        //     child: GestureDetector(
+                        //       onTap: () {
+                        //         Navigator.push(
+                        //           context,
+                        //           MaterialPageRoute(
+                        //             builder: (context) => EditProfilePage(
+                        //               userDetails: _userDetails,
+                        //             ),
+                        //           ),
+                        //         );
+                        //       },
+                        //       child: Container(
+                        //         width: 56,
+                        //         height: 56,
+                        //         alignment: Alignment.center,
+                        //         color: Colors.transparent,
+                        //         child: const Icon(
+                        //           Icons.edit,
+                        //           color: Colors.white,
+                        //           size: 24,
+                        //         ),
+                        //       ),
+                        //     ),
+                        //   ),
+
                         if (!isViewerMode)
                           Positioned(
-                            top: MediaQuery.of(context).padding.top + 12,
-                            right: 16,
+                            right: 12,
                             child: GestureDetector(
-                              onTap: () {
-                                Navigator.push(
+                              onTap: () async {
+                                // 👈 make the function async
+                                final result = await Navigator.push(
                                   context,
                                   MaterialPageRoute(
                                     builder: (context) => EditProfilePage(
-                                        userDetails: _userDetails),
+                                      userDetails: _userDetails,
+                                    ),
                                   ),
                                 );
+                                if (result == true) {
+                                  // 👈 if profile was saved successfully
+                                  // Refresh all data
+                                  await _fetchUserDetails();
+                                  await _fetchMasterLinks();
+                                  await _fetchReviews();
+                                  await _fetchAverageRating();
+                                  // Also refresh the provider if you use it
+                                  if (mounted) {
+                                    context
+                                        .read<ProfileProvider>()
+                                        .fetchAllProfileData();
+                                  }
+                                }
                               },
-                              child: const Icon(
-                                Icons.edit,
-                                color: Colors.white,
-                                size: 24,
+                              child: Container(
+                                width: 56,
+                                height: 56,
+                                alignment: Alignment.center,
+                                color: Colors.transparent,
+                                child: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
                               ),
                             ),
                           ),
@@ -1338,7 +1395,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     ? null
                                     : Border.all(
                                         color: colorScheme.outlineVariant,
-                                        width: 1,
+                                        width: 0.2,
                                       ),
                               ),
                               child: Column(
@@ -1397,7 +1454,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     ? null
                                     : Border.all(
                                         color: colorScheme.outlineVariant,
-                                        width: 1,
+                                        width: 0.2,
                                       ),
                               ),
                               child: Column(
@@ -1438,61 +1495,87 @@ class _ProfilePageState extends State<ProfilePage> {
 
                                   const SizedBox(height: 16),
 
-                                  /// MESSAGE FIELD + SEND BUTTON
-                                  Row(
-                                    children: [
-                                      Expanded(
-                                        child: TextField(
-                                          controller: _messageController,
-                                          style: TextStyle(
-                                              color: colorScheme.onSurface),
-                                          decoration: InputDecoration(
-                                            hintText: 'Message',
-                                            hintStyle: TextStyle(
-                                                color: colorScheme
-                                                    .onSurfaceVariant),
-                                            filled: true,
-                                            fillColor:
-                                                colorScheme.surfaceContainer,
-                                            border: OutlineInputBorder(
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? colorScheme.surfaceContainerHighest
+                                          : colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(18),
+                                      boxShadow: isDark
+                                          ? []
+                                          : [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withOpacity(0.1),
+                                                spreadRadius: 1,
+                                                blurRadius: 6,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                      border: isDark
+                                          ? null
+                                          : Border.all(
+                                              color: colorScheme.outlineVariant,
+                                              width: 0.2,
+                                            ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _messageController,
+                                            style: TextStyle(
+                                                color: colorScheme.onSurface),
+                                            decoration: InputDecoration(
+                                              hintText: 'Message',
+                                              hintStyle: TextStyle(
+                                                  color: colorScheme
+                                                      .onSurfaceVariant),
+                                              filled: true,
+                                              fillColor:
+                                                  colorScheme.surfaceContainer,
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: BorderSide.none,
+                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 12,
+                                              ),
+                                              suffixIcon: IconButton(
+                                                icon: Icon(
+                                                  Icons.camera_alt,
+                                                  color: colorScheme.primary,
+                                                ),
+                                                onPressed: _pickImageForMessage,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ElevatedButton(
+                                          onPressed: _sendMessage,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                colorScheme.primary,
+                                            foregroundColor:
+                                                colorScheme.onPrimary,
+                                            shape: RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(12),
-                                              borderSide: BorderSide.none,
                                             ),
-                                            contentPadding:
-                                                const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 12,
-                                            ),
-                                            suffixIcon: IconButton(
-                                              icon: Icon(
-                                                Icons.camera_alt,
-                                                color: colorScheme.primary,
-                                              ),
-                                              onPressed: _pickImageForMessage,
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 20,
+                                              vertical: 14,
                                             ),
                                           ),
+                                          child: const Text('Send'),
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      ElevatedButton(
-                                        onPressed: _sendMessage,
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: colorScheme.primary,
-                                          foregroundColor:
-                                              colorScheme.onPrimary,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 20,
-                                            vertical: 14,
-                                          ),
-                                        ),
-                                        child: const Text('Send'),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
 
                                   /// IMAGE PREVIEW
@@ -1560,7 +1643,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                   ? null
                                   : Border.all(
                                       color: colorScheme.outlineVariant,
-                                      width: 1,
+                                      width: 0.2,
                                     ),
                             ),
                             child: Column(
@@ -1594,28 +1677,80 @@ class _ProfilePageState extends State<ProfilePage> {
                                             child: ListView.builder(
                                               scrollDirection: Axis.horizontal,
                                               itemCount: _reviews.length,
+                                              // itemBuilder: (context, index) {
+                                              //   final r = _reviews[index]
+                                              //       as Map<String, dynamic>;
+
+                                              //   final fromUser =
+                                              //       (r["from_user"] ?? {})
+                                              //           as Map<String, dynamic>;
+
+                                              //   final username =
+                                              //       (fromUser["user_name"] ??
+                                              //               "Unknown User")
+                                              //           .toString();
+
+                                              //   final reviewer_name =
+                                              //       (r["reviewer_name"] ?? "anonymous")
+                                              //           as Map<String, dynamic>;
+
+                                              //           //reviewer_name
+
+                                              //   final message =
+                                              //       (r["message"] ?? "")
+                                              //           .toString();
+
+                                              //   final rating = int.tryParse(
+                                              //         r["rating"].toString(),
+                                              //       ) ??
+                                              //       0;
+
+                                              //   final createdAt =
+                                              //       (r["created_at"] ?? "")
+                                              //           .toString();
+
+                                              //   return _reviewCardHorizontal(
+                                              //     username: username,
+                                              //     rating: rating,
+                                              //     message: message,
+                                              //     createdAt: createdAt,
+                                              //   );
+                                              // },
+
                                               itemBuilder: (context, index) {
                                                 final r = _reviews[index]
                                                     as Map<String, dynamic>;
 
-                                                final fromUser =
-                                                    (r["from_user"] ?? {})
-                                                        as Map<String, dynamic>;
+                                                // Safely get from_user as a map or null
+                                                final fromUser = r["from_user"]
+                                                    as Map<String, dynamic>?;
 
-                                                final username =
-                                                    (fromUser["user_name"] ??
-                                                            "Unknown User")
-                                                        .toString();
+                                                // Determine username:
+                                                // 1. If fromUser exists and has user_name, use it.
+                                                // 2. Else if reviewer_name (string) exists, use it.
+                                                // 3. Else fallback to "Anonymous".
+                                                String username;
+                                                if (fromUser != null &&
+                                                    fromUser["user_name"] !=
+                                                        null) {
+                                                  username =
+                                                      fromUser["user_name"]
+                                                          .toString();
+                                                } else if (r["reviewer_name"] !=
+                                                    null) {
+                                                  username = r["reviewer_name"]
+                                                      .toString();
+                                                } else {
+                                                  username = "Anonymous";
+                                                }
 
                                                 final message =
                                                     (r["message"] ?? "")
                                                         .toString();
-
                                                 final rating = int.tryParse(
-                                                      r["rating"].toString(),
-                                                    ) ??
+                                                        r["rating"]
+                                                            .toString()) ??
                                                     0;
-
                                                 final createdAt =
                                                     (r["created_at"] ?? "")
                                                         .toString();

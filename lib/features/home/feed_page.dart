@@ -15,10 +15,11 @@ import '../../features/qr_generator/qr_generator_page.dart';
 //K:\amit\bynd-ai\byndai_app-main\lib\features\business_feed\home_post_card.dart
 import 'package:gridcard/widgets/post_card.dart' as old_post_card;
 import '../../features/business_feed/home_post_card.dart';
-
+import 'package:provider/provider.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
+import 'package:gridcard/core/services/auth_provider.dart';
 
 import 'package:gridcard/core/services/social_provider.dart';
 import '../../features/analitics/user_analitics_page.dart';
@@ -40,6 +41,8 @@ class FeedPage extends StatefulWidget {
 
 // class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
 class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
+  final GlobalKey<ConnectionSuggestState> _connectionSuggestKey = GlobalKey();
+
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
 
@@ -907,6 +910,17 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     );
   }
 
+  // Future<void> _handleRefresh() async {
+  //   if (!mounted) return;
+  //   context.read<SocialProvider>().fetchPosts('All');
+  //   await Future.wait([
+  //     _fetchLatest5Posts(),
+  //     _fetchUserAnalytics(),
+  //     _fetchAverageRating(),
+  //     _fetchProfileCompletion(),
+  //   ]);
+  // }
+
   Future<void> _handleRefresh() async {
     if (!mounted) return;
     context.read<SocialProvider>().fetchPosts('All');
@@ -916,6 +930,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
       _fetchAverageRating(),
       _fetchProfileCompletion(),
     ]);
+    _connectionSuggestKey.currentState?.refresh(); // 👈 refresh suggestions
   }
 
   // ===========================
@@ -926,6 +941,12 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     final socialProvider = context.watch<SocialProvider>();
     final posts = socialProvider.posts;
 
+    final authProvider = Provider.of<AuthProvider>(context);
+    final viewerUserId = authProvider.user?.id;
+
+    if (viewerUserId == null) {
+      return const Center(child: Text("User not logged in"));
+    }
     return FadeTransition(
         opacity: _fadeAnimation,
         child: RefreshIndicator(
@@ -960,7 +981,11 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      const ConnectionSuggest(),
+                      // const ConnectionSuggest(),
+                      ConnectionSuggest(
+                        key: _connectionSuggestKey, // 👈 pass key
+                        viewerUserId: viewerUserId, // 👈 pass ID
+                      ),
                       const SizedBox(height: 32),
 
                       // NEW SECTION

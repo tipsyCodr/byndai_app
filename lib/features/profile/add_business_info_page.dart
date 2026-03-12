@@ -159,27 +159,7 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
     }
   }
 
-  // Widget _inputField({
-  //   required String label,
-  //   required TextEditingController controller,
-  //   int maxLines = 1,
-  //   TextInputType keyboardType = TextInputType.text,
-  // }) {
-  //   return Padding(
-  //     padding: const EdgeInsets.only(bottom: 14),
-  //     child: TextFormField(
-  //       controller: controller,
-  //       maxLines: maxLines,
-  //       keyboardType: keyboardType,
-  //       decoration: InputDecoration(
-  //         labelText: label,
-  //         border: OutlineInputBorder(
-  //           borderRadius: BorderRadius.circular(12),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
+  
 
   Widget _inputField({
     required String label,

@@ -40,6 +40,18 @@ class AuthProvider extends ChangeNotifier {
   Map<String, dynamic>? get pendingRegisterUser => _pendingRegisterUser;
   Map<String, String>? get googleSignInData => _googleSignInData;
 
+  void updateUserFromDetails(Map<String, dynamic> userDetails) {
+    try {
+      final user = UserModel.fromJson(userDetails);
+      _user = user;
+      _storageService.updateUser(user); // update stored user
+      notifyListeners();
+      debugPrint("AuthProvider: User updated from profile details");
+    } catch (e) {
+      debugPrint("AuthProvider: Error updating user from details: $e");
+    }
+  }
+
   /// Restores authentication state from a pre-loaded session.
   /// Called from main() to avoid async issues in widgets.
   void restoreSession(UserSession session) {

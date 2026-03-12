@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:gridcard/widgets/top_alert.dart';
 import './add_product_page.dart';
 import './product_details_page.dart'; // we'll create this next
+import 'package:url_launcher/url_launcher.dart';
 
 class ProductsTab extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
@@ -172,130 +173,161 @@ class _ProductsTabState extends State<ProductsTab> {
                   itemBuilder: (_, i) {
                     final p = products[i] as Map<String, dynamic>;
 
+                    final List links = p["product_link"] ?? [];
+
                     // return Card(
-                    //   elevation: 2,
+                    //   // elevation: 2,
+                    //   // shape: RoundedRectangleBorder(
+                    //   //   borderRadius: BorderRadius.circular(14),
+                    //   // ),
+                    //   elevation: 0,
+                    //   color: isDark
+                    //       ? colorScheme.surfaceContainerHighest
+                    //       : colorScheme.surface,
                     //   shape: RoundedRectangleBorder(
                     //     borderRadius: BorderRadius.circular(14),
                     //   ),
-                    //   child: Padding(
-                    //     padding: const EdgeInsets.all(8.0),
-                    //     child: Row(
-                    //       children: [
-                    //         // Tappable area (image + details)
-                    //         Expanded(
-                    //           child: GestureDetector(
-                    //             onTap: () => _navigateToDetails(p),
-                    //             child: Row(
+                    //   child: InkWell(
+                    //     borderRadius: BorderRadius.circular(14),
+                    //     onTap: () => _navigateToDetails(
+                    //         p), // ✅ Full card click -> details
+                    //     child: Padding(
+                    //       padding: const EdgeInsets.all(8.0),
+                    //       child: Row(
+                    //         children: [
+                    //           // Product image
+                    //           ClipRRect(
+                    //             borderRadius: BorderRadius.circular(8),
+                    //             child: _buildProductImage(p),
+                    //           ),
+
+                    //           const SizedBox(width: 12),
+
+                    //           // Product details
+                    //           Expanded(
+                    //             child: Column(
+                    //               crossAxisAlignment: CrossAxisAlignment.start,
                     //               children: [
-                    //                 // Product image
-                    //                 ClipRRect(
-                    //                   borderRadius: BorderRadius.circular(8),
-                    //                   child: _buildProductImage(p),
-                    //                 ),
-                    //                 const SizedBox(width: 12),
-                    //                 // Product details
-                    //                 Expanded(
-                    //                   child: Column(
-                    //                     crossAxisAlignment:
-                    //                         CrossAxisAlignment.start,
-                    //                     children: [
-                    //                       Text(
-                    //                         p["product_name"] ?? "-",
-                    //                         style: const TextStyle(
-                    //                           fontWeight: FontWeight.w600,
-                    //                           fontSize: 16,
-                    //                         ),
-                    //                       ),
-                    //                       const SizedBox(height: 4),
-                    //                       Text(
-                    //                         "₹ ${p["product_price"] ?? "0"}",
-                    //                         style: const TextStyle(
-                    //                           fontSize: 14,
-                    //                           color: Colors.green,
-                    //                         ),
-                    //                       ),
-                    //                       if (p["description"] != null &&
-                    //                           p["description"]
-                    //                               .toString()
-                    //                               .isNotEmpty)
-                    //                         Padding(
-                    //                           padding:
-                    //                               const EdgeInsets.only(top: 4),
-                    //                           child: Text(
-                    //                             p["description"],
-                    //                             maxLines: 2,
-                    //                             overflow: TextOverflow.ellipsis,
-                    //                             style: const TextStyle(
-                    //                               fontSize: 12,
-                    //                               color: Colors.grey,
-                    //                             ),
-                    //                           ),
-                    //                         ),
-                    //                     ],
+                    //                 Text(
+                    //                   p["product_name"] ?? "-",
+                    //                   style: const TextStyle(
+                    //                     fontWeight: FontWeight.w600,
+                    //                     fontSize: 16,
                     //                   ),
                     //                 ),
+                    //                 const SizedBox(height: 4),
+                    //                 Text(
+                    //                   "₹ ${p["product_price"] ?? "0"}",
+                    //                   style: const TextStyle(
+                    //                     fontSize: 14,
+                    //                     color: Colors.green,
+                    //                   ),
+                    //                 ),
+                    //                 if (p["description"] != null &&
+                    //                     p["description"].toString().isNotEmpty)
+                    //                   Padding(
+                    //                     padding: const EdgeInsets.only(top: 4),
+                    //                     child: Text(
+                    //                       p["description"],
+                    //                       maxLines: 2,
+                    //                       overflow: TextOverflow.ellipsis,
+                    //                       style: const TextStyle(
+                    //                         fontSize: 12,
+                    //                         color: Colors.grey,
+                    //                       ),
+                    //                     ),
+                    //                   ),
+                    //                 if (links.isNotEmpty)
+                    //                   Padding(
+                    //                     padding: const EdgeInsets.only(top: 6),
+                    //                     child: Wrap(
+                    //                       spacing: 6,
+                    //                       runSpacing: 6,
+                    //                       children: links.map((link) {
+                    //                         final title =
+                    //                             (link["title"] ?? "Link")
+                    //                                 .toString();
+                    //                         final url = (link["links"] ?? "")
+                    //                             .toString();
+
+                    //                         return ElevatedButton(
+                    //                           style: ElevatedButton.styleFrom(
+                    //                             padding:
+                    //                                 const EdgeInsets.symmetric(
+                    //                               horizontal: 10,
+                    //                               vertical: 4,
+                    //                             ),
+                    //                             textStyle: const TextStyle(
+                    //                                 fontSize: 12),
+                    //                           ),
+                    //                           onPressed: () async {
+                    //                             final uri = Uri.parse(url);
+                    //                             if (await canLaunchUrl(uri)) {
+                    //                               await launchUrl(uri);
+                    //                             }
+                    //                           },
+                    //                           child: Text(title),
+                    //                         );
+                    //                       }).toList(),
+                    //                     ),
+                    //                   ),
                     //               ],
                     //             ),
                     //           ),
-                    //         ),
-                    //         // Three-dot menu
 
-                    //         PopupMenuButton<String>(
-                    //           icon: const Icon(Icons.more_vert),
-                    //           onSelected: (value) async {
-                    //             if (value == 'edit') {
-                    //               // ✅ Navigate to AddProductPage in Edit Mode
-                    //               final result = await Navigator.push(
-                    //                 context,
-                    //                 MaterialPageRoute(
-                    //                   builder: (_) =>
-                    //                       AddProductPage(product: p),
-                    //                 ),
-                    //               );
+                    //           // Three-dot menu (ye tap se safe rahega)
+                    //           PopupMenuButton<String>(
+                    //             icon: const Icon(Icons.more_horiz),
+                    //             onSelected: (value) async {
+                    //               if (value == 'edit') {
+                    //                 final result = await Navigator.push(
+                    //                   context,
+                    //                   MaterialPageRoute(
+                    //                     builder: (_) =>
+                    //                         AddProductPage(product: p),
+                    //                   ),
+                    //                 );
 
-                    //               // ✅ If updated successfully, refresh list
-                    //               if (result == true) {
-                    //                 _fetchProducts();
+                    //                 if (result == true) {
+                    //                   _fetchProducts();
+                    //                 }
+                    //               } else if (value == 'delete') {
+                    //                 _confirmDelete(p);
                     //               }
-                    //             } else if (value == 'delete') {
-                    //               _confirmDelete(p);
-                    //             }
-                    //           },
-                    //           itemBuilder: (ctx) => const [
-                    //             PopupMenuItem(
-                    //               value: 'edit',
-                    //               child: Row(
-                    //                 children: [
-                    //                   Icon(Icons.edit, size: 18),
-                    //                   SizedBox(width: 8),
-                    //                   Text("Edit"),
-                    //                 ],
+                    //             },
+                    //             itemBuilder: (ctx) => const [
+                    //               PopupMenuItem(
+                    //                 value: 'edit',
+                    //                 child: Row(
+                    //                   children: [
+                    //                     Icon(Icons.edit, size: 18),
+                    //                     SizedBox(width: 8),
+                    //                     Text("Edit"),
+                    //                   ],
+                    //                 ),
                     //               ),
-                    //             ),
-                    //             PopupMenuItem(
-                    //               value: 'delete',
-                    //               child: Row(
-                    //                 children: [
-                    //                   Icon(Icons.delete,
-                    //                       size: 18, color: Colors.red),
-                    //                   SizedBox(width: 8),
-                    //                   Text("Delete",
-                    //                       style: TextStyle(color: Colors.red)),
-                    //                 ],
+                    //               PopupMenuItem(
+                    //                 value: 'delete',
+                    //                 child: Row(
+                    //                   children: [
+                    //                     Icon(Icons.delete,
+                    //                         size: 18, color: Colors.red),
+                    //                     SizedBox(width: 8),
+                    //                     Text("Delete",
+                    //                         style:
+                    //                             TextStyle(color: Colors.red)),
+                    //                   ],
+                    //                 ),
                     //               ),
-                    //             ),
-                    //           ],
-                    //         ),
-                    //       ],
+                    //             ],
+                    //           ),
+                    //         ],
+                    //       ),
                     //     ),
                     //   ),
                     // );
 
                     return Card(
-                      // elevation: 2,
-                      // shape: RoundedRectangleBorder(
-                      //   borderRadius: BorderRadius.circular(14),
-                      // ),
                       elevation: 0,
                       color: isDark
                           ? colorScheme.surfaceContainerHighest
@@ -305,40 +337,48 @@ class _ProductsTabState extends State<ProductsTab> {
                       ),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(14),
-                        onTap: () => _navigateToDetails(
-                            p), // ✅ Full card click -> details
+                        onTap: () => _navigateToDetails(p),
                         child: Padding(
-                          padding: const EdgeInsets.all(8.0),
+                          padding: const EdgeInsets.all(10),
                           child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Product image
+                              /// PRODUCT IMAGE
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: BorderRadius.circular(10),
                                 child: _buildProductImage(p),
                               ),
 
                               const SizedBox(width: 12),
 
-                              // Product details
+                              /// PRODUCT INFO
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
+                                    /// NAME
                                     Text(
                                       p["product_name"] ?? "-",
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w600,
-                                        fontSize: 16,
+                                        fontSize: 15,
+                                        color: colorScheme.onSurface,
                                       ),
                                     ),
+
                                     const SizedBox(height: 4),
+
+                                    /// PRICE
                                     Text(
                                       "₹ ${p["product_price"] ?? "0"}",
                                       style: const TextStyle(
-                                        fontSize: 14,
+                                        fontSize: 13,
                                         color: Colors.green,
+                                        fontWeight: FontWeight.w500,
                                       ),
                                     ),
+
+                                    /// DESCRIPTION
                                     if (p["description"] != null &&
                                         p["description"].toString().isNotEmpty)
                                       Padding(
@@ -347,19 +387,59 @@ class _ProductsTabState extends State<ProductsTab> {
                                           p["description"],
                                           maxLines: 2,
                                           overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 12,
-                                            color: Colors.grey,
+                                            color: colorScheme.onSurfaceVariant,
                                           ),
+                                        ),
+                                      ),
+
+                                    /// PRODUCT LINKS BUTTONS
+                                    if (links.isNotEmpty)
+                                      Padding(
+                                        padding: const EdgeInsets.only(top: 10),
+                                        child: Wrap(
+                                          spacing: 8,
+                                          runSpacing: 8,
+                                          children: links.map<Widget>((link) {
+                                            final title =
+                                                (link["title"] ?? "Link")
+                                                    .toString();
+                                            final url = (link["links"] ?? "")
+                                                .toString();
+
+                                            return OutlinedButton(
+                                              style: OutlinedButton.styleFrom(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 10,
+                                                ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
+                                                ),
+                                              ),
+                                              onPressed: () async {
+                                                final uri = Uri.parse(url);
+                                                if (await canLaunchUrl(uri)) {
+                                                  await launchUrl(uri);
+                                                }
+                                              },
+                                              child: Text(title),
+                                            );
+                                          }).toList(),
                                         ),
                                       ),
                                   ],
                                 ),
                               ),
 
-                              // Three-dot menu (ye tap se safe rahega)
+                              const SizedBox(width: 8),
+
+                              /// MENU
                               PopupMenuButton<String>(
-                                icon: const Icon(Icons.more_vert),
+                                icon: const Icon(Icons.more_horiz),
                                 onSelected: (value) async {
                                   if (value == 'edit') {
                                     final result = await Navigator.push(
@@ -395,9 +475,10 @@ class _ProductsTabState extends State<ProductsTab> {
                                         Icon(Icons.delete,
                                             size: 18, color: Colors.red),
                                         SizedBox(width: 8),
-                                        Text("Delete",
-                                            style:
-                                                TextStyle(color: Colors.red)),
+                                        Text(
+                                          "Delete",
+                                          style: TextStyle(color: Colors.red),
+                                        ),
                                       ],
                                     ),
                                   ),
