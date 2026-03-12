@@ -48,8 +48,12 @@ dependencies:
   firebase_crashlytics: ^5.0.8
   firebase_auth: ^6.2.0
   google_sign_in: ^7.2.0
+<<<<<<< HEAD
+  crop_your_image: ^1.1.0
+=======
   firebase_messaging: ^16.1.2
   flutter_local_notifications: ^21.0.0
+>>>>>>> a28ed8316169962cd46d40329991d2a2510669e9
 
 
   

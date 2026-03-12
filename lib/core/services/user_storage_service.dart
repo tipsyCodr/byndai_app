@@ -32,6 +32,15 @@ class UserStorageService {
   static const String _kPrefTokenBackup = 'token_backup';
   static const String _kPrefUserId = 'user_id';
 
+  Future<void> updateUser(UserModel user) async {
+    final userJson = jsonEncode(user.toJson());
+    // Update secure storage
+    await _secureStorage.write(key: _kKeyUser, value: userJson);
+    // Update backup in SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kPrefUserBackup, userJson);
+  }
+
   Future<int?> getUserId() async {
     // 1) Try from secure storage user json
     try {

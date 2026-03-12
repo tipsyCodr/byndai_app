@@ -479,6 +479,16 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     }
   }
 
+  Future<http.Response> _deleteRequest(
+      String url, Map<String, dynamic> body) async {
+    final request = http.Request('DELETE', Uri.parse(url));
+    request.headers.addAll(await _getHeaders());
+    request.headers['Content-Type'] = 'application/json';
+    request.body = jsonEncode(body);
+    final streamedResponse = await request.send();
+    return await http.Response.fromStream(streamedResponse);
+  }
+
   // ================= ACCEPT / REJECT =================
   Future<void> updateStatus({
     required int senderId,
@@ -651,24 +661,32 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     final connectionTitle = "Connected ($_acceptedCount)";
     final pendingTitle = "Pending ($_pendingCount)";
     final sentTitle = "Sent ($_sentCount)"; // ✅
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text('Connections', style: TextStyle(color: Colors.white)),
+        elevation: 0,
+        backgroundColor: colorScheme.surface,
+        title:
+            Text('Connections', style: TextStyle(color: colorScheme.onSurface)),
         leading: IconButton(
-          icon: const Icon(CupertinoIcons.back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
           onPressed: () => Navigator.pop(context),
         ),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.blueAccent,
-          labelColor: Colors.blueAccent,
-          unselectedLabelColor: Colors.white54,
+          indicator: BoxDecoration(
+            color: colorScheme.primary.withOpacity(0.2), // or any color
+            borderRadius: BorderRadius.circular(8), // optional
+          ),
+          indicatorSize: TabBarIndicatorSize.tab,
+          labelColor: colorScheme.primary,
+          unselectedLabelColor: colorScheme.onSurface.withOpacity(0.6),
           tabs: [
             Tab(text: connectionTitle),
             Tab(text: pendingTitle),
@@ -688,10 +706,12 @@ class _ConnectionsPageState extends State<ConnectionsPage>
   }
 
   // ================= ACCEPTED UI =================
-
   Widget _buildAcceptedList() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (acceptedLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+          child: CircularProgressIndicator(color: colorScheme.primary));
     }
 
     return Column(
@@ -704,20 +724,23 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                 child: Container(
                   height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
+                    color: colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white12),
+                    border:
+                        Border.all(color: colorScheme.primary.withOpacity(0.2)),
                   ),
                   child: TextField(
                     controller: _searchController,
                     onChanged: _onSearchChanged,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: colorScheme.onSurface),
+                    decoration: InputDecoration(
                       hintText: "Search connections...",
-                      hintStyle: TextStyle(color: Colors.white38),
-                      prefixIcon: Icon(Icons.search, color: Colors.white54),
+                      hintStyle: TextStyle(
+                          color: colorScheme.onSurface.withOpacity(0.6)),
+                      prefixIcon: Icon(Icons.search,
+                          color: colorScheme.onSurface.withOpacity(0.6)),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
                 ),
@@ -727,13 +750,14 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                 height: 44,
                 width: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
+                  color: colorScheme.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white12),
+                  border:
+                      Border.all(color: colorScheme.primary.withOpacity(0.2)),
                 ),
                 child: IconButton(
                   onPressed: _onExportClick,
-                  icon: const Icon(Icons.download, color: Colors.white),
+                  icon: Icon(Icons.download, color: colorScheme.onSurface),
                 ),
               ),
             ],
@@ -741,16 +765,18 @@ class _ConnectionsPageState extends State<ConnectionsPage>
         ),
         Expanded(
           child: acceptedFriends.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'No connections found',
-                    style: TextStyle(color: Colors.white38),
+                    style: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.6)),
                   ),
                 )
               : RefreshIndicator(
                   onRefresh: () async {
                     await fetchAcceptedFriends(reset: true);
                   },
+                  color: colorScheme.primary,
                   child: ListView.builder(
                     controller: _acceptedScrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -760,9 +786,11 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                     itemBuilder: (context, index) {
                       if (_acceptedIsPaginating &&
                           index == acceptedFriends.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 18),
-                          child: Center(child: CircularProgressIndicator()),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          child: Center(
+                              child: CircularProgressIndicator(
+                                  color: colorScheme.primary)),
                         );
                       }
 
@@ -783,67 +811,124 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                               builder: (_) => ProfilePage(
                                 userId: friendId,
                                 viewerUserId: viewerId,
-                                isConnected: true, // ← added
+                                isConnected: true,
                               ),
                             ),
                           );
                         },
                         child: Card(
-                          color: const Color(0xFF1E1E1E),
+                          color: colorScheme.surface,
+                          elevation: 1,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color:
+                                  isDark ? Colors.white : colorScheme.primary,
+                              width: 0.2,
+                            ),
                           ),
                           margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: const CircleAvatar(
-                              backgroundImage: AssetImage(
-                                  'assets/images/default_avatar.png'),
-                            ),
-                            title: Text(
-                              item['fname'] ?? 'User',
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                            subtitle: Text(
-                              item['user_name'] ?? '',
-                              style: const TextStyle(color: Colors.white38),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.chat_bubble_outline,
-                                      color: Colors.blueAccent),
-                                  onPressed: () async {
-                                    debugPrint(
-                                        "✅ Accepted Friend Item: ${jsonEncode(item)}");
+                                /// Top User Info
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 24,
+                                      backgroundColor:
+                                          colorScheme.surfaceVariant,
+                                      backgroundImage:
+                                          item['profile_pic'] != null
+                                              ? NetworkImage(
+                                                  "${AppConfig.apiProfileImg}/${item['profile_pic']}",
+                                                )
+                                              : null,
+                                      child: item['profile_pic'] == null
+                                          ? Icon(
+                                              Icons.person,
+                                              color: colorScheme.onSurface
+                                                  .withOpacity(0.6),
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        item['fname'] ?? 'User',
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: colorScheme.onSurface,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
 
-                                    final receiverId = int.tryParse(
-                                        item['friend_id'].toString());
-                                    if (receiverId == null) {
-                                      debugPrint("❌ friend_id missing");
-                                      return;
-                                    }
+                                const SizedBox(height: 12),
 
-                                    showDialog(
-                                      context: context,
-                                      barrierDismissible: false,
-                                      builder: (_) => const Center(
-                                          child: CircularProgressIndicator()),
-                                    );
+                                // Divider(
+                                //   color: colorScheme.outline.withOpacity(0.2),
+                                // ),
 
-                                    final chatId =
-                                        await _createChatAndGetChatId(
-                                            receiverId);
+                                // const SizedBox(height: 12),
 
-                                    if (!mounted) return;
-                                    Navigator.pop(context);
+                                /// Bottom Buttons
+                                Row(
+                                  children: [
+                                    /// Chat Button
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        icon: Icon(Icons.chat_bubble_outline,
+                                            size: 18),
+                                        label: const Text("Chat"),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: colorScheme.primary,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          debugPrint(
+                                              "✅ Accepted Friend Item: ${jsonEncode(item)}");
 
-                                    if (chatId == null) {
-                                      TopAlert.show(
-                                          context, "Chat create nahi ho paya",
-                                          isError: true);
-                                      return;
-                                    }
+                                          final receiverId = int.tryParse(
+                                              item['friend_id'].toString());
+
+                                          if (receiverId == null) {
+                                            debugPrint("❌ friend_id missing");
+                                            return;
+                                          }
+
+                                          showDialog(
+                                            context: context,
+                                            barrierDismissible: false,
+                                            builder: (_) => const Center(
+                                                child:
+                                                    CircularProgressIndicator()),
+                                          );
+
+                                          final chatId =
+                                              await _createChatAndGetChatId(
+                                                  receiverId);
+
+                                          if (!mounted) return;
+                                          Navigator.pop(context);
+
+                                          if (chatId == null) {
+                                            TopAlert.show(
+                                              context,
+                                              "Chat create nahi ho paya",
+                                              isError: true,
+                                            );
+                                            return;
+                                          }
 
                                     Navigator.push(
                                       context,
@@ -916,8 +1001,11 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
   // ================= PENDING UI (UPDATED) =================
   Widget _buildPendingListUpdated() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (isLoading && pendingConnections.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+          child: CircularProgressIndicator(color: colorScheme.primary));
     }
 
     return Column(
@@ -930,20 +1018,23 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                 child: Container(
                   height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
+                    color: colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white12),
+                    border:
+                        Border.all(color: colorScheme.primary.withOpacity(0.2)),
                   ),
                   child: TextField(
                     controller: _pendingSearchController,
                     onChanged: _onPendingSearchChanged,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: colorScheme.onSurface),
+                    decoration: InputDecoration(
                       hintText: "Search pending...",
-                      hintStyle: TextStyle(color: Colors.white38),
-                      prefixIcon: Icon(Icons.search, color: Colors.white54),
+                      hintStyle: TextStyle(
+                          color: colorScheme.onSurface.withOpacity(0.6)),
+                      prefixIcon: Icon(Icons.search,
+                          color: colorScheme.onSurface.withOpacity(0.6)),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
                 ),
@@ -953,13 +1044,14 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                 height: 44,
                 width: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
+                  color: colorScheme.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white12),
+                  border:
+                      Border.all(color: colorScheme.primary.withOpacity(0.2)),
                 ),
                 child: IconButton(
                   onPressed: _onPendingExportClick,
-                  icon: const Icon(Icons.download, color: Colors.white),
+                  icon: Icon(Icons.download, color: colorScheme.onSurface),
                 ),
               ),
             ],
@@ -967,16 +1059,18 @@ class _ConnectionsPageState extends State<ConnectionsPage>
         ),
         Expanded(
           child: pendingConnections.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'No pending requests',
-                    style: TextStyle(color: Colors.white38),
+                    style: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.6)),
                   ),
                 )
               : RefreshIndicator(
                   onRefresh: () async {
                     await fetchConnections(reset: true);
                   },
+                  color: colorScheme.primary,
                   child: ListView.builder(
                     controller: _pendingScrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -986,9 +1080,11 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                     itemBuilder: (context, index) {
                       if (_pendingIsPaginating &&
                           index == pendingConnections.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 18),
-                          child: Center(child: CircularProgressIndicator()),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          child: Center(
+                              child: CircularProgressIndicator(
+                                  color: colorScheme.primary)),
                         );
                       }
 
@@ -1008,68 +1104,169 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                               builder: (_) => ProfilePage(
                                 userId: senderId,
                                 viewerUserId: viewerId,
-                                fromConnectionTab: 'pending', // ← ADD THIS
+                                fromConnectionTab: 'pending',
                               ),
                             ),
                           );
                         },
                         child: Card(
-                          color: const Color(0xFF1E1E1E),
+                          color: colorScheme.surface,
+                          elevation: 1,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color:
+                                  isDark ? Colors.white : colorScheme.primary,
+                              width: 0.2,
+                            ),
                           ),
                           margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: const CircleAvatar(
-                              backgroundImage: AssetImage(
-                                  'assets/images/default_avatar.png'),
-                            ),
-                            title: Text(
-                              item['fname'] ?? '',
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                            subtitle: Text(
-                              item['user_name'] ?? '',
-                              style: const TextStyle(color: Colors.white38),
-                            ),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
                               children: [
-                                IconButton(
-                                  icon: const Icon(Icons.check_circle,
-                                      color: Colors.greenAccent),
-                                  onPressed: () async {
-                                    final session = await UserStorageService()
-                                        .loadSession();
-                                    updateStatus(
-                                      senderId: item['sender_id'],
-                                      receiverId: session.user!.id!,
-                                      status: 2,
-                                      index: index,
-                                    );
-                                  },
+                                /// Top Section
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 26,
+                                      backgroundColor:
+                                          colorScheme.surfaceVariant,
+                                      backgroundImage:
+                                          item['profile_pic'] != null
+                                              ? NetworkImage(
+                                                  "${AppConfig.apiProfileImg}/${item['profile_pic']}",
+                                                )
+                                              : null,
+                                      child: item['profile_pic'] == null
+                                          ? Icon(Icons.person,
+                                              color: colorScheme.onSurface
+                                                  .withOpacity(0.6))
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            item['fname'] ?? '',
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: colorScheme.onSurface,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            item['user_name'] ?? '',
+                                            style: TextStyle(
+                                              fontSize: 13,
+                                              color: colorScheme.onSurface
+                                                  .withOpacity(0.6),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.cancel,
-                                      color: Colors.redAccent),
-                                  onPressed: () async {
-                                    final session = await UserStorageService()
-                                        .loadSession();
 
-                                    final receiverId = session.user?.id;
-                                    if (receiverId == null) return;
+                                const SizedBox(height: 12),
 
-                                    final senderId = item['sender_id'];
-                                    final status = item['status'];
+                                // Divider(
+                                //   height: 1,
+                                //   color: colorScheme.outline.withOpacity(0.2),
+                                // ),
 
-                                    await deleteConnectionRequest(
-                                      senderId: senderId,
-                                      receiverId: receiverId,
-                                      status: status,
-                                      fromTab: "pending",
-                                      index: index,
-                                    );
-                                  },
+                                // const SizedBox(height: 12),
+
+                                /// Bottom Buttons
+                                Row(
+                                  children: [
+                                    /// Accept
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: colorScheme.primary,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          final session =
+                                              await UserStorageService()
+                                                  .loadSession();
+                                          final senderId = int.tryParse(
+                                              item['sender_id'].toString());
+                                          final receiverId = session.user?.id;
+
+                                          if (senderId == null ||
+                                              receiverId == null) return;
+                                          // updateStatus(
+                                          //   senderId: item['sender_id'],
+                                          //   receiverId: session.user!.id!,
+                                          //   status: 2,
+                                          //   index: index,
+                                          // );
+                                          updateStatus(
+                                            senderId: senderId,
+                                            receiverId: receiverId,
+                                            status: 2,
+                                            index: index,
+                                          );
+                                        },
+                                        child: const Text("Accept"),
+                                      ),
+                                    ),
+
+                                    const SizedBox(width: 10),
+
+                                    /// Reject
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        style: OutlinedButton.styleFrom(
+                                          side: BorderSide(
+                                            color: colorScheme.outline,
+                                            width: 0.2,
+                                          ),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          final session =
+                                              await UserStorageService()
+                                                  .loadSession();
+
+                                          final receiverId = session.user?.id;
+                                          if (receiverId == null) return;
+
+                                          // final senderId = item['sender_id'];
+                                          // final status = item['status'];
+                                          final senderId = int.tryParse(
+                                              item['sender_id'].toString());
+                                          final status = int.tryParse(
+                                              item['status'].toString());
+                                          if (senderId == null ||
+                                              status == null) return;
+
+                                          await deleteConnectionRequest(
+                                            senderId: senderId,
+                                            receiverId: receiverId,
+                                            status: status,
+                                            fromTab: "pending",
+                                            index: index,
+                                          );
+                                        },
+                                        child: const Text("Reject"),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
@@ -1086,8 +1283,11 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
   // ================= SENT UI (FULL UPDATED LIKE PENDING) ====================
   Widget _buildSentListUpdated() {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     if (sentLoading && sentRequests.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return Center(
+          child: CircularProgressIndicator(color: colorScheme.primary));
     }
 
     return Column(
@@ -1101,20 +1301,23 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                 child: Container(
                   height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
+                    color: colorScheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.white12),
+                    border:
+                        Border.all(color: colorScheme.primary.withOpacity(0.2)),
                   ),
                   child: TextField(
                     controller: _sentSearchController,
                     onChanged: _onSentSearchChanged,
-                    style: const TextStyle(color: Colors.white),
-                    decoration: const InputDecoration(
+                    style: TextStyle(color: colorScheme.onSurface),
+                    decoration: InputDecoration(
                       hintText: "Search sent...",
-                      hintStyle: TextStyle(color: Colors.white38),
-                      prefixIcon: Icon(Icons.search, color: Colors.white54),
+                      hintStyle: TextStyle(
+                          color: colorScheme.onSurface.withOpacity(0.6)),
+                      prefixIcon: Icon(Icons.search,
+                          color: colorScheme.onSurface.withOpacity(0.6)),
                       border: InputBorder.none,
-                      contentPadding: EdgeInsets.symmetric(vertical: 12),
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
                 ),
@@ -1124,13 +1327,14 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                 height: 44,
                 width: 44,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1E1E1E),
+                  color: colorScheme.surfaceVariant,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white12),
+                  border:
+                      Border.all(color: colorScheme.primary.withOpacity(0.2)),
                 ),
                 child: IconButton(
                   onPressed: _onSentExportClick,
-                  icon: const Icon(Icons.download, color: Colors.white),
+                  icon: Icon(Icons.download, color: colorScheme.onSurface),
                 ),
               ),
             ],
@@ -1140,16 +1344,18 @@ class _ConnectionsPageState extends State<ConnectionsPage>
         // list
         Expanded(
           child: sentRequests.isEmpty
-              ? const Center(
+              ? Center(
                   child: Text(
                     'No sent requests',
-                    style: TextStyle(color: Colors.white38),
+                    style: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.6)),
                   ),
                 )
               : RefreshIndicator(
                   onRefresh: () async {
                     await fetchSentRequests(reset: true);
                   },
+                  color: colorScheme.primary,
                   child: ListView.builder(
                     controller: _sentScrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
@@ -1158,9 +1364,11 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                         sentRequests.length + (_sentIsPaginating ? 1 : 0),
                     itemBuilder: (context, index) {
                       if (_sentIsPaginating && index == sentRequests.length) {
-                        return const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 18),
-                          child: Center(child: CircularProgressIndicator()),
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 18),
+                          child: Center(
+                              child: CircularProgressIndicator(
+                                  color: colorScheme.primary)),
                         );
                       }
 
@@ -1183,48 +1391,112 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                               builder: (_) => ProfilePage(
                                 userId: profileUserId,
                                 viewerUserId: viewerId,
-                                fromConnectionTab: 'sent', // ← ADD THIS
+                                fromConnectionTab: 'sent',
                               ),
                             ),
                           );
                         },
                         child: Card(
-                          color: const Color(0xFF1E1E1E),
+                          color: colorScheme.surface,
+                          elevation: 1,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color:
+                                  isDark ? Colors.white : colorScheme.primary,
+                              width: 0.2,
+                            ),
                           ),
                           margin: const EdgeInsets.only(bottom: 12),
-                          child: ListTile(
-                            leading: const CircleAvatar(
-                              backgroundImage: AssetImage(
-                                  'assets/images/default_avatar.png'),
-                            ),
-                            title: Text(
-                              fname,
-                              style: const TextStyle(color: Colors.white),
-                            ),
-                            subtitle: Text(
-                              userName,
-                              style: const TextStyle(color: Colors.white38),
-                            ),
-                            trailing: PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert,
-                                  color: Colors.white),
-                              onSelected: (value) async {
-                                final session =
-                                    await UserStorageService().loadSession();
-                                final senderId = session.user?.id;
+                          child: Padding(
+                            padding: const EdgeInsets.all(12),
+                            child: Column(
+                              children: [
+                                /// Top User Info
+                                Row(
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 26,
+                                      backgroundColor:
+                                          colorScheme.surfaceVariant,
+                                      backgroundImage:
+                                          item['profile_pic'] != null
+                                              ? NetworkImage(
+                                                  "${AppConfig.apiProfileImg}/${item['profile_pic']}",
+                                                )
+                                              : null,
+                                      child: item['profile_pic'] == null
+                                          ? Icon(
+                                              Icons.person,
+                                              color: colorScheme.onSurface
+                                                  .withOpacity(0.6),
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            fname,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: colorScheme.onSurface,
+                                            ),
+                                          ),
+                                          // const SizedBox(height: 2),
+                                          // Text(
+                                          //   userName,
+                                          //   style: TextStyle(
+                                          //     fontSize: 13,
+                                          //     color: colorScheme.onSurface
+                                          //         .withOpacity(0.6),
+                                          //   ),
+                                          // ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
 
-                                if (senderId == null) return;
+                                const SizedBox(height: 12),
 
-                                final receiverId = item['receiver_id'];
-                                final status = item['status'];
+                                // Divider(
+                                //   color: colorScheme.outline.withOpacity(0.2),
+                                // ),
 
-                                if (value == "view") {
-                                  // 👁 view => also open profile
-                                  final profileUserId =
-                                      int.tryParse(receiverId.toString());
-                                  if (profileUserId == null) return;
+                                // const SizedBox(height: 12),
+
+                                /// Bottom Buttons
+                                Row(
+                                  children: [
+                                    /// View Button
+                                    Expanded(
+                                      child: ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: colorScheme.primary,
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(8),
+                                          ),
+                                        ),
+                                        onPressed: () async {
+                                          final session =
+                                              await UserStorageService()
+                                                  .loadSession();
+                                          final senderId = session.user?.id;
+
+                                          if (senderId == null) return;
+
+                                          final receiverId =
+                                              item['receiver_id'];
+                                          final profileUserId = int.tryParse(
+                                              receiverId.toString());
+                                          if (profileUserId == null) return;
 
                                   Navigator.push(
                                     context,

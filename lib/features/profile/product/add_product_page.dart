@@ -26,6 +26,12 @@ class _AddProductPageState extends State<AddProductPage> {
   final skuCtrl = TextEditingController();
   final tagsCtrl = TextEditingController();
   final stockCtrl = TextEditingController();
+  String existingImageUrl = "";
+
+  List<Map<String, String>> productLinks = [];
+
+  final linkTitleCtrl = TextEditingController();
+  final linkUrlCtrl = TextEditingController();
 
   XFile? productImage;
 
@@ -51,6 +57,8 @@ class _AddProductPageState extends State<AddProductPage> {
     // ✅ Prefill fields in Edit Mode
     if (isEdit) {
       final p = widget.product!;
+      print("Product Data:");
+      print(widget.product);
       categoryCtrl.text = (p["category_name"] ?? "").toString();
       nameCtrl.text = (p["product_name"] ?? "").toString();
       priceCtrl.text = (p["product_price"] ?? "").toString();
@@ -58,7 +66,189 @@ class _AddProductPageState extends State<AddProductPage> {
       skuCtrl.text = (p["sku"] ?? "").toString();
       tagsCtrl.text = (p["tags"] ?? "").toString();
       stockCtrl.text = (p["stock"] ?? "").toString();
+
+      /// ✅ Load existing product links
+      if (p["product_link"] != null && p["product_link"] is List) {
+        productLinks = List<Map<String, String>>.from(
+          (p["product_link"] as List).map((link) => {
+                "title": (link["title"] ?? "").toString(),
+                "links": (link["links"] ?? "").toString(),
+              }),
+        );
+      }
+
+      print("Loaded Links:");
+      print(productLinks);
+
+      if (p["product_image"] != null &&
+          (p["product_image"] as List).isNotEmpty) {
+        String path = p["product_image"][0]["product_images"] ?? "";
+
+        if (path.isNotEmpty) {
+          String base = _baseUrl;
+
+          if (base.endsWith('/api')) {
+            base = base.substring(0, base.length - 4);
+          }
+
+          if (path.startsWith('/')) {
+            path = path.substring(1);
+          }
+
+          existingImageUrl = "$base/$path";
+        }
+      }
     }
+  }
+
+  void _openAddLinkModal() {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Add Link",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: linkTitleCtrl,
+                decoration: const InputDecoration(
+                  labelText: "Title",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: linkUrlCtrl,
+                decoration: const InputDecoration(
+                  labelText: "Link",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    if (linkTitleCtrl.text.trim().isEmpty ||
+                        linkUrlCtrl.text.trim().isEmpty) {
+                      return;
+                    }
+
+                    setState(() {
+                      productLinks.add({
+                        "title": linkTitleCtrl.text.trim(),
+                        "links": linkUrlCtrl.text.trim(),
+                      });
+                    });
+
+                    linkTitleCtrl.clear();
+                    linkUrlCtrl.clear();
+
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Add Link"),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _openEditLinkModal(int index) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    linkTitleCtrl.text = productLinks[index]["title"] ?? "";
+    linkUrlCtrl.text = productLinks[index]["links"] ?? "";
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                "Edit Link",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: linkTitleCtrl,
+                decoration: const InputDecoration(
+                  labelText: "Title",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: linkUrlCtrl,
+                decoration: const InputDecoration(
+                  labelText: "Link",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    setState(() {
+                      productLinks[index] = {
+                        "title": linkTitleCtrl.text.trim(),
+                        "links": linkUrlCtrl.text.trim(),
+                      };
+                    });
+
+                    linkTitleCtrl.clear();
+                    linkUrlCtrl.clear();
+
+                    Navigator.pop(context);
+                  },
+                  child: const Text("Update Link"),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _pickProductImage() async {
@@ -69,28 +259,6 @@ class _AddProductPageState extends State<AddProductPage> {
       setState(() => productImage = picked);
     }
   }
-
-  // Widget _inputField({
-  //   required String label,
-  //   required TextEditingController controller,
-  //   int maxLines = 1,
-  //   TextInputType keyboardType = TextInputType.text,
-  // }) {
-  //   return Padding(
-  //     padding: const EdgeInsets.only(bottom: 14),
-  //     child: TextFormField(
-  //       controller: controller,
-  //       maxLines: maxLines,
-  //       keyboardType: keyboardType,
-  //       decoration: InputDecoration(
-  //         labelText: label,
-  //         border: OutlineInputBorder(
-  //           borderRadius: BorderRadius.circular(12),
-  //         ),
-  //       ),
-  //     ),
-  //   );
-  // }
 
   Widget _inputField({
     required String label,
@@ -131,6 +299,9 @@ class _AddProductPageState extends State<AddProductPage> {
   Future<void> _submit() async {
     if (isLoading) return;
 
+    print("Product Links:");
+    print(productLinks);
+
     if (nameCtrl.text.trim().isEmpty) {
       TopAlert.show(context, "Product name required", isError: true);
       return;
@@ -163,6 +334,11 @@ class _AddProductPageState extends State<AddProductPage> {
       request.fields["tags"] = tagsCtrl.text.trim();
       request.fields["stock"] = stockCtrl.text.trim();
       request.fields["status"] = "1";
+
+      // ✅ Send Product Links
+      if (productLinks.isNotEmpty) {
+        request.fields["links"] = jsonEncode(productLinks);
+      }
 
       // ✅ Image (only if selected new one)
       if (productImage != null) {
@@ -282,6 +458,45 @@ class _AddProductPageState extends State<AddProductPage> {
                           TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 10),
+                    // if (productImage != null)
+                    //   ClipRRect(
+                    //     borderRadius: BorderRadius.circular(12),
+                    //     child: kIsWeb
+                    //         ? Image.network(
+                    //             productImage!.path,
+                    //             height: 160,
+                    //             width: double.infinity,
+                    //             fit: BoxFit.contain,
+                    //           )
+                    //         : Image.file(
+                    //             File(productImage!.path),
+                    //             height: 160,
+                    //             width: double.infinity,
+                    //             fit: BoxFit.contain,
+                    //           ),
+                    //   )
+                    // else
+                    //   Container(
+                    //     height: 140,
+                    //     width: double.infinity,
+                    //     decoration: BoxDecoration(
+                    //       color: isDark
+                    //           ? colorScheme.surfaceContainerHighest
+                    //           : Colors.grey.shade100,
+                    //       borderRadius: BorderRadius.circular(12),
+                    //     ),
+                    //     child: Center(
+                    //       child: Text(
+                    //         isEdit
+                    //             ? "No new image selected (old image will remain)"
+                    //             : "No image selected",
+                    //         textAlign: TextAlign.center,
+                    //         style: TextStyle(
+                    //           color: colorScheme.onSurface.withOpacity(0.7),
+                    //         ),
+                    //       ),
+                    //     ),
+                    //   ),
                     if (productImage != null)
                       ClipRRect(
                         borderRadius: BorderRadius.circular(12),
@@ -299,42 +514,22 @@ class _AddProductPageState extends State<AddProductPage> {
                                 fit: BoxFit.contain,
                               ),
                       )
+                    else if (existingImageUrl.isNotEmpty)
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          existingImageUrl,
+                          height: 160,
+                          width: double.infinity,
+                          fit: BoxFit.contain,
+                        ),
+                      )
                     else
-                      // Container(
-                      //   height: 140,
-                      //   width: double.infinity,
-                      //   decoration: BoxDecoration(
-                      //     color: Colors.grey.shade100,
-                      //     borderRadius: BorderRadius.circular(12),
-                      //   ),
-                      //   child: Center(
-                      //     child: Text(
-                      //       isEdit
-                      //           ? "No new image selected (old image will remain)"
-                      //           : "No image selected",
-                      //       textAlign: TextAlign.center,
-                      //     ),
-                      //   ),
-                      // ),
                       Container(
                         height: 140,
                         width: double.infinity,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? colorScheme.surfaceContainerHighest
-                              : Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
                         child: Center(
-                          child: Text(
-                            isEdit
-                                ? "No new image selected (old image will remain)"
-                                : "No image selected",
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: colorScheme.onSurface.withOpacity(0.7),
-                            ),
-                          ),
+                          child: Text("No image selected"),
                         ),
                       ),
                     const SizedBox(height: 12),
@@ -351,6 +546,84 @@ class _AddProductPageState extends State<AddProductPage> {
                   ],
                 ),
               ),
+
+              const SizedBox(height: 12),
+
+              Align(
+                alignment: Alignment.centerRight,
+                child: ElevatedButton.icon(
+                  onPressed: _openAddLinkModal,
+                  icon: const Icon(Icons.add_link),
+                  label: const Text("Add Links"),
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              if (productLinks.isNotEmpty)
+                // Column(
+                //   children: productLinks.map((link) {
+                //     return Card(
+                //       margin: const EdgeInsets.only(bottom: 8),
+                //       child: ListTile(
+                //         title: Text(link["title"] ?? ""),
+                //         subtitle: Text(link["links"] ?? ""),
+                //         leading: const Icon(Icons.link),
+                //       ),
+                //     );
+                //   }).toList(),
+                // ),
+
+                Column(
+                  children: productLinks.asMap().entries.map((entry) {
+                    int index = entry.key;
+                    Map<String, String> link = entry.value;
+
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      child: ListTile(
+                        leading: const Icon(Icons.link),
+                        title: Text(link["title"] ?? ""),
+                        subtitle: Text(link["links"] ?? ""),
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (value) {
+                            if (value == "edit") {
+                              _openEditLinkModal(index);
+                            } else if (value == "delete") {
+                              setState(() {
+                                productLinks.removeAt(index);
+                              });
+                            }
+                          },
+                          itemBuilder: (context) => const [
+                            PopupMenuItem(
+                              value: "edit",
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit, size: 18),
+                                  SizedBox(width: 8),
+                                  Text("Edit"),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem(
+                              value: "delete",
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete,
+                                      size: 18, color: Colors.red),
+                                  SizedBox(width: 8),
+                                  Text("Delete",
+                                      style: TextStyle(color: Colors.red)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
 
               const SizedBox(height: 18),
 
