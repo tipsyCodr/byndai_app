@@ -503,12 +503,23 @@ class ConnectionSuggestState extends State<ConnectionSuggest> {
 
     return GestureDetector(
       onTap: () {
+        // Navigator.push(
+        //   context,
+        //   MaterialPageRoute(
+        //     builder: (context) => ProfilePage(
+        //       userId: user["id"],
+        //       viewerUserId: widget.viewerUserId,
+        //     ),
+        //   ),
+        // );
+
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => ProfilePage(
               userId: user["id"],
               viewerUserId: widget.viewerUserId,
+              fromSuggestion: true, // 👈 ADD THIS
             ),
           ),
         );
