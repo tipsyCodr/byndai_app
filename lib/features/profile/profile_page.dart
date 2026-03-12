@@ -437,6 +437,48 @@ class _ProfilePageState extends State<ProfilePage> {
     return text[0].toUpperCase() + text.substring(1);
   }
 
+  int? _parseConnectionStatus(Map<String, dynamic>? connection) {
+    if (connection == null) return null;
+    return int.tryParse(connection['status']?.toString() ?? '');
+  }
+
+  bool _isPendingConnectionStatus(int? status) {
+    return status == 0 || status == 1;
+  }
+
+  bool _isIncomingPendingRequest(Map<String, dynamic>? connection) {
+    final viewerId = widget.viewerUserId;
+    if (viewerId == null) return false;
+
+    final status = _parseConnectionStatus(connection);
+    final receiverId =
+        int.tryParse(connection?['receiver_id']?.toString() ?? '');
+
+    return _isPendingConnectionStatus(status) && receiverId == viewerId;
+  }
+
+  bool _isOutgoingPendingRequest(Map<String, dynamic>? connection) {
+    final viewerId = widget.viewerUserId;
+    if (viewerId == null) return false;
+
+    final status = _parseConnectionStatus(connection);
+    final senderId = int.tryParse(connection?['sender_id']?.toString() ?? '');
+
+    return _isPendingConnectionStatus(status) && senderId == viewerId;
+  }
+
+  String _getConnectionActionLabel(Map<String, dynamic>? connection) {
+    if (widget.fromConnectionTab == 'pending' ||
+        _isIncomingPendingRequest(connection)) {
+      return 'Accept';
+    }
+    if (widget.fromConnectionTab == 'sent' ||
+        _isOutgoingPendingRequest(connection)) {
+      return 'Remove';
+    }
+    return 'Connect';
+  }
+
   String _getFullName() {
     final apiMasterUser = _userDetails?['master_user'];
     final fname = apiMasterUser?['fname']?.toString() ?? '';
@@ -1147,9 +1189,8 @@ class _ProfilePageState extends State<ProfilePage> {
         widget.viewerUserId != widget.userId;
 
     final connectionData = _userDetails?['connection'];
-    final int? connectionStatus = connectionData != null
-        ? int.tryParse(connectionData['status'].toString())
-        : null;
+    final int? connectionStatus =
+        _parseConnectionStatus(connectionData as Map<String, dynamic>?);
 
     final bool isAlreadyConnected =
         widget.isConnected || connectionStatus == 2;
@@ -1424,17 +1465,14 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                             child: ElevatedButton(
                               onPressed: () async {
-                                final connection = _userDetails?['connection'];
-                                final int? status = connection != null ? int.tryParse(connection['status'].toString()) : null;
-                                final String? receiverId = connection?['receiver_id']?.toString();
-                                final String? senderId = connection?['sender_id']?.toString();
-                                final String viewerIdStr = widget.viewerUserId.toString();
+                                final connection =
+                                    _userDetails?['connection'] as Map<String, dynamic>?;
 
                                 if (widget.fromConnectionTab == 'pending' ||
-                                    (status == 0 && receiverId == viewerIdStr)) {
+                                    _isIncomingPendingRequest(connection)) {
                                   _acceptPendingRequest();
                                 } else if (widget.fromConnectionTab == 'sent' ||
-                                    (status == 0 && senderId == viewerIdStr)) {
+                                    _isOutgoingPendingRequest(connection)) {
                                   _removeSentRequest();
                                 } else {
                                   if (widget.userId == null) return;
@@ -1461,26 +1499,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                   borderRadius: BorderRadius.circular(14),
                                 ),
                               ),
-                                child: Text(
-                                  (() {
-                                    final connection = _userDetails?['connection'];
-                                    final int? status = connection != null ? int.tryParse(connection['status'].toString()) : null;
-                                    final String? receiverId = connection?['receiver_id']?.toString();
-                                    final String? senderId = connection?['sender_id']?.toString();
-                                    final String viewerIdStr = widget.viewerUserId.toString();
-
-                                    if (widget.fromConnectionTab == 'pending' ||
-                                        (status == 0 && receiverId == viewerIdStr)) {
-                                      return 'Accept';
-                                    } else if (widget.fromConnectionTab == 'sent' ||
-                                        (status == 0 && senderId == viewerIdStr)) {
-                                      return 'Remove';
-                                    } else {
-                                      return 'Connect';
-                                    }
-                                  })(),
-                                  style: const TextStyle(fontSize: 12),
+                              child: Text(
+                                _getConnectionActionLabel(
+                                  _userDetails?['connection']
+                                      as Map<String, dynamic>?,
                                 ),
+                                style: const TextStyle(fontSize: 12),
+                              ),
                             ),
                           ),
                         ],

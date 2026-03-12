@@ -347,8 +347,6 @@
 //   }
 // }
 
-
-
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -363,7 +361,8 @@ class ConnectionSuggest extends StatefulWidget {
   const ConnectionSuggest({super.key, required this.viewerUserId});
 
   @override
-  State<ConnectionSuggest> createState() => ConnectionSuggestState(); // public state class
+  State<ConnectionSuggest> createState() =>
+      ConnectionSuggestState(); // public state class
 }
 
 class ConnectionSuggestState extends State<ConnectionSuggest> {
