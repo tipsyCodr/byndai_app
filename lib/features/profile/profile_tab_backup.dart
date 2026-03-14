@@ -1,1520 +1,80 @@
-// import 'dart:convert';
-// import 'dart:io';
-// import 'package:flutter/material.dart';
-// import 'dart:typed_data';
-// import 'package:gridcard/config/app_config.dart';
-// import 'package:gridcard/core/services/user_storage_service.dart';
-// import 'package:http/http.dart' as http;
-// import 'package:image_picker/image_picker.dart';
-// import 'package:http_parser/http_parser.dart';
-// import 'package:gridcard/widgets/top_alert.dart';
-// import './crop_screen.dart';
-
-// class ProfileTab extends StatefulWidget {
-//   final Map<String, dynamic>? userDetails;
-
-//   const ProfileTab({super.key, this.userDetails});
-
-//   @override
-//   State<ProfileTab> createState() => _ProfileTabState();
-// }
-
-// class _ProfileTabState extends State<ProfileTab> {
-//   // Controllers for text fields
-//   final TextEditingController _nameController = TextEditingController();
-//   final TextEditingController _emailController = TextEditingController();
-//   final TextEditingController _mobileController = TextEditingController();
-//   final TextEditingController _addressController = TextEditingController();
-//   final TextEditingController _dobController = TextEditingController();
-
-//   // Additional email and mobile controllers - only one each allowed
-//   TextEditingController? _additionalEmailController;
-//   TextEditingController? _additionalMobileController;
-
-//   // Selected values
-//   Uint8List? _croppedImageBytes;
-//   String? _selectedGender;
-//   String? _selectedCountry = 'India'; // Default to India
-//   int? _selectedStateId;
-//   int? _selectedDistrictId;
-
-//   // Selected names for display
-//   String? _selectedStateName;
-//   String? _selectedDistrictName;
-
-//   // API Lists
-//   List<Map<String, dynamic>> _states = [];
-//   List<Map<String, dynamic>> _districts = [];
-//   List<Map<String, dynamic>> _filteredDistricts = [];
-
-//   // Loading states
-//   bool _isLoadingStates = false;
-//   bool _isLoadingDistricts = false;
-//   bool _isSaving = false;
-
-//   // Media files
-//   XFile? _profileImage;
-//   XFile? _logoImage;
-//   XFile? _profileVideo;
-//   XFile? _bannerImage;
-
-//   final ImagePicker _picker = ImagePicker();
-
-//   // ✅ GENDER: Removed "Other", only Male & Female
-//   final List<String> _genders = ['Male', 'Female'];
-
-//   final List<String> _countries = ['India']; // Only India
-
-//   static const String _baseUrl = AppConfig.apiBaseUrl;
-//   static const String _imgBaseUrl = AppConfig.apiProfileImg;
-
-//   // ================= HEADERS =================
-//   Future<Map<String, String>> _getHeaders() async {
-//     final token = await UserStorageService().getToken();
-//     return {
-//       'Content-Type': 'application/json',
-//       'Accept': 'application/json',
-//       if (token != null) 'Authorization': 'Bearer $token',
-//     };
-//   }
-
-//   Future<Map<String, String>> _getHeadersMultipart() async {
-//     final token = await UserStorageService().getToken();
-//     return {
-//       'Accept': 'application/json',
-//       if (token != null) 'Authorization': 'Bearer $token',
-//     };
-//   }
-
-//   // ================= FETCH STATES =================
-//   Future<void> _fetchStates() async {
-//     try {
-//       setState(() => _isLoadingStates = true);
-
-//       final uri = Uri.parse("$_baseUrl/states");
-
-//       final response = await http.get(
-//         uri,
-//         headers: await _getHeaders(),
-//       );
-
-//       debugPrint("========== PROFILE STATES API ==========");
-//       debugPrint("URL: $uri");
-//       debugPrint("STATUS: ${response.statusCode}");
-
-//       if (response.statusCode == 200) {
-//         final jsonData = jsonDecode(response.body);
-
-//         if (jsonData["status"] == true) {
-//           final List list = jsonData["data"];
-
-//           setState(() {
-//             _states = list.map((e) {
-//               return {
-//                 "id": e["id"],
-//                 "state_name": e["state_name"],
-//                 "c_id": e["c_id"],
-//               };
-//             }).toList();
-//           });
-
-//           debugPrint("TOTAL STATES: ${_states.length}");
-//         }
-//       }
-//     } catch (e) {
-//       debugPrint("States fetch error: $e");
-//     } finally {
-//       setState(() => _isLoadingStates = false);
-//     }
-//   }
-
-//   // ================= FETCH DISTRICTS =================
-//   Future<void> _fetchDistricts() async {
-//     try {
-//       setState(() => _isLoadingDistricts = true);
-
-//       final uri = Uri.parse("$_baseUrl/districts");
-
-//       final response = await http.get(
-//         uri,
-//         headers: await _getHeaders(),
-//       );
-
-//       debugPrint("========== PROFILE DISTRICTS API ==========");
-//       debugPrint("URL: $uri");
-//       debugPrint("STATUS: ${response.statusCode}");
-
-//       if (response.statusCode == 200) {
-//         final jsonData = jsonDecode(response.body);
-
-//         if (jsonData["status"] == true) {
-//           final List list = jsonData["data"];
-
-//           setState(() {
-//             _districts = list.map((e) {
-//               return {
-//                 "id": e["id"],
-//                 "district_name": e["district_name"],
-//                 "s_id": e["s_id"],
-//               };
-//             }).toList();
-//           });
-
-//           debugPrint("TOTAL DISTRICTS: ${_districts.length}");
-//         }
-//       }
-//     } catch (e) {
-//       debugPrint("Districts fetch error: $e");
-//     } finally {
-//       setState(() => _isLoadingDistricts = false);
-//     }
-//   }
-
-//   // ================= MEDIA PICKERS =================
-//   // Future<void> _pickProfileImage() async {
-//   //   try {
-//   //     final XFile? image = await _picker.pickImage(
-//   //       source: ImageSource.gallery,
-//   //       maxWidth: 500,
-//   //       maxHeight: 500,
-//   //       imageQuality: 85,
-//   //     );
-//   //     if (image != null) {
-//   //       setState(() {
-//   //         _profileImage = image;
-//   //       });
-//   //     }
-//   //   } catch (e) {
-//   //     debugPrint("Error picking profile image: $e");
-//   //     _showErrorSnackBar('Error picking image: ${e.toString()}');
-//   //   }
-//   // }
-
-//   Future<void> _pickProfileImage() async {
-//     final XFile? pickedFile =
-//         await _picker.pickImage(source: ImageSource.gallery);
-
-//     if (pickedFile == null) return;
-
-//     Navigator.push(
-//       context,
-//       MaterialPageRoute(
-//         builder: (context) => CropScreen(
-//           imageFile: pickedFile,
-//           onCropped: (Uint8List croppedBytes) {
-//             setState(() {
-//               _croppedImageBytes = croppedBytes;
-//             });
-//           },
-//         ),
-//       ),
-//     );
-//   }
-
-//   Future<void> _pickLogoImage() async {
-//     try {
-//       final XFile? image = await _picker.pickImage(
-//         source: ImageSource.gallery,
-//         maxWidth: 500,
-//         maxHeight: 500,
-//         imageQuality: 85,
-//       );
-//       if (image != null) {
-//         setState(() {
-//           _logoImage = image;
-//         });
-//       }
-//     } catch (e) {
-//       debugPrint("Error picking logo image: $e");
-//       _showErrorSnackBar('Error picking logo: ${e.toString()}');
-//     }
-//   }
-
-//   Future<void> _pickProfileVideo() async {
-//     try {
-//       final XFile? video = await _picker.pickVideo(
-//         source: ImageSource.gallery,
-//         maxDuration: const Duration(seconds: 30),
-//       );
-//       if (video != null) {
-//         setState(() {
-//           _profileVideo = video;
-//         });
-//       }
-//     } catch (e) {
-//       debugPrint("Error picking profile video: $e");
-//       _showErrorSnackBar('Error picking video: ${e.toString()}');
-//     }
-//   }
-
-//   Future<void> _pickBannerImage() async {
-//     try {
-//       final XFile? image = await _picker.pickImage(
-//         source: ImageSource.gallery,
-//         maxWidth: 500,
-//         maxHeight: 500,
-//         imageQuality: 85,
-//       );
-//       if (image != null) {
-//         setState(() {
-//           _bannerImage = image;
-//         });
-//       }
-//     } catch (e) {
-//       debugPrint("Error picking banner image: $e");
-//       _showErrorSnackBar('Error picking banner: ${e.toString()}');
-//     }
-//   }
-
-//   // ================= UPDATE PROFILE API =================
-//   Future<void> _updateProfile() async {
-//     if (_nameController.text.isEmpty) {
-//       _showErrorSnackBar('Please enter your name');
-//       return;
-//     }
-
-//     setState(() => _isSaving = true);
-
-//     try {
-//       final uri = Uri.parse("$_baseUrl/update_profile");
-//       final request = http.MultipartRequest("POST", uri);
-
-//       // Add headers
-//       request.headers.addAll(await _getHeadersMultipart());
-
-//       // Add text fields
-//       request.fields['user_name'] = _nameController.text.trim();
-
-//       if (_emailController.text.trim().isNotEmpty) {
-//         request.fields['email'] = _emailController.text.trim();
-//       }
-
-//       if (_dobController.text.trim().isNotEmpty) {
-//         request.fields['dob'] = _dobController.text.trim();
-//       }
-
-//       // ✅ GENDER: Convert display value to DB code
-//       if (_selectedGender != null) {
-//         final String genderCode = _selectedGender == 'Male' ? 'M' : 'F';
-//         request.fields['gender'] = genderCode;
-//       }
-
-//       // Primary mobile
-//       if (_mobileController.text.trim().isNotEmpty) {
-//         request.fields['mobile_one'] = _mobileController.text.trim();
-//       }
-
-//       // Secondary mobile
-//       if (_additionalMobileController != null &&
-//           _additionalMobileController!.text.trim().isNotEmpty) {
-//         request.fields['mobile_two'] = _additionalMobileController!.text.trim();
-//       }
-
-//       // Secondary email
-//       if (_additionalEmailController != null &&
-//           _additionalEmailController!.text.trim().isNotEmpty) {
-//         request.fields['email_one'] = _additionalEmailController!.text.trim();
-//       }
-
-//       // Address
-//       if (_addressController.text.trim().isNotEmpty) {
-//         request.fields['address'] = _addressController.text.trim();
-//       }
-
-//       // Country ID (India = 1)
-//       request.fields['country_id'] = '1';
-
-//       // State ID
-//       if (_selectedStateId != null) {
-//         request.fields['state_id'] = _selectedStateId.toString();
-//       }
-
-//       // District ID
-//       if (_selectedDistrictId != null) {
-//         request.fields['district_id'] = _selectedDistrictId.toString();
-//       }
-
-//       // ========== MEDIA FILES ==========
-//       // Profile Image
-//       // if (_profileImage != null) {
-//       //   final bytes = await _profileImage!.readAsBytes();
-//       //   request.files.add(
-//       //     http.MultipartFile.fromBytes(
-//       //       'profile_pic',
-//       //       bytes,
-//       //       filename: _profileImage!.name,
-//       //       contentType:
-//       //           MediaType('image', _getFileExtension(_profileImage!.path)),
-//       //     ),
-//       //   );
-//       // }
-//       // Profile Image
-//       if (_croppedImageBytes != null) {
-//         request.files.add(
-//           http.MultipartFile.fromBytes(
-//             'profile_pic',
-//             _croppedImageBytes!,
-//             filename: 'profile.jpg',
-//             contentType: MediaType('image', 'jpeg'),
-//           ),
-//         );
-//       }
-
-//       // Logo
-//       if (_logoImage != null) {
-//         final bytes = await _logoImage!.readAsBytes();
-//         request.files.add(
-//           http.MultipartFile.fromBytes(
-//             'profile_logo',
-//             bytes,
-//             filename: _logoImage!.name,
-//             contentType:
-//                 MediaType('image', _getFileExtension(_logoImage!.path)),
-//           ),
-//         );
-//       }
-
-//       // Banner Image
-//       if (_bannerImage != null) {
-//         final bytes = await _bannerImage!.readAsBytes();
-//         request.files.add(
-//           http.MultipartFile.fromBytes(
-//             'profile_banner',
-//             bytes,
-//             filename: _bannerImage!.name,
-//             contentType:
-//                 MediaType('image', _getFileExtension(_bannerImage!.path)),
-//           ),
-//         );
-//       }
-
-//       // Profile Video
-//       if (_profileVideo != null) {
-//         final bytes = await _profileVideo!.readAsBytes();
-//         final ext = _getFileExtension(_profileVideo!.path);
-//         request.files.add(
-//           http.MultipartFile.fromBytes(
-//             'profile_video',
-//             bytes,
-//             filename: _profileVideo!.name,
-//             contentType: MediaType('video', ext),
-//           ),
-//         );
-//       }
-
-//       debugPrint("========== PROFILE UPDATE API ==========");
-//       debugPrint("URL: $uri");
-//       debugPrint("FIELDS: ${request.fields}");
-
-//       final response = await request.send();
-//       final responseBody = await response.stream.bytesToString();
-//       final jsonResponse = json.decode(responseBody);
-
-//       debugPrint("STATUS CODE: ${response.statusCode}");
-//       debugPrint("RESPONSE: $jsonResponse");
-
-//       if (response.statusCode == 200 && jsonResponse['status'] == true) {
-//         _showSuccessSnackBar(
-//             jsonResponse['message'] ?? 'Profile updated successfully!');
-
-//         // Refresh user details
-//         await _fetchUserDetails();
-
-//         if (mounted) {
-//           Navigator.pop(context, true); // Return with success
-//         }
-//       } else {
-//         _showErrorSnackBar(
-//             jsonResponse['message'] ?? 'Failed to update profile');
-//       }
-//     } catch (e) {
-//       debugPrint("EXCEPTION in _updateProfile: $e");
-//       _showErrorSnackBar("Error updating profile: ${e.toString()}");
-//     } finally {
-//       if (mounted) {
-//         setState(() => _isSaving = false);
-//       }
-//     }
-//   }
-
-//   // ================= FETCH USER DETAILS (refresh) =================
-//   Future<void> _fetchUserDetails() async {
-//     try {
-//       final userId = await UserStorageService().getUserId();
-//       if (userId == null) return;
-
-//       final headers = await _getHeaders();
-//       final url = Uri.parse("$_baseUrl/user-details/$userId");
-//       final response = await http.get(url, headers: headers);
-
-//       if (response.statusCode == 200) {
-//         final decoded = jsonDecode(response.body);
-//         if (decoded["status"] == true) {
-//           // Update the widget.userDetails if needed
-//           debugPrint("User details refreshed successfully");
-//         }
-//       }
-//     } catch (e) {
-//       debugPrint("Error refreshing user details: $e");
-//     }
-//   }
-
-//   // ================= HELPER METHODS =================
-//   String _getFileExtension(String path) {
-//     return path.split('.').last.toLowerCase();
-//   }
-
-//   void _showErrorSnackBar(String message) {
-//     if (!mounted) return;
-//     TopAlert.show(context, message, isError: true);
-//   }
-
-//   void _showSuccessSnackBar(String message) {
-//     if (!mounted) return;
-//     TopAlert.show(context, message, isSuccess: true);
-//   }
-
-//   // ================= INIT =================
-//   // @override
-//   // void initState() {
-//   //   super.initState();
-//   //   _fetchStates();
-//   //   _fetchDistricts();
-
-//   //   // Prefill from API data
-//   //   WidgetsBinding.instance.addPostFrameCallback((_) {
-//   //     _loadUserData();
-//   //   });
-//   // }
-
-//   @override
-//   void initState() {
-//     super.initState();
-//     _init();
-//   }
-
-//   Future<void> _init() async {
-//     await _fetchStates();
-//     await _fetchDistricts();
-//     _loadUserData();
-//   }
-
-//   // ✅ GENDER: Convert DB code (M/F) to display text (Male/Female)
-//   void _loadUserData() {
-//     if (widget.userDetails != null) {
-//       final apiMasterUser = widget.userDetails?['master_user'];
-//       final user = widget.userDetails;
-
-//       setState(() {
-//         // Name
-//         _nameController.text =
-//             apiMasterUser?['fname'] ?? user?['user_name'] ?? "";
-
-//         // Email
-//         _emailController.text =
-//             user?['email'] ?? apiMasterUser?['email_one'] ?? "";
-
-//         // Mobile
-//         _mobileController.text = apiMasterUser?['mobile_one'] ?? "";
-
-//         // Secondary Mobile
-//         if (apiMasterUser?['mobile_two'] != null &&
-//             apiMasterUser!['mobile_two'].toString().isNotEmpty) {
-//           _additionalMobileController = TextEditingController(
-//             text: apiMasterUser['mobile_two'],
-//           );
-//         }
-
-//         // Secondary Email
-//         if (apiMasterUser?['email_one'] != null &&
-//             apiMasterUser!['email_one'].toString().isNotEmpty &&
-//             _emailController.text != apiMasterUser['email_one']) {
-//           _additionalEmailController = TextEditingController(
-//             text: apiMasterUser['email_one'],
-//           );
-//         }
-
-//         // DOB
-//         _dobController.text = apiMasterUser?['dob'] ?? "";
-
-//         // ✅ GENDER: Convert DB code (M/F) to display text
-//         // final apiGender = apiMasterUser?['gender'];
-//         // if (apiGender == 'M') {
-//         //   _selectedGender = 'Male';
-//         // } else if (apiGender == 'F') {
-//         //   _selectedGender = 'Female';
-//         // } else {
-//         //   _selectedGender = null;
-//         // }
-
-//         final apiGender =
-//             (apiMasterUser?['gender'] ?? '').toString().toUpperCase();
-
-//         if (apiGender == 'M') {
-//           _selectedGender = 'Male';
-//         } else if (apiGender == 'F') {
-//           _selectedGender = 'Female';
-//         } else {
-//           _selectedGender = null;
-//         }
-
-//         // Address
-//         _addressController.text = apiMasterUser?['address'] ?? "";
-
-//         // State
-//         _selectedStateId = apiMasterUser?['state_id'];
-//         _selectedStateName = apiMasterUser?['state_name'];
-
-//         // District
-//         _selectedDistrictId = apiMasterUser?['district_id'];
-//         _selectedDistrictName = apiMasterUser?['district_name'];
-
-//         // Filter districts if state is selected
-//         if (_selectedStateId != null) {
-//           _filteredDistricts =
-//               _districts.where((d) => d["s_id"] == _selectedStateId).toList();
-//         }
-//       });
-//     }
-//   }
-
-//   @override
-//   void dispose() {
-//     _nameController.dispose();
-//     _emailController.dispose();
-//     _mobileController.dispose();
-//     _addressController.dispose();
-//     _dobController.dispose();
-//     _additionalEmailController?.dispose();
-//     _additionalMobileController?.dispose();
-//     super.dispose();
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final colorScheme = Theme.of(context).colorScheme;
-//     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-//     return SingleChildScrollView(
-//       padding: const EdgeInsets.all(16.0),
-//       child: Column(
-//         crossAxisAlignment: CrossAxisAlignment.start,
-//         children: [
-//           // Media Upload Section
-//           Text(
-//             'Media',
-//             style: TextStyle(
-//                 fontSize: 18,
-//                 fontWeight: FontWeight.bold,
-//                 color: colorScheme.onSurface),
-//           ),
-//           const SizedBox(height: 16),
-
-//           // Profile Image, Logo, Video, Banner Grid
-//           GridView.builder(
-//             shrinkWrap: true,
-//             physics: const NeverScrollableScrollPhysics(),
-//             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-//               crossAxisCount: 2,
-//               crossAxisSpacing: 16,
-//               mainAxisSpacing: 16,
-//               childAspectRatio: 0.9,
-//             ),
-//             itemCount: 4,
-//             itemBuilder: (context, index) {
-//               switch (index) {
-//                 case 0:
-//                   return MediaUploadCard(
-//                     title: 'Profile Image',
-//                     size: '500px x 500px',
-//                     mediaFile: _profileImage,
-//                     existingFile: widget.userDetails?['master_user']
-//                         ?['profile_pic'],
-//                     baseUrl: _imgBaseUrl,
-//                     onTap: _pickProfileImage,
-//                   );
-//                 case 1:
-//                   return MediaUploadCard(
-//                     title: 'Logo',
-//                     size: '500px x 500px',
-//                     mediaFile: _logoImage,
-//                     existingFile: widget.userDetails?['master_user']
-//                         ?['profile_logo'],
-//                     baseUrl: _imgBaseUrl,
-//                     onTap: _pickLogoImage,
-//                   );
-//                 case 2:
-//                   return MediaUploadCard(
-//                     title: 'Profile Video',
-//                     size: '500px x 500px (25 MB)',
-//                     mediaFile: _profileVideo,
-//                     existingFile: widget.userDetails?['master_user']
-//                         ?['profile_video'],
-//                     baseUrl: _imgBaseUrl,
-//                     onTap: _pickProfileVideo,
-//                     isVideo: true,
-//                   );
-//                 case 3:
-//                   return MediaUploadCard(
-//                     title: 'Banner Image',
-//                     size: '500px x 500px',
-//                     mediaFile: _bannerImage,
-//                     existingFile: widget.userDetails?['master_user']
-//                         ?['profile_banner'],
-//                     baseUrl: _imgBaseUrl,
-//                     onTap: _pickBannerImage,
-//                   );
-//                 default:
-//                   return const SizedBox();
-//               }
-//             },
-//           ),
-
-//           const SizedBox(height: 32),
-//           Divider(color: colorScheme.outlineVariant),
-//           const SizedBox(height: 16),
-
-//           // Personal Information Section
-//           Text(
-//             'Personal Information',
-//             style: TextStyle(
-//                 fontSize: 18,
-//                 fontWeight: FontWeight.bold,
-//                 color: colorScheme.onSurface),
-//           ),
-//           const SizedBox(height: 16),
-
-//           // Name Field
-//           TextField(
-//             controller: _nameController,
-//             style: TextStyle(color: colorScheme.onSurface),
-//             decoration: InputDecoration(
-//               labelText: 'Full Name *',
-//               labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-//               filled: true,
-//               fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark ? BorderSide.none : const BorderSide(),
-//               ),
-//               enabledBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark
-//                     ? BorderSide.none
-//                     : BorderSide(color: colorScheme.outline),
-//               ),
-//               prefixIcon: Icon(Icons.person, color: colorScheme.primary),
-//             ),
-//           ),
-//           const SizedBox(height: 16),
-
-//           // DOB Field
-//           TextField(
-//             controller: _dobController,
-//             style: TextStyle(color: colorScheme.onSurface),
-//             decoration: InputDecoration(
-//               labelText: 'Date of Birth',
-//               labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-//               filled: true,
-//               fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark ? BorderSide.none : const BorderSide(),
-//               ),
-//               enabledBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark
-//                     ? BorderSide.none
-//                     : BorderSide(color: colorScheme.outline),
-//               ),
-//               prefixIcon:
-//                   Icon(Icons.calendar_today, color: colorScheme.primary),
-//               suffixIcon: Icon(Icons.arrow_drop_down,
-//                   color: colorScheme.onSurfaceVariant),
-//             ),
-//             readOnly: true,
-//             onTap: () async {
-//               DateTime? pickedDate = await showDatePicker(
-//                 context: context,
-//                 initialDate: DateTime.now(),
-//                 firstDate: DateTime(1900),
-//                 lastDate: DateTime.now(),
-//               );
-//               if (pickedDate != null) {
-//                 _dobController.text =
-//                     '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
-//               }
-//             },
-//           ),
-//           const SizedBox(height: 16),
-
-//           // ✅ GENDER DROPDOWN – Only Male & Female
-//           DropdownButtonFormField<String>(
-//             initialValue: _selectedGender,
-//             decoration: InputDecoration(
-//               labelText: 'Gender',
-//               labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-//               filled: true,
-//               fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark ? BorderSide.none : const BorderSide(),
-//               ),
-//               enabledBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark
-//                     ? BorderSide.none
-//                     : BorderSide(color: colorScheme.outline),
-//               ),
-//               prefixIcon: Icon(Icons.people, color: colorScheme.primary),
-//             ),
-//             dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//             style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
-//             items: _genders.map((gender) {
-//               return DropdownMenuItem(
-//                 value: gender,
-//                 child: Text(gender),
-//               );
-//             }).toList(),
-//             onChanged: (value) {
-//               setState(() {
-//                 _selectedGender = value;
-//               });
-//             },
-//           ),
-//           const SizedBox(height: 16),
-
-//           // Email Section
-//           Text(
-//             'Email',
-//             style: TextStyle(
-//                 fontSize: 16,
-//                 fontWeight: FontWeight.w500,
-//                 color: colorScheme.onSurface),
-//           ),
-//           const SizedBox(height: 8),
-
-//           // Primary Email
-//           TextField(
-//             controller: _emailController,
-//             style: TextStyle(color: colorScheme.onSurface),
-//             decoration: InputDecoration(
-//               labelText: 'Primary Email',
-//               labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-//               filled: true,
-//               fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark ? BorderSide.none : const BorderSide(),
-//               ),
-//               enabledBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark
-//                     ? BorderSide.none
-//                     : BorderSide(color: colorScheme.outline),
-//               ),
-//               prefixIcon: Icon(Icons.email, color: colorScheme.primary),
-//               suffixIcon: IconButton(
-//                 icon: const Icon(Icons.add),
-//                 onPressed:
-//                     _additionalEmailController == null ? _addEmailField : null,
-//                 color: _additionalEmailController == null
-//                     ? colorScheme.primary
-//                     : colorScheme.onSurfaceVariant,
-//               ),
-//             ),
-//           ),
-//           const SizedBox(height: 8),
-
-//           // Additional Email - Only ONE
-//           if (_additionalEmailController != null)
-//             Padding(
-//               padding: const EdgeInsets.only(bottom: 8),
-//               child: TextField(
-//                 controller: _additionalEmailController,
-//                 style: TextStyle(color: colorScheme.onSurface),
-//                 decoration: InputDecoration(
-//                   labelText: 'Secondary Email',
-//                   labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-//                   filled: true,
-//                   fillColor:
-//                       isDark ? colorScheme.surfaceContainerHighest : null,
-//                   border: OutlineInputBorder(
-//                     borderRadius: BorderRadius.circular(8),
-//                     borderSide: isDark ? BorderSide.none : const BorderSide(),
-//                   ),
-//                   enabledBorder: OutlineInputBorder(
-//                     borderRadius: BorderRadius.circular(8),
-//                     borderSide: isDark
-//                         ? BorderSide.none
-//                         : BorderSide(color: colorScheme.outline),
-//                   ),
-//                   prefixIcon: Icon(Icons.email, color: colorScheme.primary),
-//                   suffixIcon: IconButton(
-//                     icon: const Icon(Icons.delete, color: Colors.red),
-//                     onPressed: _removeEmailField,
-//                   ),
-//                 ),
-//               ),
-//             ),
-
-//           const SizedBox(height: 16),
-
-//           // Mobile Section
-//           Text(
-//             'Mobile',
-//             style: TextStyle(
-//                 fontSize: 16,
-//                 fontWeight: FontWeight.w500,
-//                 color: colorScheme.onSurface),
-//           ),
-//           const SizedBox(height: 8),
-
-//           // Primary Mobile
-//           TextField(
-//             controller: _mobileController,
-//             keyboardType: TextInputType.phone,
-//             style: TextStyle(color: colorScheme.onSurface),
-//             decoration: InputDecoration(
-//               labelText: 'Primary Mobile',
-//               labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-//               filled: true,
-//               fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark ? BorderSide.none : const BorderSide(),
-//               ),
-//               enabledBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark
-//                     ? BorderSide.none
-//                     : BorderSide(color: colorScheme.outline),
-//               ),
-//               prefixIcon: Icon(Icons.phone, color: colorScheme.primary),
-//               suffixIcon: IconButton(
-//                 icon: const Icon(Icons.add),
-//                 onPressed: _additionalMobileController == null
-//                     ? _addMobileField
-//                     : null,
-//                 color: _additionalMobileController == null
-//                     ? colorScheme.primary
-//                     : colorScheme.onSurfaceVariant,
-//               ),
-//             ),
-//           ),
-//           const SizedBox(height: 8),
-
-//           // Additional Mobile - Only ONE
-//           if (_additionalMobileController != null)
-//             Padding(
-//               padding: const EdgeInsets.only(bottom: 8),
-//               child: TextField(
-//                 controller: _additionalMobileController,
-//                 keyboardType: TextInputType.phone,
-//                 style: TextStyle(color: colorScheme.onSurface),
-//                 decoration: InputDecoration(
-//                   labelText: 'Secondary Mobile',
-//                   labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-//                   filled: true,
-//                   fillColor:
-//                       isDark ? colorScheme.surfaceContainerHighest : null,
-//                   border: OutlineInputBorder(
-//                     borderRadius: BorderRadius.circular(8),
-//                     borderSide: isDark ? BorderSide.none : const BorderSide(),
-//                   ),
-//                   enabledBorder: OutlineInputBorder(
-//                     borderRadius: BorderRadius.circular(8),
-//                     borderSide: isDark
-//                         ? BorderSide.none
-//                         : BorderSide(color: colorScheme.outline),
-//                   ),
-//                   prefixIcon: Icon(Icons.phone, color: colorScheme.primary),
-//                   suffixIcon: IconButton(
-//                     icon: const Icon(Icons.delete, color: Colors.red),
-//                     onPressed: _removeMobileField,
-//                   ),
-//                 ),
-//               ),
-//             ),
-
-//           const SizedBox(height: 16),
-
-//           // Country Dropdown - India only with value 1
-//           DropdownButtonFormField<String>(
-//             initialValue: _selectedCountry,
-//             decoration: InputDecoration(
-//               labelText: 'Country',
-//               labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-//               filled: true,
-//               fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark ? BorderSide.none : const BorderSide(),
-//               ),
-//               enabledBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark
-//                     ? BorderSide.none
-//                     : BorderSide(color: colorScheme.outline),
-//               ),
-//               prefixIcon: Icon(Icons.public, color: colorScheme.primary),
-//             ),
-//             dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//             style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
-//             items: const [
-//               DropdownMenuItem(
-//                 value: 'India',
-//                 child: Text('India'),
-//               ),
-//             ],
-//             onChanged: (value) {
-//               setState(() {
-//                 _selectedCountry = value;
-//               });
-//             },
-//           ),
-//           const SizedBox(height: 16),
-
-//           // State Dropdown
-//           DropdownButtonFormField<int>(
-//             initialValue: _selectedStateId,
-//             isExpanded: true,
-//             dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//             style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
-//             icon: Icon(Icons.keyboard_arrow_down, color: colorScheme.primary),
-//             decoration: InputDecoration(
-//               labelText: "State",
-//               labelStyle:
-//                   TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
-//               filled: true,
-//               fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark ? BorderSide.none : const BorderSide(),
-//               ),
-//               enabledBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark
-//                     ? BorderSide.none
-//                     : BorderSide(color: colorScheme.outline),
-//               ),
-//               focusedBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: BorderSide(color: colorScheme.primary, width: 1),
-//               ),
-//               contentPadding:
-//                   const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-//               prefixIcon: Icon(Icons.map, color: colorScheme.primary),
-//             ),
-//             items: _isLoadingStates
-//                 ? [
-//                     const DropdownMenuItem<int>(
-//                       value: null,
-//                       child: Text('Loading states...'),
-//                     )
-//                   ]
-//                 : _states.isEmpty
-//                     ? [
-//                         const DropdownMenuItem<int>(
-//                           value: null,
-//                           child: Text('No states available'),
-//                         )
-//                       ]
-//                     : _states.map((state) {
-//                         return DropdownMenuItem<int>(
-//                           value: state['id'],
-//                           child: Text(
-//                             state['state_name'],
-//                           ),
-//                         );
-//                       }).toList(),
-//             onChanged: (value) {
-//               if (value == null) return;
-
-//               final selectedState = _states.firstWhere(
-//                 (state) => state['id'] == value,
-//                 orElse: () => {},
-//               );
-
-//               setState(() {
-//                 _selectedStateId = value;
-//                 _selectedStateName = selectedState['state_name'];
-//                 _selectedDistrictId = null;
-//                 _selectedDistrictName = null;
-
-//                 // Filter districts based on selected state
-//                 _filteredDistricts =
-//                     _districts.where((d) => d["s_id"] == value).toList();
-//               });
-
-//               debugPrint("Selected State ID: $_selectedStateId");
-//               debugPrint("Selected State Name: $_selectedStateName");
-//               debugPrint("Filtered Districts: ${_filteredDistricts.length}");
-//             },
-//           ),
-//           const SizedBox(height: 16),
-
-//           // District Dropdown
-//           DropdownButtonFormField<int>(
-//             // value: _selectedDistrictId,
-//             initialValue:
-//                 _filteredDistricts.any((d) => d['id'] == _selectedDistrictId)
-//                     ? _selectedDistrictId
-//                     : null,
-//             isExpanded: true,
-//             dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//             style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
-//             icon: Icon(Icons.keyboard_arrow_down, color: colorScheme.primary),
-//             decoration: InputDecoration(
-//               labelText: "District",
-//               labelStyle:
-//                   TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
-//               filled: true,
-//               fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark ? BorderSide.none : const BorderSide(),
-//               ),
-//               enabledBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark
-//                     ? BorderSide.none
-//                     : BorderSide(color: colorScheme.outline),
-//               ),
-//               focusedBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: BorderSide(color: colorScheme.primary, width: 1),
-//               ),
-//               contentPadding:
-//                   const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-//               prefixIcon: Icon(Icons.location_city, color: colorScheme.primary),
-//             ),
-//             items: _buildDistrictItems(),
-//             onChanged: _selectedStateId == null
-//                 ? null
-//                 : (value) {
-//                     if (value == null) return;
-
-//                     final selectedDistrict = _filteredDistricts.firstWhere(
-//                       (district) => district['id'] == value,
-//                       orElse: () => {},
-//                     );
-
-//                     setState(() {
-//                       _selectedDistrictId = value;
-//                       _selectedDistrictName = selectedDistrict['district_name'];
-//                     });
-
-//                     debugPrint("Selected District ID: $_selectedDistrictId");
-//                     debugPrint(
-//                         "Selected District Name: $_selectedDistrictName");
-//                   },
-//           ),
-//           const SizedBox(height: 16),
-
-//           // Address Field (4 lines)
-//           TextField(
-//             controller: _addressController,
-//             // maxLines: 4,
-//             style: TextStyle(color: colorScheme.onSurface),
-//             decoration: InputDecoration(
-//               labelText: 'Address',
-//               labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-//               filled: true,
-//               fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-//               border: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark ? BorderSide.none : const BorderSide(),
-//               ),
-//               enabledBorder: OutlineInputBorder(
-//                 borderRadius: BorderRadius.circular(8),
-//                 borderSide: isDark
-//                     ? BorderSide.none
-//                     : BorderSide(color: colorScheme.outline),
-//               ),
-//               prefixIcon: Icon(Icons.home, color: colorScheme.primary),
-//               alignLabelWithHint: true,
-//             ),
-//           ),
-
-//           const SizedBox(height: 32),
-
-//           // Save Button
-//           SizedBox(
-//             width: double.infinity,
-//             child: ElevatedButton(
-//               onPressed: _isSaving ? null : _updateProfile,
-//               style: ElevatedButton.styleFrom(
-//                 padding: const EdgeInsets.symmetric(vertical: 16),
-//                 backgroundColor: colorScheme.primary,
-//                 foregroundColor: colorScheme.onPrimary,
-//               ),
-//               child: _isSaving
-//                   ? SizedBox(
-//                       height: 20,
-//                       width: 20,
-//                       child: CircularProgressIndicator(
-//                         strokeWidth: 2,
-//                         color: colorScheme.onPrimary,
-//                       ),
-//                     )
-//                   : const Text(
-//                       'Save Profile',
-//                       style:
-//                           TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-//                     ),
-//             ),
-//           ),
-//           const SizedBox(height: 16),
-//         ],
-//       ),
-//     );
-//   }
-
-//   // Helper method to build district dropdown items
-//   List<DropdownMenuItem<int>> _buildDistrictItems() {
-//     final colorScheme = Theme.of(context).colorScheme;
-
-//     if (_selectedStateId == null) {
-//       return [
-//         DropdownMenuItem<int>(
-//           value: null,
-//           child: Text(
-//             'Select state first',
-//             style: TextStyle(color: colorScheme.onSurfaceVariant),
-//           ),
-//         )
-//       ];
-//     }
-
-//     if (_isLoadingDistricts) {
-//       return [
-//         DropdownMenuItem<int>(
-//           value: null,
-//           child: Text(
-//             'Loading districts...',
-//             style: TextStyle(color: colorScheme.onSurfaceVariant),
-//           ),
-//         )
-//       ];
-//     }
-
-//     if (_filteredDistricts.isEmpty) {
-//       return [
-//         DropdownMenuItem<int>(
-//           value: null,
-//           child: Text(
-//             'No districts available',
-//             style: TextStyle(color: colorScheme.onSurfaceVariant),
-//           ),
-//         )
-//       ];
-//     }
-
-//     return _filteredDistricts.map((district) {
-//       return DropdownMenuItem<int>(
-//         value: district['id'],
-//         child: Text(
-//           district['district_name'],
-//         ),
-//       );
-//     }).toList();
-//   }
-
-//   void _addEmailField() {
-//     setState(() {
-//       _additionalEmailController = TextEditingController();
-//     });
-//   }
-
-//   void _removeEmailField() {
-//     setState(() {
-//       _additionalEmailController?.dispose();
-//       _additionalEmailController = null;
-//     });
-//   }
-
-//   void _addMobileField() {
-//     setState(() {
-//       _additionalMobileController = TextEditingController();
-//     });
-//   }
-
-//   void _removeMobileField() {
-//     setState(() {
-//       _additionalMobileController?.dispose();
-//       _additionalMobileController = null;
-//     });
-//   }
-// }
-
-// // Media Upload Card Component - Updated with existing file support
-// class MediaUploadCard extends StatelessWidget {
-//   final String title;
-//   final String size;
-//   final XFile? mediaFile;
-//   final String? existingFile;
-//   final String baseUrl;
-//   final VoidCallback onTap;
-//   final bool isVideo;
-
-//   const MediaUploadCard({
-//     super.key,
-//     required this.title,
-//     required this.size,
-//     this.mediaFile,
-//     this.existingFile,
-//     required this.baseUrl,
-//     required this.onTap,
-//     this.isVideo = false,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final hasNewFile = mediaFile != null;
-//     final hasExistingFile = existingFile != null && existingFile!.isNotEmpty;
-//     final showPreview = hasNewFile || hasExistingFile;
-//     final colorScheme = Theme.of(context).colorScheme;
-//     final isDark = Theme.of(context).brightness == Brightness.dark;
-
-//     return GestureDetector(
-//       onTap: onTap,
-//       child: Container(
-//         decoration: BoxDecoration(
-//           color: isDark ? colorScheme.surfaceContainerHighest : null,
-//           border: isDark ? null : Border.all(color: colorScheme.outlineVariant),
-//           borderRadius: BorderRadius.circular(8),
-//         ),
-//         padding: const EdgeInsets.all(8),
-//         child: Column(
-//           mainAxisAlignment: MainAxisAlignment.center,
-//           mainAxisSize: MainAxisSize.min,
-//           children: [
-//             // Preview or Icon
-//             SizedBox(
-//               width: 50,
-//               height: 50,
-//               child: Container(
-//                 decoration: BoxDecoration(
-//                   color: colorScheme.surfaceContainerHighest,
-//                   borderRadius: BorderRadius.circular(8),
-//                 ),
-//                 child: showPreview
-//                     ? _buildPreview(hasNewFile, hasExistingFile)
-//                     : Icon(
-//                         isVideo ? Icons.videocam : Icons.image,
-//                         color: colorScheme.onSurfaceVariant,
-//                         size: 24,
-//                       ),
-//               ),
-//             ),
-//             const SizedBox(height: 4),
-//             // Title
-//             Text(
-//               title,
-//               style: TextStyle(
-//                   fontWeight: FontWeight.w500,
-//                   fontSize: 12,
-//                   color: colorScheme.onSurface),
-//               textAlign: TextAlign.center,
-//               maxLines: 1,
-//               overflow: TextOverflow.ellipsis,
-//             ),
-//             const SizedBox(height: 2),
-//             // Size/Status
-//             Text(
-//               hasNewFile
-//                   ? 'New Selected'
-//                   : (hasExistingFile ? 'Uploaded' : size),
-//               style: TextStyle(
-//                 color: hasNewFile
-//                     ? Colors.green
-//                     : (hasExistingFile
-//                         ? Colors.blue
-//                         : colorScheme.onSurfaceVariant),
-//                 fontSize: 10,
-//                 fontWeight: hasNewFile || hasExistingFile
-//                     ? FontWeight.w500
-//                     : FontWeight.normal,
-//               ),
-//               textAlign: TextAlign.center,
-//               maxLines: 2,
-//               overflow: TextOverflow.ellipsis,
-//             ),
-//             const SizedBox(height: 4),
-//             // Upload Button
-//             Container(
-//               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-//               decoration: BoxDecoration(
-//                 color: hasNewFile
-//                     ? Colors.green.withOpacity(0.1)
-//                     : (hasExistingFile
-//                         ? Colors.blue.withOpacity(0.1)
-//                         : colorScheme.primary.withOpacity(0.1)),
-//                 borderRadius: BorderRadius.circular(20),
-//               ),
-//               child: Text(
-//                 hasNewFile
-//                     ? 'Change'
-//                     : (hasExistingFile ? 'Replace' : 'Upload'),
-//                 style: TextStyle(
-//                   color: hasNewFile
-//                       ? Colors.green
-//                       : (hasExistingFile ? Colors.blue : colorScheme.primary),
-//                   fontSize: 10,
-//                   fontWeight: FontWeight.w500,
-//                 ),
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildPreview(bool hasNewFile, bool hasExistingFile) {
-//     if (hasNewFile) {
-//       // Show newly selected file
-//       if (isVideo) {
-//         return const Icon(
-//           Icons.play_circle_filled,
-//           color: Colors.blue,
-//           size: 30,
-//         );
-//       } else {
-//         try {
-//           return ClipRRect(
-//             borderRadius: BorderRadius.circular(6),
-//             child: Image.file(
-//               File(mediaFile!.path),
-//               width: 50,
-//               height: 50,
-//               fit: BoxFit.cover,
-//               errorBuilder: (context, error, stackTrace) {
-//                 return _buildFallbackIcon();
-//               },
-//             ),
-//           );
-//         } catch (e) {
-//           return _buildFallbackIcon();
-//         }
-//       }
-//     } else if (hasExistingFile) {
-//       // Show existing file from server
-//       if (isVideo) {
-//         return const Icon(
-//           Icons.play_circle_filled,
-//           color: Colors.blue,
-//           size: 30,
-//         );
-//       } else {
-//         return ClipRRect(
-//           borderRadius: BorderRadius.circular(6),
-//           child: Image.network(
-//             '$baseUrl/$existingFile',
-//             width: 50,
-//             height: 50,
-//             fit: BoxFit.cover,
-//             errorBuilder: (context, error, stackTrace) {
-//               return _buildFallbackIcon();
-//             },
-//           ),
-//         );
-//       }
-//     }
-
-//     return _buildFallbackIcon();
-//   }
-
-//   Widget _buildFallbackIcon() {
-//     return Builder(
-//       builder: (context) {
-//         final colorScheme = Theme.of(context).colorScheme;
-//         return Container(
-//           decoration: BoxDecoration(
-//             color: colorScheme.surfaceContainerHighest,
-//             borderRadius: BorderRadius.circular(6),
-//           ),
-//           child: Icon(
-//             Icons.broken_image,
-//             color: colorScheme.onSurfaceVariant,
-//             size: 24,
-//           ),
-//         );
-//       },
-//     );
-//   }
-// }
-//-----------------------------------------------------------------------------------
-
-
-
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/core/services/profile_provider.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:gridcard/features/profile/edit_profile_page.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
-import 'package:http_parser/http_parser.dart';
+import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 
-class ProfileTab extends StatefulWidget {
+class ProfilePage extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
+  final int? userId;
+  final int? viewerUserId;
+  final String? fromConnectionTab; // 'pending', 'sent', or null
+  final bool isConnected; // true if viewer is already connected
+  final bool fromSuggestion;
 
-  const ProfileTab({super.key, this.userDetails});
+  const ProfilePage({
+    super.key,
+    this.userDetails,
+    this.userId,
+    this.viewerUserId,
+    this.fromConnectionTab,
+    this.isConnected = false,
+    this.fromSuggestion = false,
+  });
 
   @override
-  State<ProfileTab> createState() => _ProfileTabState();
+  State<ProfilePage> createState() => _ProfilePageState();
 }
 
-class _ProfileTabState extends State<ProfileTab> {
-  // Controllers for text fields
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _mobileController = TextEditingController();
-  final TextEditingController _addressController = TextEditingController();
-  final TextEditingController _dobController = TextEditingController();
-
-  // Additional email and mobile controllers - only one each allowed
-  TextEditingController? _additionalEmailController;
-  TextEditingController? _additionalMobileController;
-
-  // Selected values
-  String? _selectedGender;
-  String? _selectedCountry = 'India'; // Default to India
-  int? _selectedStateId;
-  int? _selectedDistrictId;
-
-  // Selected names for display
-  String? _selectedStateName;
-  String? _selectedDistrictName;
-
-  // API Lists
-  List<Map<String, dynamic>> _states = [];
-  List<Map<String, dynamic>> _districts = [];
-  List<Map<String, dynamic>> _filteredDistricts = [];
-
-  // Loading states
-  bool _isLoadingStates = false;
-  bool _isLoadingDistricts = false;
-  bool _isSaving = false;
-
-  // Media files
-  XFile? _profileImage;
-  XFile? _logoImage;
-  XFile? _profileVideo;
-  XFile? _bannerImage;
-
+class _ProfilePageState extends State<ProfilePage> {
   final ImagePicker _picker = ImagePicker();
-
-  // ✅ GENDER: Removed "Other", only Male & Female
-  final List<String> _genders = ['Male', 'Female'];
-
-  final List<String> _countries = ['India']; // Only India
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
   static const String _imgBaseUrl = AppConfig.apiProfileImg;
+
+  String _requestStatus = "none";
+  bool _isCheckingConnection = false;
+
+  // ================= PROFILE VIEW TRACKING =================
+  DateTime? _profileOpenTime;
+  bool _viewStarted = false;
+
+  // ================= USER DETAILS =================
+  Map<String, dynamic>? _userDetails;
+
+  // ================= MASTER LINKS =================
+  bool _isLoadingMasterLinks = false;
+  List<Map<String, dynamic>> _masterLinks = [];
+
+  // ================= MESSAGE SECTION =================
+  File? _selectedImage;
+  final TextEditingController _messageController = TextEditingController();
+
+  // ================= RATINGS SECTION =================
+  int _selectedRating = 0;
+  final TextEditingController _feedbackController = TextEditingController();
+
+  // ================= REVIEWS SECTION =================
+  List _reviews = [];
+  bool _isLoadingReviews = false;
+
+  // ================= AVG RATING SECTION =================
+  double _avgRating = 0.0;
+  int _totalReviews = 0;
+  bool _isLoadingAvgRating = false;
+
+  // ================= PRODUCTS SECTION =================
+  bool _isLoadingProducts = false;
+  List _products = [];
 
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {
@@ -1526,1261 +86,1074 @@ class _ProfileTabState extends State<ProfileTab> {
     };
   }
 
-  Future<Map<String, String>> _getHeadersMultipart() async {
-    final token = await UserStorageService().getToken();
-    return {
-      'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-  }
-
-  // ================= FETCH STATES =================
-  Future<void> _fetchStates() async {
+  Future<void> _checkConnectionStatus() async {
     try {
-      setState(() => _isLoadingStates = true);
+      setState(() => _isCheckingConnection = true);
 
-      final uri = Uri.parse("$_baseUrl/states");
+      final token = await UserStorageService().getToken();
 
-      final response = await http.get(
-        uri,
-        headers: await _getHeaders(),
+      final res = await http.post(
+        Uri.parse("$_baseUrl/connection/status"),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          if (token != null) "Authorization": "Bearer $token",
+        },
+        body: jsonEncode({
+          "viewerUserId": widget.viewerUserId,
+          "profileUserId": widget.userId,
+        }),
       );
 
-      debugPrint("========== PROFILE STATES API ==========");
-      debugPrint("URL: $uri");
-      debugPrint("STATUS: ${response.statusCode}");
+      final jsonData = jsonDecode(res.body);
 
-      if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body);
-
-        if (jsonData["status"] == true) {
-          final List list = jsonData["data"];
-
-          setState(() {
-            _states = list.map((e) {
-              return {
-                "id": e["id"],
-                "state_name": e["state_name"],
-                "c_id": e["c_id"],
-              };
-            }).toList();
-          });
-
-          debugPrint("TOTAL STATES: ${_states.length}");
-        }
+      if (res.statusCode == 200) {
+        setState(() {
+          _requestStatus = jsonData["request_status"] ?? "none";
+        });
       }
     } catch (e) {
-      debugPrint("States fetch error: $e");
+      debugPrint("connection status error $e");
     } finally {
-      setState(() => _isLoadingStates = false);
+      setState(() => _isCheckingConnection = false);
     }
   }
 
-  // ================= FETCH DISTRICTS =================
-  Future<void> _fetchDistricts() async {
+  Future<void> _trackProfileLinkClick(String platform) async {
     try {
-      setState(() => _isLoadingDistricts = true);
+      final viewerId =
+          widget.viewerUserId ?? await UserStorageService().getUserId();
+      final profileId = widget.userId ?? await UserStorageService().getUserId();
 
-      final uri = Uri.parse("$_baseUrl/districts");
+      if (viewerId == null || profileId == null) return;
+      if (viewerId == profileId) return;
 
-      final response = await http.get(
-        uri,
+      final url = Uri.parse("$_baseUrl/profile-link/click");
+
+      final res = await http.post(
+        url,
         headers: await _getHeaders(),
+        body: jsonEncode({
+          "viewer_id": viewerId,
+          "profile_id": profileId,
+          "platform": platform,
+        }),
       );
 
-      debugPrint("========== PROFILE DISTRICTS API ==========");
-      debugPrint("URL: $uri");
-      debugPrint("STATUS: ${response.statusCode}");
-
-      if (response.statusCode == 200) {
-        final jsonData = jsonDecode(response.body);
-
-        if (jsonData["status"] == true) {
-          final List list = jsonData["data"];
-
-          setState(() {
-            _districts = list.map((e) {
-              return {
-                "id": e["id"],
-                "district_name": e["district_name"],
-                "s_id": e["s_id"],
-              };
-            }).toList();
-          });
-
-          debugPrint("TOTAL DISTRICTS: ${_districts.length}");
-        }
-      }
+      debugPrint("🟠 LINK CLICK API: ${res.statusCode} => ${res.body}");
     } catch (e) {
-      debugPrint("Districts fetch error: $e");
-    } finally {
-      setState(() => _isLoadingDistricts = false);
+      debugPrint("🔴 ERROR _trackProfileLinkClick(): $e");
     }
   }
 
-  // ================= MEDIA PICKERS =================
-  Future<void> _pickProfileImage() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 500,
-        maxHeight: 500,
-        imageQuality: 85,
-      );
-      if (image != null) {
-        setState(() {
-          _profileImage = image;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error picking profile image: $e");
-      _showErrorSnackBar('Error picking image: ${e.toString()}');
-    }
-  }
+  // ================= MASTER LINKS API =================
+  Future<void> _fetchMasterLinks() async {
+    if (_isLoadingMasterLinks) return;
 
-  Future<void> _pickLogoImage() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 500,
-        maxHeight: 500,
-        imageQuality: 85,
-      );
-      if (image != null) {
-        setState(() {
-          _logoImage = image;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error picking logo image: $e");
-      _showErrorSnackBar('Error picking logo: ${e.toString()}');
-    }
-  }
-
-  Future<void> _pickProfileVideo() async {
-    try {
-      final XFile? video = await _picker.pickVideo(
-        source: ImageSource.gallery,
-        maxDuration: const Duration(seconds: 30),
-      );
-      if (video != null) {
-        setState(() {
-          _profileVideo = video;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error picking profile video: $e");
-      _showErrorSnackBar('Error picking video: ${e.toString()}');
-    }
-  }
-
-  Future<void> _pickBannerImage() async {
-    try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 500,
-        maxHeight: 500,
-        imageQuality: 85,
-      );
-      if (image != null) {
-        setState(() {
-          _bannerImage = image;
-        });
-      }
-    } catch (e) {
-      debugPrint("Error picking banner image: $e");
-      _showErrorSnackBar('Error picking banner: ${e.toString()}');
-    }
-  }
-
-  // ================= UPDATE PROFILE API =================
-  Future<void> _updateProfile() async {
-    if (_nameController.text.isEmpty) {
-      _showErrorSnackBar('Please enter your name');
-      return;
-    }
-
-    setState(() => _isSaving = true);
+    setState(() => _isLoadingMasterLinks = true);
 
     try {
-      final uri = Uri.parse("$_baseUrl/update_profile");
-      final request = http.MultipartRequest("POST", uri);
+      final url = Uri.parse("$_baseUrl/user/${widget.userId}/master-links");
 
-      // Add headers
-      request.headers.addAll(await _getHeadersMultipart());
+      final res = await http.get(url);
 
-      // Add text fields
-      request.fields['user_name'] = _nameController.text.trim();
+      debugPrint("🟦 MASTER LINKS API: ${res.statusCode} => ${res.body}");
 
-      if (_emailController.text.trim().isNotEmpty) {
-        request.fields['email'] = _emailController.text.trim();
-      }
+      final decoded = jsonDecode(res.body);
 
-      if (_dobController.text.trim().isNotEmpty) {
-        request.fields['dob'] = _dobController.text.trim();
-      }
+      if (res.statusCode == 200 && decoded["status"] == true) {
+        final List data = decoded["data"] ?? [];
 
-      // ✅ GENDER: Convert display value to DB code
-      if (_selectedGender != null) {
-        final String genderCode = _selectedGender == 'Male' ? 'M' : 'F';
-        request.fields['gender'] = genderCode;
-      }
-
-      // Primary mobile
-      if (_mobileController.text.trim().isNotEmpty) {
-        request.fields['mobile_one'] = _mobileController.text.trim();
-      }
-
-      // Secondary mobile
-      if (_additionalMobileController != null &&
-          _additionalMobileController!.text.trim().isNotEmpty) {
-        request.fields['mobile_two'] = _additionalMobileController!.text.trim();
-      }
-
-      // Secondary email
-      if (_additionalEmailController != null &&
-          _additionalEmailController!.text.trim().isNotEmpty) {
-        request.fields['email_one'] = _additionalEmailController!.text.trim();
-      }
-
-      // Address
-      if (_addressController.text.trim().isNotEmpty) {
-        request.fields['address'] = _addressController.text.trim();
-      }
-
-      // Country ID (India = 1)
-      request.fields['country_id'] = '1';
-
-      // State ID
-      if (_selectedStateId != null) {
-        request.fields['state_id'] = _selectedStateId.toString();
-      }
-
-      // District ID
-      if (_selectedDistrictId != null) {
-        request.fields['district_id'] = _selectedDistrictId.toString();
-      }
-
-      // ========== MEDIA FILES ==========
-      // Profile Image
-      if (_profileImage != null) {
-        final bytes = await _profileImage!.readAsBytes();
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'profile_pic',
-            bytes,
-            filename: _profileImage!.name,
-            contentType:
-                MediaType('image', _getFileExtension(_profileImage!.path)),
-          ),
-        );
-      }
-
-      // Logo
-      if (_logoImage != null) {
-        final bytes = await _logoImage!.readAsBytes();
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'profile_logo',
-            bytes,
-            filename: _logoImage!.name,
-            contentType:
-                MediaType('image', _getFileExtension(_logoImage!.path)),
-          ),
-        );
-      }
-
-      // Banner Image
-      if (_bannerImage != null) {
-        final bytes = await _bannerImage!.readAsBytes();
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'profile_banner',
-            bytes,
-            filename: _bannerImage!.name,
-            contentType:
-                MediaType('image', _getFileExtension(_bannerImage!.path)),
-          ),
-        );
-      }
-
-      // Profile Video
-      if (_profileVideo != null) {
-        final bytes = await _profileVideo!.readAsBytes();
-        final ext = _getFileExtension(_profileVideo!.path);
-        request.files.add(
-          http.MultipartFile.fromBytes(
-            'profile_video',
-            bytes,
-            filename: _profileVideo!.name,
-            contentType: MediaType('video', ext),
-          ),
-        );
-      }
-
-      debugPrint("========== PROFILE UPDATE API ==========");
-      debugPrint("URL: $uri");
-      debugPrint("FIELDS: ${request.fields}");
-
-      final response = await request.send();
-      final responseBody = await response.stream.bytesToString();
-      final jsonResponse = json.decode(responseBody);
-
-      debugPrint("STATUS CODE: ${response.statusCode}");
-      debugPrint("RESPONSE: $jsonResponse");
-
-      if (response.statusCode == 200 && jsonResponse['status'] == true) {
-        _showSuccessSnackBar(
-            jsonResponse['message'] ?? 'Profile updated successfully!');
-
-        // Refresh user details
-        await _fetchUserDetails();
+        final links = data
+            .map((e) => Map<String, dynamic>.from(e))
+            .where((e) => (e["name"] != null &&
+                e["link"] != null &&
+                e["name"].toString().trim().isNotEmpty &&
+                e["link"].toString().trim().isNotEmpty))
+            .toList();
 
         if (mounted) {
-          Navigator.pop(context, true); // Return with success
+          setState(() {
+            _masterLinks = links;
+          });
         }
       } else {
-        _showErrorSnackBar(
-            jsonResponse['message'] ?? 'Failed to update profile');
+        if (mounted) {
+          setState(() => _masterLinks = []);
+        }
       }
     } catch (e) {
-      debugPrint("EXCEPTION in _updateProfile: $e");
-      _showErrorSnackBar("Error updating profile: ${e.toString()}");
+      debugPrint("🔴 ERROR _fetchMasterLinks(): $e");
+      if (mounted) setState(() => _masterLinks = []);
     } finally {
-      if (mounted) {
-        setState(() => _isSaving = false);
-      }
+      if (mounted) setState(() => _isLoadingMasterLinks = false);
     }
   }
 
-  // ================= FETCH USER DETAILS (refresh) =================
+  // ================= PROFILE VIEW START =================
+  Future<void> _startProfileView() async {
+    try {
+      final viewerId =
+          widget.viewerUserId ?? await UserStorageService().getUserId();
+      final profileId = widget.userId ?? await UserStorageService().getUserId();
+
+      if (viewerId == null || profileId == null) return;
+
+      // self view ignore
+      if (viewerId == profileId) return;
+
+      final url = Uri.parse("$_baseUrl/profile-view/start");
+
+      final res = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "viewer_user_id": viewerId,
+          "profile_user_id": profileId,
+        }),
+      );
+
+      debugPrint("🟢 START VIEW API: ${res.statusCode} => ${res.body}");
+
+      _profileOpenTime = DateTime.now();
+      _viewStarted = true;
+    } catch (e) {
+      debugPrint("🔴 ERROR _startProfileView(): $e");
+    }
+  }
+
+  // ================= PROFILE VIEW END =================
+  Future<void> _endProfileView() async {
+    try {
+      if (!_viewStarted || _profileOpenTime == null) return;
+
+      final viewerId =
+          widget.viewerUserId ?? await UserStorageService().getUserId();
+      final profileId = widget.userId ?? await UserStorageService().getUserId();
+
+      if (viewerId == null || profileId == null) return;
+      if (viewerId == profileId) return;
+
+      final durationSeconds =
+          DateTime.now().difference(_profileOpenTime!).inSeconds;
+
+      // ignore < 1 sec
+      if (durationSeconds < 1) return;
+
+      final url = Uri.parse("$_baseUrl/profile-view/end");
+
+      final res = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "viewer_user_id": viewerId,
+          "profile_user_id": profileId,
+          "duration_seconds": durationSeconds,
+        }),
+      );
+
+      debugPrint("🟣 END VIEW API: ${res.statusCode} => ${res.body}");
+    } catch (e) {
+      debugPrint("🔴 ERROR _endProfileView(): $e");
+    }
+  }
+
+  // ================= USER DETAILS =================
   Future<void> _fetchUserDetails() async {
     try {
-      final userId = await UserStorageService().getUserId();
-      if (userId == null) return;
+      final int? targetUserId =
+          widget.userId ?? await UserStorageService().getUserId();
+
+      if (targetUserId == null) return;
 
       final headers = await _getHeaders();
-      final url = Uri.parse("$_baseUrl/user-details/$userId");
+      final url = Uri.parse("$_baseUrl/user-details/$targetUserId");
+
       final response = await http.get(url, headers: headers);
 
       if (response.statusCode == 200) {
         final decoded = jsonDecode(response.body);
+
         if (decoded["status"] == true) {
-          // Update the widget.userDetails if needed
-          debugPrint("User details refreshed successfully");
+          if (mounted) {
+            setState(() {
+              _userDetails = decoded["data"];
+            });
+          }
         }
       }
     } catch (e) {
-      debugPrint("Error refreshing user details: $e");
+      debugPrint("🔴 EXCEPTION in _fetchUserDetails(): $e");
     }
   }
 
-  // ================= HELPER METHODS =================
-  String _getFileExtension(String path) {
-    return path.split('.').last.toLowerCase();
+  // ================= FETCH PRODUCTS =================
+  Future<void> _fetchProducts() async {
+    try {
+      final int? targetUserId =
+          widget.userId ?? await UserStorageService().getUserId();
+      if (targetUserId == null) {
+        debugPrint("🟠 targetUserId is null for _fetchProducts");
+        return;
+      }
+
+      if (mounted) setState(() => _isLoadingProducts = true);
+
+      final headers = await _getHeaders();
+      final url = Uri.parse("$_baseUrl/products-by-user/$targetUserId");
+
+      debugPrint("🟦 PRODUCTS FETCH URL: $url");
+
+      final response = await http.get(url, headers: headers);
+
+      debugPrint("🟦 PRODUCTS API STATUS: ${response.statusCode}");
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        debugPrint("🟦 PRODUCTS JSON: ${jsonEncode(jsonData)}");
+
+        if (jsonData["status"] == true) {
+          final dataObject = jsonData["data"];
+          // Handle both paginated and direct list responses
+          List fetchedProducts = [];
+          if (dataObject is Map && dataObject["data"] != null) {
+            fetchedProducts = dataObject["data"] as List;
+          } else if (dataObject is List) {
+            fetchedProducts = dataObject;
+          }
+
+          if (mounted) {
+            setState(() {
+              _products = fetchedProducts;
+            });
+            debugPrint("🟢 SET STATE PRODUCTS: ${_products.length} items");
+          }
+        }
+      } else {
+        debugPrint(
+            "🔴 Error fetching products: ${response.statusCode} ${response.body}");
+      }
+    } catch (e) {
+      debugPrint("🔴 EXCEPTION in _fetchProducts(): $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingProducts = false);
+    }
   }
 
-  void _showErrorSnackBar(String message) {
-    if (!mounted) return;
-    TopAlert.show(context, message, isError: true);
+  /// Constructs full image URL from relative path
+  String _getFullProductImageUrl(Map<String, dynamic> product) {
+    try {
+      if (product['product_image'] != null &&
+          (product['product_image'] as List).isNotEmpty) {
+        var imagePath =
+            product['product_image'][0]['product_images'] as String?;
+        if (imagePath != null && imagePath.isNotEmpty) {
+          if (imagePath.startsWith('http')) return imagePath;
+          if (imagePath.startsWith('/')) imagePath = imagePath.substring(1);
+
+          String base = _baseUrl;
+          if (base.endsWith('/api')) {
+            base = base.substring(0, base.length - 4);
+          }
+          if (base.endsWith('/')) base = base.substring(0, base.length - 1);
+
+          return '$base/$imagePath';
+        }
+      }
+    } catch (e) {
+      debugPrint('Error constructing image URL: $e');
+    }
+    return '';
   }
 
-  void _showSuccessSnackBar(String message) {
-    if (!mounted) return;
-    TopAlert.show(context, message, isSuccess: true);
+  // ================= AVG RATING =================
+  Future<void> _fetchAverageRating() async {
+    if (_isLoadingAvgRating) return;
+
+    setState(() => _isLoadingAvgRating = true);
+
+    try {
+      final headers = await _getHeaders();
+
+      final int? targetUserId =
+          widget.userId ?? await UserStorageService().getUserId();
+
+      if (targetUserId == null) return;
+
+      final url = Uri.parse("$_baseUrl/user-reviews/$targetUserId/average");
+
+      final res = await http.get(url, headers: headers);
+      final jsonData = jsonDecode(res.body);
+
+      if (res.statusCode == 200 && jsonData["status"] == true) {
+        final data = jsonData["data"] ?? {};
+
+        if (mounted) {
+          setState(() {
+            _avgRating =
+                double.tryParse(data["average_rating"].toString()) ?? 0.0;
+            _totalReviews = int.tryParse(data["total_reviews"].toString()) ?? 0;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("🔴 ERROR _fetchAverageRating(): $e");
+    } finally {
+      if (mounted) setState(() => _isLoadingAvgRating = false);
+    }
   }
 
-  // ================= INIT =================
-  // @override
-  // void initState() {
-  //   super.initState();
-  //   _fetchStates();
-  //   _fetchDistricts();
+  // ================= REVIEWS =================
+  Future<void> _fetchReviews() async {
+    if (_isLoadingReviews) return;
 
-  //   // Prefill from API data
-  //   WidgetsBinding.instance.addPostFrameCallback((_) {
-  //     _loadUserData();
-  //   });
-  // }
+    setState(() => _isLoadingReviews = true);
+
+    try {
+      final headers = await _getHeaders();
+
+      final int? targetUserId =
+          widget.userId ?? await UserStorageService().getUserId();
+
+      if (targetUserId == null) return;
+
+      final url = Uri.parse("$_baseUrl/user-reviews/$targetUserId");
+
+      final res = await http.get(url, headers: headers);
+      final jsonData = jsonDecode(res.body);
+
+      if (res.statusCode == 200 && jsonData["status"] == true) {
+        final dataObj = jsonData["data"];
+
+        if (dataObj != null && dataObj["data"] != null) {
+          _reviews = dataObj["data"] as List;
+        } else {
+          _reviews = [];
+        }
+      } else {
+        _reviews = [];
+      }
+    } catch (e) {
+      _reviews = [];
+    } finally {
+      if (mounted) setState(() => _isLoadingReviews = false);
+    }
+  }
+
+  // ================= LIFECYCLE =================
+
+  Widget _buildConnectionButton() {
+    if (!widget.fromSuggestion) {
+      return _existingButtonWidget(); // 👈 पुराना logic
+    }
+
+    if (_isCheckingConnection) {
+      return const Padding(
+        padding: EdgeInsets.all(20),
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_requestStatus == "none") {
+      return _connectButton();
+    }
+
+    if (_requestStatus == "received") {
+      return _acceptButton();
+    }
+
+    if (_requestStatus == "sent") {
+      return _removeButton();
+    }
+
+    return _connectButton();
+  }
+
+  Widget _connectButton() {
+    return ElevatedButton(
+      onPressed: () async {
+        if (widget.userId == null) return;
+
+        final error = await _sendConnectionRequest(widget.userId!);
+
+        if (error == null) {
+          TopAlert.show(context, "Connection request sent", isSuccess: true);
+          _checkConnectionStatus();
+        } else {
+          TopAlert.show(context, error, isError: true);
+        }
+      },
+      child: const Text("Connect"),
+    );
+  }
+
+  Widget _acceptButton() {
+    return ElevatedButton(
+      onPressed: () async {
+        await _acceptPendingRequest();
+        _checkConnectionStatus();
+      },
+      child: const Text("Accept"),
+    );
+  }
+
+  Widget _removeButton() {
+    return ElevatedButton(
+      onPressed: () async {
+        await _removeSentRequest();
+        _checkConnectionStatus();
+      },
+      child: const Text("Remove"),
+    );
+  }
 
   @override
   void initState() {
     super.initState();
-    _init();
-  }
 
-  Future<void> _init() async {
-    await _fetchStates();
-    await _fetchDistricts();
-    _loadUserData();
-  }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _startProfileView();
 
-  // ✅ GENDER: Convert DB code (M/F) to display text (Male/Female)
-  void _loadUserData() {
-    if (widget.userDetails != null) {
-      final apiMasterUser = widget.userDetails?['master_user'];
-      final user = widget.userDetails;
+      await _fetchMasterLinks();
+      await _fetchUserDetails();
+      await _fetchProducts();
 
-      setState(() {
-        // Name
-        _nameController.text =
-            apiMasterUser?['fname'] ?? user?['user_name'] ?? "";
+      // existing provider call (as it is)
+      context.read<ProfileProvider>().fetchAllProfileData();
 
-        // Email
-        _emailController.text =
-            user?['email'] ?? apiMasterUser?['email_one'] ?? "";
+      // existing reviews/rating
+      _fetchReviews();
+      _fetchAverageRating();
+      debugPrint("🟢 USER DETAILS JSON 121: ${jsonEncode(_userDetails)}");
+    });
 
-        // Mobile
-        _mobileController.text = apiMasterUser?['mobile_one'] ?? "";
-
-        // Secondary Mobile
-        if (apiMasterUser?['mobile_two'] != null &&
-            apiMasterUser!['mobile_two'].toString().isNotEmpty) {
-          _additionalMobileController = TextEditingController(
-            text: apiMasterUser['mobile_two'],
-          );
-        }
-
-        // Secondary Email
-        if (apiMasterUser?['email_one'] != null &&
-            apiMasterUser!['email_one'].toString().isNotEmpty &&
-            _emailController.text != apiMasterUser['email_one']) {
-          _additionalEmailController = TextEditingController(
-            text: apiMasterUser['email_one'],
-          );
-        }
-
-        // DOB
-        _dobController.text = apiMasterUser?['dob'] ?? "";
-
-        // ✅ GENDER: Convert DB code (M/F) to display text
-        // final apiGender = apiMasterUser?['gender'];
-        // if (apiGender == 'M') {
-        //   _selectedGender = 'Male';
-        // } else if (apiGender == 'F') {
-        //   _selectedGender = 'Female';
-        // } else {
-        //   _selectedGender = null;
-        // }
-
-        final apiGender =
-            (apiMasterUser?['gender'] ?? '').toString().toUpperCase();
-
-        if (apiGender == 'M') {
-          _selectedGender = 'Male';
-        } else if (apiGender == 'F') {
-          _selectedGender = 'Female';
-        } else {
-          _selectedGender = null;
-        }
-
-        // Address
-        _addressController.text = apiMasterUser?['address'] ?? "";
-
-        // State
-        _selectedStateId = apiMasterUser?['state_id'];
-        _selectedStateName = apiMasterUser?['state_name'];
-
-        // District
-        _selectedDistrictId = apiMasterUser?['district_id'];
-        _selectedDistrictName = apiMasterUser?['district_name'];
-
-        // Filter districts if state is selected
-        if (_selectedStateId != null) {
-          _filteredDistricts =
-              _districts.where((d) => d["s_id"] == _selectedStateId).toList();
-        }
-      });
+    if (widget.fromSuggestion) {
+      _checkConnectionStatus();
     }
   }
 
   @override
   void dispose() {
-    _nameController.dispose();
-    _emailController.dispose();
-    _mobileController.dispose();
-    _addressController.dispose();
-    _dobController.dispose();
-    _additionalEmailController?.dispose();
-    _additionalMobileController?.dispose();
+    _endProfileView();
+    _messageController.dispose();
+    _feedbackController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  // ================== UTILS ==================
+  String _capitalize(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1);
+  }
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
+  int? _parseConnectionStatus(Map<String, dynamic>? connection) {
+    if (connection == null) return null;
+    return int.tryParse(connection['status']?.toString() ?? '');
+  }
+
+  bool _isPendingConnectionStatus(int? status) {
+    return status == 0 || status == 1;
+  }
+
+  bool _isIncomingPendingRequest(Map<String, dynamic>? connection) {
+    final viewerId = widget.viewerUserId;
+    if (viewerId == null) return false;
+
+    final status = _parseConnectionStatus(connection);
+    final receiverId =
+        int.tryParse(connection?['receiver_id']?.toString() ?? '');
+
+    return _isPendingConnectionStatus(status) && receiverId == viewerId;
+  }
+
+  bool _isOutgoingPendingRequest(Map<String, dynamic>? connection) {
+    final viewerId = widget.viewerUserId;
+    if (viewerId == null) return false;
+
+    final status = _parseConnectionStatus(connection);
+    final senderId = int.tryParse(connection?['sender_id']?.toString() ?? '');
+
+    return _isPendingConnectionStatus(status) && senderId == viewerId;
+  }
+
+  String _getConnectionActionLabel(Map<String, dynamic>? connection) {
+    if (widget.fromConnectionTab == 'pending' ||
+        _isIncomingPendingRequest(connection)) {
+      return 'Accept';
+    }
+    if (widget.fromConnectionTab == 'sent' ||
+        _isOutgoingPendingRequest(connection)) {
+      return 'Remove';
+    }
+    return 'Connect';
+  }
+
+  String _getFullName() {
+    final apiMasterUser = _userDetails?['master_user'];
+    final fname = apiMasterUser?['fname']?.toString() ?? '';
+    final lname = apiMasterUser?['lname']?.toString() ?? '';
+
+    if (fname.isNotEmpty && lname.isNotEmpty) return "$fname $lname";
+    if (fname.isNotEmpty) return fname;
+
+    return "";
+  }
+
+  // ================== SOCIAL ICONS HELPERS ==================
+  IconData? _getIconForName(String name) {
+    final key = name.trim().toLowerCase();
+
+    switch (key) {
+      case "facebook":
+        return FontAwesomeIcons.facebookF;
+      case "instagram":
+        return FontAwesomeIcons.instagram;
+      case "twitter":
+      case "x":
+        return FontAwesomeIcons.twitter;
+      case "linkedin":
+        return FontAwesomeIcons.linkedinIn;
+      case "youtube":
+        return FontAwesomeIcons.youtube;
+      case "whatsapp":
+        return FontAwesomeIcons.whatsapp;
+      case "telegram":
+        return FontAwesomeIcons.telegram;
+      case "snapchat":
+        return FontAwesomeIcons.snapchat;
+      default:
+        return null;
+    }
+  }
+
+  Color _getColorForName(String name) {
+    final key = name.trim().toLowerCase();
+
+    switch (key) {
+      case "facebook":
+        return const Color(0xFF1877F2);
+      case "instagram":
+        return const Color(0xFFE4405F);
+      case "twitter":
+      case "x":
+        return const Color(0xFF1DA1F2);
+      case "linkedin":
+        return const Color(0xFF0A66C2);
+      case "youtube":
+        return const Color(0xFFFF0000);
+      case "whatsapp":
+        return const Color(0xFF25D366);
+      case "telegram":
+        return const Color(0xFF0088CC);
+      case "snapchat":
+        return const Color(0xFFFFFC00);
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Future<void> _openLink(String url, {required String platform}) async {
+    try {
+      String fixed = url.trim();
+      if (fixed.isEmpty) return;
+
+      // Ensure URL starts with http:// or https://
+      if (!fixed.startsWith('http://') && !fixed.startsWith('https://')) {
+        fixed = 'https://$fixed';
+      }
+
+      // ✅ track click first
+      await _trackProfileLinkClick(platform);
+
+      final uri = Uri.parse(fixed);
+
+      final canOpen = await canLaunchUrl(uri);
+
+      if (!canOpen) {
+        if (!mounted) return;
+        TopAlert.show(context, "Cannot open link: $fixed", isError: true);
+        return;
+      }
+
+      await launchUrl(
+        uri,
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      TopAlert.show(context, "Invalid link", isError: true);
+    }
+  }
+
+  Widget _socialIconClickable(
+      IconData icon, Color color, String link, String name) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () {
+        if (link.trim().isEmpty) return;
+        _openLink(link, platform: name.toLowerCase());
+      },
+      child: Builder(
+        builder: (context) {
+          final cs = Theme.of(context).colorScheme;
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: cs.outlineVariant,
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: color.withOpacity(0.15),
+                  child: FaIcon(
+                    icon,
+                    size: 16,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    name,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: cs.onSurface,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Icon(
+                  Icons.open_in_new,
+                  size: 16,
+                  color: cs.onSurfaceVariant,
+                )
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ✅ MAIN DYNAMIC GRID
+
+  Widget _buildSocialIconsGrid() {
+    if (_isLoadingMasterLinks) return const SizedBox.shrink();
+    if (_masterLinks.isEmpty) return const SizedBox.shrink();
+
+    final supportedLinks = _masterLinks.where((item) {
+      final name = (item["name"] ?? "").toString();
+      return _getIconForName(name) != null;
+    }).toList();
+
+    if (supportedLinks.isEmpty) return const SizedBox.shrink();
+
+    return GridView.count(
+      crossAxisCount: 4,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      mainAxisSpacing: 12,
+      crossAxisSpacing: 12,
+      childAspectRatio: 1,
+      children: supportedLinks.map((item) {
+        final name = (item["name"] ?? "").toString();
+        final link = (item["link"] ?? "").toString();
+
+        final icon = _getIconForName(name)!;
+        final color = _getColorForName(name);
+
+        return _socialIconOnly(icon, color, link, name);
+      }).toList(),
+    );
+  }
+
+  Widget _socialIconOnly(IconData icon, Color color, String link, String name) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(30),
+      onTap: () {
+        if (link.trim().isEmpty) return;
+        _openLink(link, platform: name.toLowerCase());
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(30),
+        ),
+        child: Center(
+          child: FaIcon(
+            icon,
+            size: 28,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ================= MESSAGE METHODS =================
+  Future<void> _pickImageForMessage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _selectedImage = File(image.path);
+      });
+    }
+  }
+
+  void _sendMessage() {
+    if (_messageController.text.isNotEmpty || _selectedImage != null) {
+      TopAlert.show(context, 'Message sent!', isSuccess: true);
+
+      setState(() {
+        _messageController.clear();
+        _selectedImage = null;
+      });
+    } else {
+      TopAlert.show(context, 'Type a message or select an image');
+    }
+  }
+
+  // ================= RATINGS METHODS =================
+  Widget _averageStarsRow(double rating) {
+    final double safeRating = rating.clamp(0.0, 5.0);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        final starValue = index + 1;
+
+        IconData icon;
+
+        if (safeRating >= starValue) {
+          icon = Icons.star;
+        } else if (safeRating >= starValue - 0.5) {
+          icon = Icons.star_half;
+        } else {
+          icon = Icons.star_border;
+        }
+
+        return Icon(
+          icon,
+          size: 16,
+          color: Colors.amber,
+        );
+      }),
+    );
+  }
+
+  Future<void> _submitRating() async {
+    try {
+      final int? toUserId = widget.userId;
+      final int? fromUserId =
+          widget.viewerUserId ?? await UserStorageService().getUserId();
+
+      if (toUserId == null || fromUserId == null) return;
+
+      // self rating block
+      if (toUserId == fromUserId) {
+        TopAlert.show(context, "You can't rate yourself", isError: true);
+        return;
+      }
+
+      // ⭐ rating mandatory
+      if (_selectedRating == 0) {
+        TopAlert.show(context, "Please select rating", isError: true);
+        return;
+      }
+
+      final message = _feedbackController.text.trim();
+
+      // message optional (but you can make mandatory if you want)
+      // if (message.isEmpty) { ... }
+
+      final url = Uri.parse("$_baseUrl/user-reviews");
+
+      final res = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "to_user_id": toUserId,
+          "rating": _selectedRating,
+          "message": message,
+        }),
+      );
+
+      final jsonData = jsonDecode(res.body);
+
+      debugPrint("🟦 REVIEW POST: ${res.statusCode} => ${res.body}");
+
+      if (res.statusCode == 200 && jsonData["status"] == true) {
+        TopAlert.show(context, jsonData["message"] ?? "Review added",
+            isSuccess: true);
+
+        // reset fields
+        setState(() {
+          _selectedRating = 0;
+          _feedbackController.clear();
+        });
+
+        // refresh reviews + avg rating
+        await _fetchReviews();
+        await _fetchAverageRating();
+      } else {
+        TopAlert.show(context, jsonData["message"] ?? "Failed", isError: true);
+      }
+    } catch (e) {
+      debugPrint("🔴 ERROR _submitRating(): $e");
+      TopAlert.show(context, "Network error", isError: true);
+    }
+  }
+
+  Widget _buildRatingsSection() {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(18),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Media Upload Section
-          Text(
-            'Media',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface),
-          ),
-          const SizedBox(height: 16),
-
-          // Profile Image, Logo, Video, Banner Grid
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 0.9,
-            ),
-            itemCount: 4,
-            itemBuilder: (context, index) {
-              switch (index) {
-                case 0:
-                  return MediaUploadCard(
-                    title: 'Profile Image',
-                    size: '500px x 500px',
-                    mediaFile: _profileImage,
-                    existingFile: widget.userDetails?['master_user']
-                        ?['profile_pic'],
-                    baseUrl: _imgBaseUrl,
-                    onTap: _pickProfileImage,
-                  );
-                case 1:
-                  return MediaUploadCard(
-                    title: 'Logo',
-                    size: '500px x 500px',
-                    mediaFile: _logoImage,
-                    existingFile: widget.userDetails?['master_user']
-                        ?['profile_logo'],
-                    baseUrl: _imgBaseUrl,
-                    onTap: _pickLogoImage,
-                  );
-                case 2:
-                  return MediaUploadCard(
-                    title: 'Profile Video',
-                    size: '500px x 500px (25 MB)',
-                    mediaFile: _profileVideo,
-                    existingFile: widget.userDetails?['master_user']
-                        ?['profile_video'],
-                    baseUrl: _imgBaseUrl,
-                    onTap: _pickProfileVideo,
-                    isVideo: true,
-                  );
-                case 3:
-                  return MediaUploadCard(
-                    title: 'Banner Image',
-                    size: '500px x 500px',
-                    mediaFile: _bannerImage,
-                    existingFile: widget.userDetails?['master_user']
-                        ?['profile_banner'],
-                    baseUrl: _imgBaseUrl,
-                    onTap: _pickBannerImage,
-                  );
-                default:
-                  return const SizedBox();
-              }
-            },
-          ),
-
-          const SizedBox(height: 32),
-          Divider(color: colorScheme.outlineVariant),
-          const SizedBox(height: 16),
-
-          // Personal Information Section
-          Text(
-            'Personal Information',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colorScheme.onSurface),
-          ),
-          const SizedBox(height: 16),
-
-          // Name Field
-          TextField(
-            controller: _nameController,
-            style: TextStyle(color: colorScheme.onSurface),
-            decoration: InputDecoration(
-              labelText: 'Full Name *',
-              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-              filled: true,
-              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark ? BorderSide.none : const BorderSide(),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark
-                    ? BorderSide.none
-                    : BorderSide(color: colorScheme.outline),
-              ),
-              prefixIcon: Icon(Icons.person, color: colorScheme.primary),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // DOB Field
-          TextField(
-            controller: _dobController,
-            style: TextStyle(color: colorScheme.onSurface),
-            decoration: InputDecoration(
-              labelText: 'Date of Birth',
-              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-              filled: true,
-              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark ? BorderSide.none : const BorderSide(),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark
-                    ? BorderSide.none
-                    : BorderSide(color: colorScheme.outline),
-              ),
-              prefixIcon:
-                  Icon(Icons.calendar_today, color: colorScheme.primary),
-              suffixIcon: Icon(Icons.arrow_drop_down,
-                  color: colorScheme.onSurfaceVariant),
-            ),
-            readOnly: true,
-            onTap: () async {
-              DateTime? pickedDate = await showDatePicker(
-                context: context,
-                initialDate: DateTime.now(),
-                firstDate: DateTime(1900),
-                lastDate: DateTime.now(),
-              );
-              if (pickedDate != null) {
-                _dobController.text =
-                    '${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}';
-              }
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // ✅ GENDER DROPDOWN – Only Male & Female
-          DropdownButtonFormField<String>(
-            initialValue: _selectedGender,
-            decoration: InputDecoration(
-              labelText: 'Gender',
-              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-              filled: true,
-              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark ? BorderSide.none : const BorderSide(),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark
-                    ? BorderSide.none
-                    : BorderSide(color: colorScheme.outline),
-              ),
-              prefixIcon: Icon(Icons.people, color: colorScheme.primary),
-            ),
-            dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
-            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
-            items: _genders.map((gender) {
-              return DropdownMenuItem(
-                value: gender,
-                child: Text(gender),
-              );
-            }).toList(),
-            onChanged: (value) {
-              setState(() {
-                _selectedGender = value;
-              });
-            },
-          ),
-          const SizedBox(height: 16),
-
-          // Email Section
-          Text(
-            'Email',
-            style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurface),
-          ),
-          const SizedBox(height: 8),
-
-          // Primary Email
-          TextField(
-            controller: _emailController,
-            style: TextStyle(color: colorScheme.onSurface),
-            decoration: InputDecoration(
-              labelText: 'Primary Email',
-              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-              filled: true,
-              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark ? BorderSide.none : const BorderSide(),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark
-                    ? BorderSide.none
-                    : BorderSide(color: colorScheme.outline),
-              ),
-              prefixIcon: Icon(Icons.email, color: colorScheme.primary),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.add),
-                onPressed:
-                    _additionalEmailController == null ? _addEmailField : null,
-                color: _additionalEmailController == null
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Additional Email - Only ONE
-          if (_additionalEmailController != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: TextField(
-                controller: _additionalEmailController,
-                style: TextStyle(color: colorScheme.onSurface),
-                decoration: InputDecoration(
-                  labelText: 'Secondary Email',
-                  labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-                  filled: true,
-                  fillColor:
-                      isDark ? colorScheme.surfaceContainerHighest : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: isDark ? BorderSide.none : const BorderSide(),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: isDark
-                        ? BorderSide.none
-                        : BorderSide(color: colorScheme.outline),
-                  ),
-                  prefixIcon: Icon(Icons.email, color: colorScheme.primary),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: _removeEmailField,
-                  ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Your ratings',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: cs.onSurface,
                 ),
               ),
-            ),
-
-          const SizedBox(height: 16),
-
-          // Mobile Section
-          Text(
-            'Mobile',
-            style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-                color: colorScheme.onSurface),
-          ),
-          const SizedBox(height: 8),
-
-          // Primary Mobile
-          TextField(
-            controller: _mobileController,
-            keyboardType: TextInputType.phone,
-            style: TextStyle(color: colorScheme.onSurface),
-            decoration: InputDecoration(
-              labelText: 'Primary Mobile',
-              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-              filled: true,
-              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark ? BorderSide.none : const BorderSide(),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark
-                    ? BorderSide.none
-                    : BorderSide(color: colorScheme.outline),
-              ),
-              prefixIcon: Icon(Icons.phone, color: colorScheme.primary),
-              suffixIcon: IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: _additionalMobileController == null
-                    ? _addMobileField
-                    : null,
-                color: _additionalMobileController == null
-                    ? colorScheme.primary
-                    : colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Additional Mobile - Only ONE
-          if (_additionalMobileController != null)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: TextField(
-                controller: _additionalMobileController,
-                keyboardType: TextInputType.phone,
-                style: TextStyle(color: colorScheme.onSurface),
-                decoration: InputDecoration(
-                  labelText: 'Secondary Mobile',
-                  labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-                  filled: true,
-                  fillColor:
-                      isDark ? colorScheme.surfaceContainerHighest : null,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: isDark ? BorderSide.none : const BorderSide(),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: isDark
-                        ? BorderSide.none
-                        : BorderSide(color: colorScheme.outline),
-                  ),
-                  prefixIcon: Icon(Icons.phone, color: colorScheme.primary),
-                  suffixIcon: IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: _removeMobileField,
-                  ),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                decoration: BoxDecoration(
+                  color: cs.surface,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-              ),
-            ),
-
-          const SizedBox(height: 16),
-
-          // Country Dropdown - India only with value 1
-          DropdownButtonFormField<String>(
-            initialValue: _selectedCountry,
-            decoration: InputDecoration(
-              labelText: 'Country',
-              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-              filled: true,
-              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark ? BorderSide.none : const BorderSide(),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark
-                    ? BorderSide.none
-                    : BorderSide(color: colorScheme.outline),
-              ),
-              prefixIcon: Icon(Icons.public, color: colorScheme.primary),
-            ),
-            dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
-            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
-            items: const [
-              DropdownMenuItem(
-                value: 'India',
-                child: Text('India'),
+                child: _isLoadingAvgRating
+                    ? const SizedBox(
+                        height: 22,
+                        width: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          _averageStarsRow(_avgRating),
+                          const SizedBox(height: 4),
+                          Text(
+                            '(${_avgRating.toStringAsFixed(1)}) $_totalReviews people',
+                            style: TextStyle(
+                              color: cs.onSurfaceVariant,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
               ),
             ],
-            onChanged: (value) {
-              setState(() {
-                _selectedCountry = value;
-              });
-            },
           ),
           const SizedBox(height: 16),
-
-          // State Dropdown
-          DropdownButtonFormField<int>(
-            initialValue: _selectedStateId,
-            isExpanded: true,
-            dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
-            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
-            icon: Icon(Icons.keyboard_arrow_down, color: colorScheme.primary),
-            decoration: InputDecoration(
-              labelText: "State",
-              labelStyle:
-                  TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
-              filled: true,
-              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark ? BorderSide.none : const BorderSide(),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark
-                    ? BorderSide.none
-                    : BorderSide(color: colorScheme.outline),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: colorScheme.primary, width: 1),
-              ),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              prefixIcon: Icon(Icons.map, color: colorScheme.primary),
+          Text(
+            'Rate your experience working with ${_getFullName()}',
+            style: TextStyle(
+              color: cs.onSurface,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
             ),
-            items: _isLoadingStates
-                ? [
-                    const DropdownMenuItem<int>(
-                      value: null,
-                      child: Text('Loading states...'),
-                    )
-                  ]
-                : _states.isEmpty
-                    ? [
-                        const DropdownMenuItem<int>(
-                          value: null,
-                          child: Text('No states available'),
-                        )
-                      ]
-                    : _states.map((state) {
-                        return DropdownMenuItem<int>(
-                          value: state['id'],
-                          child: Text(
-                            state['state_name'],
-                          ),
-                        );
-                      }).toList(),
-            onChanged: (value) {
-              if (value == null) return;
-
-              final selectedState = _states.firstWhere(
-                (state) => state['id'] == value,
-                orElse: () => {},
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: List.generate(5, (index) {
+              return IconButton(
+                icon: Icon(
+                  index < _selectedRating ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                  size: 32,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _selectedRating = index + 1;
+                  });
+                },
               );
-
-              setState(() {
-                _selectedStateId = value;
-                _selectedStateName = selectedState['state_name'];
-                _selectedDistrictId = null;
-                _selectedDistrictName = null;
-
-                // Filter districts based on selected state
-                _filteredDistricts =
-                    _districts.where((d) => d["s_id"] == value).toList();
-              });
-
-              debugPrint("Selected State ID: $_selectedStateId");
-              debugPrint("Selected State Name: $_selectedStateName");
-              debugPrint("Filtered Districts: ${_filteredDistricts.length}");
-            },
+            }),
           ),
-          const SizedBox(height: 16),
-
-          // District Dropdown
-          DropdownButtonFormField<int>(
-            // value: _selectedDistrictId,
-            initialValue:
-                _filteredDistricts.any((d) => d['id'] == _selectedDistrictId)
-                    ? _selectedDistrictId
-                    : null,
-            isExpanded: true,
-            dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
-            style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
-            icon: Icon(Icons.keyboard_arrow_down, color: colorScheme.primary),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _feedbackController,
+            style: TextStyle(color: cs.onSurface),
             decoration: InputDecoration(
-              labelText: "District",
-              labelStyle:
-                  TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
+              hintText: 'Feedback',
+              hintStyle: TextStyle(color: cs.onSurfaceVariant),
               filled: true,
-              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
+              fillColor: cs.surface,
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark ? BorderSide.none : const BorderSide(),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark
-                    ? BorderSide.none
-                    : BorderSide(color: colorScheme.outline),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: colorScheme.primary, width: 1),
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
               ),
               contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              prefixIcon: Icon(Icons.location_city, color: colorScheme.primary),
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
-            items: _buildDistrictItems(),
-            onChanged: _selectedStateId == null
-                ? null
-                : (value) {
-                    if (value == null) return;
-
-                    final selectedDistrict = _filteredDistricts.firstWhere(
-                      (district) => district['id'] == value,
-                      orElse: () => {},
-                    );
-
-                    setState(() {
-                      _selectedDistrictId = value;
-                      _selectedDistrictName = selectedDistrict['district_name'];
-                    });
-
-                    debugPrint("Selected District ID: $_selectedDistrictId");
-                    debugPrint(
-                        "Selected District Name: $_selectedDistrictName");
-                  },
+            maxLines: 3,
           ),
           const SizedBox(height: 16),
-
-          // Address Field (4 lines)
-          TextField(
-            controller: _addressController,
-            // maxLines: 4,
-            style: TextStyle(color: colorScheme.onSurface),
-            decoration: InputDecoration(
-              labelText: 'Address',
-              labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
-              filled: true,
-              fillColor: isDark ? colorScheme.surfaceContainerHighest : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark ? BorderSide.none : const BorderSide(),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: isDark
-                    ? BorderSide.none
-                    : BorderSide(color: colorScheme.outline),
-              ),
-              prefixIcon: Icon(Icons.home, color: colorScheme.primary),
-              alignLabelWithHint: true,
-            ),
-          ),
-
-          const SizedBox(height: 32),
-
-          // Save Button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: _isSaving ? null : _updateProfile,
+              onPressed: _submitRating,
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
+                backgroundColor: cs.primary,
+                foregroundColor: cs.onPrimary,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
               ),
-              child: _isSaving
-                  ? SizedBox(
-                      height: 20,
-                      width: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: colorScheme.onPrimary,
-                      ),
-                    )
-                  : const Text(
-                      'Save Profile',
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                    ),
+              child: const Text(
+                'Submit Rating',
+                style: TextStyle(fontSize: 16),
+              ),
             ),
           ),
-          const SizedBox(height: 16),
         ],
       ),
     );
   }
 
-  // Helper method to build district dropdown items
-  List<DropdownMenuItem<int>> _buildDistrictItems() {
-    final colorScheme = Theme.of(context).colorScheme;
+// ================= REVIEW CARD (LIGHT THEME) =================
 
-    if (_selectedStateId == null) {
-      return [
-        DropdownMenuItem<int>(
-          value: null,
-          child: Text(
-            'Select state first',
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
+  Widget _reviewCardHorizontal({
+    required String username,
+    required int rating,
+    required String message,
+    required String createdAt,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: 240,
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            spreadRadius: 1,
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
-        )
-      ];
-    }
-
-    if (_isLoadingDistricts) {
-      return [
-        DropdownMenuItem<int>(
-          value: null,
-          child: Text(
-            'Loading districts...',
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
-          ),
-        )
-      ];
-    }
-
-    if (_filteredDistricts.isEmpty) {
-      return [
-        DropdownMenuItem<int>(
-          value: null,
-          child: Text(
-            'No districts available',
-            style: TextStyle(color: colorScheme.onSurfaceVariant),
-          ),
-        )
-      ];
-    }
-
-    return _filteredDistricts.map((district) {
-      return DropdownMenuItem<int>(
-        value: district['id'],
-        child: Text(
-          district['district_name'],
+        ],
+        border: Border.all(
+          color: cs.outlineVariant,
+          width: 0.4,
         ),
-      );
-    }).toList();
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(
+                radius: 14,
+                backgroundColor: cs.primaryContainer,
+                child: Text(
+                  username.isNotEmpty ? username[0].toUpperCase() : "U",
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: cs.onPrimaryContainer,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  username,
+                  style: TextStyle(
+                    color: cs.onSurface,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          _starsRow(rating, isLight: true),
+          const SizedBox(height: 6),
+          Text(
+            message.isNotEmpty ? message : "No message",
+            style: TextStyle(
+              color: cs.onSurfaceVariant,
+              fontSize: 12,
+            ),
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 6),
+          Text(
+            createdAt.isNotEmpty ? createdAt.split("T").first : "",
+            style: TextStyle(
+              color: cs.onSurfaceVariant.withOpacity(0.7),
+              fontSize: 10,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
-  void _addEmailField() {
-    setState(() {
-      _additionalEmailController = TextEditingController();
-    });
+  // ================= STAR ROW =================
+
+  // ================= STAR ROW (with light/dark support) =================
+  Widget _starsRow(int rating, {bool isLight = false}) {
+    int safeRating = rating.clamp(0, 5);
+    return Row(
+      children: List.generate(5, (index) {
+        return Icon(
+          Icons.star,
+          size: 16,
+          color: index < safeRating
+              ? Colors.amber
+              : isLight
+                  ? Colors.grey.shade300
+                  : Colors.grey.shade600,
+        );
+      }),
+    );
   }
 
-  void _removeEmailField() {
-    setState(() {
-      _additionalEmailController?.dispose();
-      _additionalEmailController = null;
-    });
-  }
-
-  void _addMobileField() {
-    setState(() {
-      _additionalMobileController = TextEditingController();
-    });
-  }
-
-  void _removeMobileField() {
-    setState(() {
-      _additionalMobileController?.dispose();
-      _additionalMobileController = null;
-    });
-  }
-}
-
-// Media Upload Card Component - Updated with existing file support
-class MediaUploadCard extends StatelessWidget {
-  final String title;
-  final String size;
-  final XFile? mediaFile;
-  final String? existingFile;
-  final String baseUrl;
-  final VoidCallback onTap;
-  final bool isVideo;
-
-  const MediaUploadCard({
-    super.key,
-    required this.title,
-    required this.size,
-    this.mediaFile,
-    this.existingFile,
-    required this.baseUrl,
-    required this.onTap,
-    this.isVideo = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final hasNewFile = mediaFile != null;
-    final hasExistingFile = existingFile != null && existingFile!.isNotEmpty;
-    final showPreview = hasNewFile || hasExistingFile;
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? colorScheme.surfaceContainerHighest : null,
-          border: isDark ? null : Border.all(color: colorScheme.outlineVariant),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        padding: const EdgeInsets.all(8),
+  // ================= EMPTY REVIEWS =================
+  Widget _buildEmptyReviews() {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
           children: [
-            // Preview or Icon
-            SizedBox(
-              width: 50,
-              height: 50,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: showPreview
-                    ? _buildPreview(hasNewFile, hasExistingFile)
-                    : Icon(
-                        isVideo ? Icons.videocam : Icons.image,
-                        color: colorScheme.onSurfaceVariant,
-                        size: 24,
-                      ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            // Title
+            Icon(Icons.rate_review, size: 40, color: cs.onSurfaceVariant),
+            const SizedBox(height: 8),
             Text(
-              title,
-              style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                  color: colorScheme.onSurface),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            // Size/Status
-            Text(
-              hasNewFile
-                  ? 'New Selected'
-                  : (hasExistingFile ? 'Uploaded' : size),
-              style: TextStyle(
-                color: hasNewFile
-                    ? Colors.green
-                    : (hasExistingFile
-                        ? Colors.blue
-                        : colorScheme.onSurfaceVariant),
-                fontSize: 10,
-                fontWeight: hasNewFile || hasExistingFile
-                    ? FontWeight.w500
-                    : FontWeight.normal,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            // Upload Button
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: hasNewFile
-                    ? Colors.green.withOpacity(0.1)
-                    : (hasExistingFile
-                        ? Colors.blue.withOpacity(0.1)
-                        : colorScheme.primary.withOpacity(0.1)),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                hasNewFile
-                    ? 'Change'
-                    : (hasExistingFile ? 'Replace' : 'Upload'),
-                style: TextStyle(
-                  color: hasNewFile
-                      ? Colors.green
-                      : (hasExistingFile ? Colors.blue : colorScheme.primary),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
+              "No reviews yet",
+              style: TextStyle(color: cs.onSurfaceVariant),
             ),
           ],
         ),
@@ -2788,76 +1161,1027 @@ class MediaUploadCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPreview(bool hasNewFile, bool hasExistingFile) {
-    if (hasNewFile) {
-      // Show newly selected file
-      if (isVideo) {
-        return const Icon(
-          Icons.play_circle_filled,
-          color: Colors.blue,
-          size: 30,
-        );
-      } else {
-        try {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Image.file(
-              File(mediaFile!.path),
-              width: 50,
-              height: 50,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return _buildFallbackIcon();
-              },
-            ),
-          );
-        } catch (e) {
-          return _buildFallbackIcon();
-        }
-      }
-    } else if (hasExistingFile) {
-      // Show existing file from server
-      if (isVideo) {
-        return const Icon(
-          Icons.play_circle_filled,
-          color: Colors.blue,
-          size: 30,
-        );
-      } else {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Image.network(
-            '$baseUrl/$existingFile',
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return _buildFallbackIcon();
-            },
-          ),
-        );
-      }
-    }
+  Widget _existingButtonWidget() {
+    final connection = _userDetails?['connection'] as Map<String, dynamic>?;
 
-    return _buildFallbackIcon();
+    return ElevatedButton(
+      onPressed: () async {
+        if (widget.fromConnectionTab == 'pending' ||
+            _isIncomingPendingRequest(connection)) {
+          _acceptPendingRequest();
+        } else if (widget.fromConnectionTab == 'sent' ||
+            _isOutgoingPendingRequest(connection)) {
+          _removeSentRequest();
+        } else {
+          if (widget.userId == null) return;
+
+          final error = await _sendConnectionRequest(widget.userId!);
+
+          if (error == null) {
+            TopAlert.show(context, "Connection request sent", isSuccess: true);
+            _fetchUserDetails();
+          } else {
+            TopAlert.show(context, error, isError: true);
+          }
+        }
+      },
+      child: Text(
+        _getConnectionActionLabel(
+          _userDetails?['connection'] as Map<String, dynamic>?,
+        ),
+      ),
+    );
   }
 
-  Widget _buildFallbackIcon() {
-    return Builder(
-      builder: (context) {
-        final colorScheme = Theme.of(context).colorScheme;
-        return Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Icon(
-            Icons.broken_image,
-            color: colorScheme.onSurfaceVariant,
-            size: 24,
-          ),
-        );
-      },
+  // ================= NEW: ACCEPT PENDING REQUEST =================
+  Future<void> _acceptPendingRequest() async {
+    final int? senderId = widget.userId;
+    final int? receiverId = widget.viewerUserId;
+
+    if (senderId == null || receiverId == null) return;
+
+    try {
+      final url = Uri.parse("$_baseUrl/connection-request/update-status");
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "sender_id": senderId,
+          "receiver_id": receiverId,
+          "status": 2, // accepted
+        }),
+      );
+
+      final jsonData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && jsonData['status'] == true) {
+        TopAlert.show(context, jsonData['message'] ?? 'Accepted',
+            isSuccess: true);
+
+        // Refresh UI
+        await _fetchUserDetails();
+      } else {
+        TopAlert.show(context, jsonData['message'] ?? 'Failed', isError: true);
+      }
+    } catch (e) {
+      debugPrint("🔴 ERROR _acceptPendingRequest(): $e");
+      TopAlert.show(context, 'Network error', isError: true);
+    }
+  }
+
+  // ================= NEW: REMOVE SENT REQUEST =================
+  Future<void> _removeSentRequest() async {
+    final int? senderId = widget.viewerUserId;
+    final int? receiverId = widget.userId;
+
+    if (senderId == null || receiverId == null) return;
+
+    try {
+      final url = Uri.parse("$_baseUrl/connection-request/delete");
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "sender_id": senderId,
+          "receiver_id": receiverId,
+          "status": 0, // connection status
+        }),
+      );
+
+      final jsonData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && jsonData['status'] == true) {
+        TopAlert.show(context, jsonData['message'] ?? 'Removed',
+            isSuccess: true);
+
+        // Refresh UI
+        await _fetchUserDetails();
+      } else {
+        TopAlert.show(context, jsonData['message'] ?? 'Failed', isError: true);
+      }
+    } catch (e) {
+      debugPrint("🔴 ERROR _removeSentRequest(): $e");
+      TopAlert.show(context, 'Network error', isError: true);
+    }
+  }
+
+  // ================= NEW: SEND CONNECTION REQUEST =================
+  Future<String?> _sendConnectionRequest(int profileId) async {
+    try {
+      final viewerId =
+          widget.viewerUserId ?? await UserStorageService().getUserId();
+      if (viewerId == null) return "User not logged in";
+
+      // Consistently use connection-create as per codebase pattern
+      final url = Uri.parse("$_baseUrl/connection-create");
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "receiver_id": profileId,
+        }),
+      );
+
+      final jsonData = jsonDecode(response.body);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (jsonData['status'] == true) return null;
+        return null; // Some endpoints might not return status true but still 200/201
+      } else {
+        return jsonData['message'] ?? "Failed to send request";
+      }
+    } catch (e) {
+      debugPrint("🔴 ERROR _sendConnectionRequest(): $e");
+      return "Network error";
+    }
+  }
+
+  // ================= EMPTY REVIEWS (LIGHT) =================
+  Widget _buildEmptyReviewsLight() {
+    final cs = Theme.of(context).colorScheme;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          children: [
+            Icon(Icons.rate_review, size: 40, color: cs.onSurfaceVariant),
+            const SizedBox(height: 8),
+            Text(
+              "No reviews yet",
+              style: TextStyle(color: cs.onSurfaceVariant),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ================= BUILD =================
+  @override
+  Widget build(BuildContext context) {
+    final profileProvider = context.watch<ProfileProvider>();
+    final profile = profileProvider.profileData;
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bool isViewerMode = widget.viewerUserId != null &&
+        widget.userId != null &&
+        widget.viewerUserId != widget.userId;
+
+    final connectionData = _userDetails?['connection'];
+    final int? connectionStatus =
+        _parseConnectionStatus(connectionData as Map<String, dynamic>?);
+
+    final bool isAlreadyConnected = widget.isConnected || connectionStatus == 2;
+
+    final apiMasterUser = _userDetails?['master_user'];
+
+    final String fullName = _getFullName();
+    final String address = apiMasterUser?['address']?.toString() ?? "-";
+    final String phone = apiMasterUser?['mobile']?.toString() ?? "9406037478";
+
+    final String? apiProfilePic = apiMasterUser?['profile_pic'];
+
+    final String? apiProfileLogo = apiMasterUser?['profile_logo'];
+
+    final String? apiProfilePicUrl =
+        (apiProfilePic != null && apiProfilePic.toString().isNotEmpty)
+            ? "$_imgBaseUrl/$apiProfilePic"
+            : null;
+
+    final String? apiProfileLogoUrl =
+        (apiProfileLogo != null && apiProfileLogo.toString().isNotEmpty)
+            ? "$_imgBaseUrl/$apiProfileLogo"
+            : null;
+
+    // ✅ Move screenHeight here, outside of children list
+    final double screenHeight = MediaQuery.of(context).size.height;
+
+    debugPrint("🟦 FINAL PROFILE PIC URL = $apiProfilePicUrl");
+    debugPrint("🟦 FINAL PROFILE Logo URL = $apiProfileLogoUrl");
+
+    return Scaffold(
+      backgroundColor: colorScheme.surface,
+      body: profileProvider.isLoading && profile == null && _userDetails == null
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              // padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  // ================= PROFILE INFO CARD (UPDATED) =================
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: MediaQuery.of(context).size.height * 0.75,
+                    child: Stack(
+                      children: [
+                        /// FULL WIDTH PROFILE COVER IMAGE
+                        Positioned.fill(
+                          child: (apiProfilePicUrl != null &&
+                                  apiProfilePicUrl.isNotEmpty)
+                              ? Image.network(
+                                  apiProfilePicUrl,
+                                  fit: BoxFit.cover,
+                                )
+                              : Container(
+                                  color: colorScheme.surfaceContainerHighest,
+                                  child: Icon(
+                                    Icons.person,
+                                    size: 80,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                        ),
+
+                        /// DARK GRADIENT OVERLAY
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.black.withOpacity(0.6),
+                                  Colors.transparent,
+                                  Colors.black.withOpacity(0.7),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        /// BACK BUTTON
+
+                        Positioned(
+                          // top: MediaQuery.of(context).padding.top + 12,
+                          // left: 12,
+                          child: GestureDetector(
+                            onTap: () => Navigator.pop(context),
+                            child: Container(
+                              width: 56,
+                              height: 56,
+                              alignment: Alignment.center,
+                              color: Colors.transparent,
+                              child: const Icon(
+                                Icons.arrow_back,
+                                color: Colors.white,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        /// EDIT BUTTON (ONLY OWNER)
+                        // if (!isViewerMode)
+                        //   Positioned(
+                        //     // top: MediaQuery.of(context).padding.top + 8,
+                        //     right: 12,
+                        //     child: GestureDetector(
+                        //       onTap: () {
+                        //         Navigator.push(
+                        //           context,
+                        //           MaterialPageRoute(
+                        //             builder: (context) => EditProfilePage(
+                        //               userDetails: _userDetails,
+                        //             ),
+                        //           ),
+                        //         );
+                        //       },
+                        //       child: Container(
+                        //         width: 56,
+                        //         height: 56,
+                        //         alignment: Alignment.center,
+                        //         color: Colors.transparent,
+                        //         child: const Icon(
+                        //           Icons.edit,
+                        //           color: Colors.white,
+                        //           size: 24,
+                        //         ),
+                        //       ),
+                        //     ),
+                        //   ),
+
+                        if (!isViewerMode)
+                          Positioned(
+                            right: 12,
+                            child: GestureDetector(
+                              onTap: () async {
+                                // 👈 make the function async
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EditProfilePage(
+                                      userDetails: _userDetails,
+                                    ),
+                                  ),
+                                );
+                                if (result == true) {
+                                  // 👈 if profile was saved successfully
+                                  // Refresh all data
+                                  await _fetchUserDetails();
+                                  await _fetchMasterLinks();
+                                  await _fetchReviews();
+                                  await _fetchAverageRating();
+                                  // Also refresh the provider if you use it
+                                  if (mounted) {
+                                    context
+                                        .read<ProfileProvider>()
+                                        .fetchAllProfileData();
+                                  }
+                                }
+                              },
+                              child: Container(
+                                width: 56,
+                                height: 56,
+                                alignment: Alignment.center,
+                                color: Colors.transparent,
+                                child: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                        /// PROFILE INFO BOTTOM CENTER
+                        Positioned(
+                          bottom: 24,
+                          left: 16,
+                          right: 16,
+                          child: Column(
+                            children: [
+                              CircleAvatar(
+                                radius: 40,
+                                backgroundColor:
+                                    colorScheme.surfaceContainerHighest,
+                                backgroundImage: apiProfileLogoUrl != null
+                                    ? NetworkImage(apiProfileLogoUrl)
+                                    : null,
+                                child: apiProfileLogoUrl == null
+                                    ? const Icon(Icons.person,
+                                        size: 42, color: Colors.white)
+                                    : null,
+                              ),
+
+                              const SizedBox(height: 14),
+
+                              /// FULL NAME
+                              Text(
+                                _capitalize(fullName),
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+
+                              const SizedBox(height: 6),
+
+                              /// BUSINESS NAME
+                              Text(
+                                _userDetails?['business_info']?['legal_name'] ??
+                                    "",
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white70,
+                                ),
+                              ),
+
+                              const SizedBox(height: 4),
+
+                              /// INDUSTRY
+                              Text(
+                                _userDetails?['business_info']?['industry']
+                                        ?['title'] ??
+                                    "",
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.white54,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  /// ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) ==================
+                  if (isViewerMode && !isAlreadyConnected)
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          const SizedBox(height: 14),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colorScheme.surfaceContainerHighest
+                                  : colorScheme.surface,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: isDark
+                                  ? []
+                                  : [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        spreadRadius: 1,
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                              border: isDark
+                                  ? null
+                                  : Border.all(
+                                      color: colorScheme.outlineVariant,
+                                      width: 1,
+                                    ),
+                            ),
+                            // child: ElevatedButton(
+                            //   onPressed: () async {
+                            //     final connection = _userDetails?['connection']
+                            //         as Map<String, dynamic>?;
+
+                            //     if (widget.fromConnectionTab == 'pending' ||
+                            //         _isIncomingPendingRequest(connection)) {
+                            //       _acceptPendingRequest();
+                            //     } else if (widget.fromConnectionTab == 'sent' ||
+                            //         _isOutgoingPendingRequest(connection)) {
+                            //       _removeSentRequest();
+                            //     } else {
+                            //       if (widget.userId == null) return;
+
+                            //       final error = await _sendConnectionRequest(
+                            //           widget.userId!);
+
+                            //       if (error == null) {
+                            //         TopAlert.show(
+                            //             context, "✅ Connection request sent",
+                            //             isSuccess: true);
+                            //         _fetchUserDetails();
+                            //       } else {
+                            //         TopAlert.show(context, error,
+                            //             isError: true);
+                            //       }
+                            //     }
+                            //   },
+                            //   style: ElevatedButton.styleFrom(
+                            //     backgroundColor: colorScheme.primary,
+                            //     foregroundColor: colorScheme.onPrimary,
+                            //     padding:
+                            //         const EdgeInsets.symmetric(vertical: 14),
+                            //     shape: RoundedRectangleBorder(
+                            //       borderRadius: BorderRadius.circular(14),
+                            //     ),
+                            //   ),
+                            //   child: Text(
+                            //     _getConnectionActionLabel(
+                            //       _userDetails?['connection']
+                            //           as Map<String, dynamic>?,
+                            //     ),
+                            //     style: const TextStyle(fontSize: 12),
+                            //   ),
+                            // ),
+
+                            child: _buildConnectionButton(),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  // ================= REST UI (ALWAYS SHOWN) =================
+                  if (true) ...[
+                    /// ================= SOCIAL LINKS SECTION ==================
+                    if (!_isLoadingMasterLinks && _masterLinks.isNotEmpty)
+                      Padding(
+                        padding:
+                            const EdgeInsets.all(16), // ✅ 16 padding outside
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 16),
+
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colorScheme.surfaceContainerHighest
+                                    : colorScheme.surface,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: isDark
+                                    ? []
+                                    : [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          spreadRadius: 1,
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                border: isDark
+                                    ? null
+                                    : Border.all(
+                                        color: colorScheme.outlineVariant,
+                                        width: 0.2,
+                                      ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  /// SECTION TITLE
+                                  Text(
+                                    'Social Links',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  /// SOCIAL ICONS GRID
+                                  _buildSocialIconsGrid(),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 12), // spacing after section
+                          ],
+                        ),
+                      ),
+
+                    if (!_isLoadingMasterLinks && _masterLinks.isNotEmpty)
+
+                      /// ================= HAVE A QUESTION SECTION ==================
+                      Padding(
+                        padding:
+                            const EdgeInsets.all(16), // ✅ 16 padding outside
+                        child: Column(
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? colorScheme.surfaceContainerHighest
+                                    : colorScheme.surface,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: isDark
+                                    ? []
+                                    : [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.1),
+                                          spreadRadius: 1,
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
+                                      ],
+                                border: isDark
+                                    ? null
+                                    : Border.all(
+                                        color: colorScheme.outlineVariant,
+                                        width: 0.2,
+                                      ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  /// TITLE
+                                  Text(
+                                    'Have a question?',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 12),
+
+                                  /// NAME
+                                  Text(
+                                    fullName,
+                                    style: TextStyle(
+                                      color: colorScheme.onSurface,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 4),
+
+                                  /// PHONE
+                                  Text(
+                                    '+91 $phone',
+                                    style: TextStyle(
+                                      color: colorScheme.onSurfaceVariant,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+
+                                  const SizedBox(height: 16),
+
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? colorScheme.surfaceContainerHighest
+                                          : colorScheme.surface,
+                                      borderRadius: BorderRadius.circular(18),
+                                      boxShadow: isDark
+                                          ? []
+                                          : [
+                                              BoxShadow(
+                                                color: Colors.black
+                                                    .withOpacity(0.1),
+                                                spreadRadius: 1,
+                                                blurRadius: 6,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                      border: isDark
+                                          ? null
+                                          : Border.all(
+                                              color: colorScheme.outlineVariant,
+                                              width: 0.2,
+                                            ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: TextField(
+                                            controller: _messageController,
+                                            style: TextStyle(
+                                                color: colorScheme.onSurface),
+                                            decoration: InputDecoration(
+                                              hintText: 'Message',
+                                              hintStyle: TextStyle(
+                                                  color: colorScheme
+                                                      .onSurfaceVariant),
+                                              filled: true,
+                                              fillColor:
+                                                  colorScheme.surfaceContainer,
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                borderSide: BorderSide.none,
+                                              ),
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                horizontal: 16,
+                                                vertical: 12,
+                                              ),
+                                              suffixIcon: IconButton(
+                                                icon: Icon(
+                                                  Icons.camera_alt,
+                                                  color: colorScheme.primary,
+                                                ),
+                                                onPressed: _pickImageForMessage,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        ElevatedButton(
+                                          onPressed: _sendMessage,
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor:
+                                                colorScheme.primary,
+                                            foregroundColor:
+                                                colorScheme.onPrimary,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 20,
+                                              vertical: 14,
+                                            ),
+                                          ),
+                                          child: const Text('Send'),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  /// IMAGE PREVIEW
+                                  if (_selectedImage != null) ...[
+                                    const SizedBox(height: 12),
+                                    Container(
+                                      height: 60,
+                                      width: 60,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(8),
+                                        image: DecorationImage(
+                                          image: FileImage(_selectedImage!),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 12), // spacing after section
+                          ],
+                        ),
+                      ),
+
+                    if (isViewerMode)
+                      Padding(
+                        padding:
+                            const EdgeInsets.all(16), // ✅ 16 padding applied
+                        child: Column(
+                          children: [
+                            _buildRatingsSection(),
+
+                            // const SizedBox(height: 12), // spacing after section
+                          ],
+                        ),
+                      ),
+
+                    /// ================= PRODUCTS SECTION ==================
+                    if (_products.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Products & Services',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            SizedBox(
+                              height: 240,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _products.length,
+                                itemBuilder: (context, index) {
+                                  final p =
+                                      _products[index] as Map<String, dynamic>;
+                                  final imageUrl = _getFullProductImageUrl(p);
+                                  return Container(
+                                    width: 180,
+                                    margin: const EdgeInsets.only(right: 12),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? colorScheme.surfaceContainerHighest
+                                          : Colors.grey[100],
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                          color: colorScheme.onSurface
+                                              .withOpacity(0.05)),
+                                    ),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              const BorderRadius.vertical(
+                                                  top: Radius.circular(12)),
+                                          child: imageUrl.isNotEmpty
+                                              ? Image.network(
+                                                  imageUrl,
+                                                  height: 120,
+                                                  width: 180,
+                                                  fit: BoxFit.cover,
+                                                  errorBuilder: (context, error,
+                                                          stackTrace) =>
+                                                      Container(
+                                                    height: 120,
+                                                    color: Colors.grey[300],
+                                                    child: const Icon(Icons
+                                                        .image_not_supported),
+                                                  ),
+                                                )
+                                              : Container(
+                                                  height: 120,
+                                                  color: Colors.grey[300],
+                                                  child:
+                                                      const Icon(Icons.image),
+                                                ),
+                                        ),
+                                        Padding(
+                                          padding: const EdgeInsets.all(8.0),
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                p["product_name"] ?? "-",
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                "₹ ${p["product_price"] ?? "0"}",
+                                                style: const TextStyle(
+                                                  color: Colors.green,
+                                                  fontWeight: FontWeight.w600,
+                                                  fontSize: 13,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                p["description"] ?? "",
+                                                maxLines: 2,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  color: colorScheme.onSurface
+                                                      .withOpacity(0.6),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ),
+                      ),
+
+                    /// ================= REVIEWS SECTION ==================
+                    Padding(
+                      padding: const EdgeInsets.all(16), // ✅ OUTER 16 PADDING
+                      child: Column(
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(
+                                16), // ✅ INNER CARD PADDING
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? colorScheme.surfaceContainerHighest
+                                  : colorScheme.surface,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: isDark
+                                  ? []
+                                  : [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.1),
+                                        spreadRadius: 1,
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                              border: isDark
+                                  ? null
+                                  : Border.all(
+                                      color: colorScheme.outlineVariant,
+                                      width: 0.2,
+                                    ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                /// TITLE
+                                Text(
+                                  'Reviews',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    color: colorScheme.onSurface,
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                /// LOADING / EMPTY / LIST
+                                _isLoadingReviews
+                                    ? const Center(
+                                        child: Padding(
+                                          padding: EdgeInsets.symmetric(
+                                              vertical: 20),
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      )
+                                    : _reviews.isEmpty
+                                        ? _buildEmptyReviewsLight()
+                                        : SizedBox(
+                                            height: 200,
+                                            child: ListView.builder(
+                                              scrollDirection: Axis.horizontal,
+                                              itemCount: _reviews.length,
+                                              // itemBuilder: (context, index) {
+                                              //   final r = _reviews[index]
+                                              //       as Map<String, dynamic>;
+
+                                              //   final fromUser =
+                                              //       (r["from_user"] ?? {})
+                                              //           as Map<String, dynamic>;
+
+                                              //   final username =
+                                              //       (fromUser["user_name"] ??
+                                              //               "Unknown User")
+                                              //           .toString();
+
+                                              //   final reviewer_name =
+                                              //       (r["reviewer_name"] ?? "anonymous")
+                                              //           as Map<String, dynamic>;
+
+                                              //           //reviewer_name
+
+                                              //   final message =
+                                              //       (r["message"] ?? "")
+                                              //           .toString();
+
+                                              //   final rating = int.tryParse(
+                                              //         r["rating"].toString(),
+                                              //       ) ??
+                                              //       0;
+
+                                              //   final createdAt =
+                                              //       (r["created_at"] ?? "")
+                                              //           .toString();
+
+                                              //   return _reviewCardHorizontal(
+                                              //     username: username,
+                                              //     rating: rating,
+                                              //     message: message,
+                                              //     createdAt: createdAt,
+                                              //   );
+                                              // },
+
+                                              itemBuilder: (context, index) {
+                                                final r = _reviews[index]
+                                                    as Map<String, dynamic>;
+
+                                                // Safely get from_user as a map or null
+                                                final fromUser = r["from_user"]
+                                                    as Map<String, dynamic>?;
+
+                                                // Determine username:
+                                                // 1. If fromUser exists and has user_name, use it.
+                                                // 2. Else if reviewer_name (string) exists, use it.
+                                                // 3. Else fallback to "Anonymous".
+                                                String username;
+                                                if (fromUser != null &&
+                                                    fromUser["user_name"] !=
+                                                        null) {
+                                                  username =
+                                                      fromUser["user_name"]
+                                                          .toString();
+                                                } else if (r["reviewer_name"] !=
+                                                    null) {
+                                                  username = r["reviewer_name"]
+                                                      .toString();
+                                                } else {
+                                                  username = "Anonymous";
+                                                }
+
+                                                final message =
+                                                    (r["message"] ?? "")
+                                                        .toString();
+                                                final rating = int.tryParse(
+                                                        r["rating"]
+                                                            .toString()) ??
+                                                    0;
+                                                final createdAt =
+                                                    (r["created_at"] ?? "")
+                                                        .toString();
+
+                                                return _reviewCardHorizontal(
+                                                  username: username,
+                                                  rating: rating,
+                                                  message: message,
+                                                  createdAt: createdAt,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 24), // spacing after section
+                        ],
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
     );
   }
 }

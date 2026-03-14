@@ -424,9 +424,13 @@ class _QRScannerPageState extends State<QRScannerPage> {
             ),
           );
 
+         
           if (result == true && mounted) {
             TopAlert.show(context, '✅ Connection request sent successfully',
                 isSuccess: true);
+
+                 // 🔥 Scanner page automatically close
+            Navigator.pop(context);
           }
         } else {
           _showErrorDialog('Profile not found');

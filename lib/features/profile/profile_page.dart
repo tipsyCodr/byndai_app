@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
-
+import 'package:video_player/video_player.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/profile_provider.dart';
@@ -12,6 +13,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'dart:async';
+import 'dart:ui';
+import './product_list_widget.dart';
 
 class ProfilePage extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
@@ -43,6 +47,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
   String _requestStatus = "none";
   bool _isCheckingConnection = false;
+
+  bool _isGeneratingAI = false;
+
+  bool _hasGivenReview = false;
+
+  Map<String, dynamic>? _givenReviewData;
+
+  VideoPlayerController? _videoController;
+  bool _showVideo = false;
+  bool _isVideoInitialized = false;
+  Timer? _videoDelayTimer;
 
   // ================= PROFILE VIEW TRACKING =================
   DateTime? _profileOpenTime;
@@ -84,6 +99,63 @@ class _ProfilePageState extends State<ProfilePage> {
       'Accept': 'application/json',
       if (token != null) 'Authorization': 'Bearer $token',
     };
+  }
+
+  // Future<void> _initProfileVideo(String videoUrl) async {
+  //   try {
+  //     // _videoController = VideoPlayerController.network(videoUrl);
+  //     _videoController = VideoPlayerController.networkUrl(
+  //       Uri.parse("$videoUrl?t=${DateTime.now().millisecondsSinceEpoch}"),
+  //     );
+
+  //     await _videoController!.initialize();
+
+  //     _videoController!.setLooping(true);
+  //     _videoController!.setVolume(0);
+
+  //     if (mounted) {
+  //       setState(() {
+  //         _isVideoInitialized = true;
+  //       });
+  //     }
+  //   } catch (e) {
+  //     debugPrint("Video init error: $e");
+  //   }
+  // }
+
+  Future<void> _initProfileVideo(String videoUrl) async {
+    try {
+      _videoController?.dispose();
+
+      _videoController = VideoPlayerController.networkUrl(
+        Uri.parse("$videoUrl?t=${DateTime.now().millisecondsSinceEpoch}"),
+      );
+
+      await _videoController!.initialize();
+
+      _videoController!.setLooping(true);
+      _videoController!.setVolume(0);
+
+      if (!mounted) return;
+
+      setState(() {
+        _isVideoInitialized = true;
+      });
+
+      /// 👇 2 second delay before showing video
+      _videoDelayTimer?.cancel();
+      _videoDelayTimer = Timer(const Duration(seconds: 2), () {
+        if (!mounted) return;
+
+        setState(() {
+          _showVideo = true;
+        });
+
+        _videoController!.play();
+      });
+    } catch (e) {
+      debugPrint("Video init error: $e");
+    }
   }
 
   Future<void> _checkConnectionStatus() async {
@@ -512,10 +584,29 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _printRatingJson();
       await _startProfileView();
-
       await _fetchMasterLinks();
       await _fetchUserDetails();
+
+      Future.delayed(const Duration(seconds: 2), () async {
+        final video = _userDetails?['master_user']?['profile_video'];
+
+        if (video != null && video.toString().isNotEmpty) {
+          String videoUrl = "$_imgBaseUrl/$video";
+
+          await _initProfileVideo(videoUrl);
+
+          if (mounted) {
+            // setState(() {
+            //   _showVideo = true;
+            // });
+
+            // _videoController?.play();
+          }
+        }
+      });
+
       await _fetchProducts();
 
       // existing provider call (as it is)
@@ -537,6 +628,9 @@ class _ProfilePageState extends State<ProfilePage> {
     _endProfileView();
     _messageController.dispose();
     _feedbackController.dispose();
+
+    _videoController?.dispose();
+    _videoDelayTimer?.cancel();
     super.dispose();
   }
 
@@ -807,17 +901,70 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  void _sendMessage() {
-    if (_messageController.text.isNotEmpty || _selectedImage != null) {
-      TopAlert.show(context, 'Message sent!', isSuccess: true);
+  void _sendMessage() async {
+    final phone = _userDetails?['master_user']?['mobile_one']?.toString() ?? '';
+    final message = _messageController.text.trim();
 
-      setState(() {
-        _messageController.clear();
-        _selectedImage = null;
-      });
-    } else {
-      TopAlert.show(context, 'Type a message or select an image');
+    // Get logged‑in user's mobile from secure storage
+    final session = await UserStorageService().loadSession();
+    final loggedInMobile = session.user?.userMobile ?? 'Unknown';
+
+    if (message.isEmpty) {
+      TopAlert.show(context, 'Please enter a message', isError: true);
+      return;
     }
+
+    // Log to console (as you already see)
+    final output = jsonEncode({
+      'target_mobile': phone,
+      'message': message,
+      'logged_in_mobile': loggedInMobile,
+    });
+    debugPrint('📤 SEND MESSAGE: $output');
+    TopAlert.show(context, 'Message logged to console', isSuccess: true);
+
+    // Now open WhatsApp for the target number
+    if (phone.isEmpty) {
+      TopAlert.show(context, 'No phone number available', isError: true);
+      return;
+    }
+
+    // Clean phone number: remove spaces/dashes, ensure country code
+    String cleanPhone = phone.replaceAll(RegExp(r'[\s\-]'), '');
+    if (!cleanPhone.startsWith('+')) {
+      // Assume Indian numbers if 10 digits, otherwise just add '+'
+      if (cleanPhone.length == 10) {
+        cleanPhone = '+91$cleanPhone';
+      } else {
+        cleanPhone = '+$cleanPhone';
+      }
+    }
+
+    final encodedMessage = Uri.encodeComponent(message);
+    final whatsappUrl =
+        'whatsapp://send?phone=$cleanPhone&text=$encodedMessage';
+    final webUrl = 'https://wa.me/$cleanPhone?text=$encodedMessage';
+
+    try {
+      final uri = Uri.parse(whatsappUrl);
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri);
+      } else {
+        // Fallback to web WhatsApp
+        final webUri = Uri.parse(webUrl);
+        if (await canLaunchUrl(webUri)) {
+          await launchUrl(webUri, mode: LaunchMode.externalApplication);
+        } else {
+          TopAlert.show(context, 'WhatsApp is not installed', isError: true);
+        }
+      }
+    } catch (e) {
+      debugPrint('🔴 Error launching WhatsApp: $e');
+      TopAlert.show(context, 'Could not open WhatsApp', isError: true);
+    }
+
+    // Clear the message field after sending
+    _messageController.clear();
   }
 
   // ================= RATINGS METHODS =================
@@ -908,6 +1055,154 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       debugPrint("🔴 ERROR _submitRating(): $e");
       TopAlert.show(context, "Network error", isError: true);
+    }
+  }
+
+  Future<void> _printRatingJson() async {
+    try {
+      final int? fromUserId =
+          widget.viewerUserId ?? await UserStorageService().getUserId();
+
+      final int? toUserId =
+          widget.userId ?? await UserStorageService().getUserId();
+
+      if (fromUserId == null || toUserId == null) return;
+
+      final ratingData = {
+        "from_user_id": fromUserId,
+        "to_user_id": toUserId,
+      };
+
+      debugPrint("⭐ RATING DATA JSON: ${jsonEncode(ratingData)}");
+
+      // ✅ CALL API
+      await _checkExistingReview(fromUserId, toUserId);
+    } catch (e) {
+      debugPrint("🔴 ERROR _printRatingJson(): $e");
+    }
+  }
+
+  Future<void> _checkExistingReview(int fromUserId, int toUserId) async {
+    try {
+      final url = Uri.parse("$_baseUrl/user-review/find");
+
+      final res = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "from_user_id": fromUserId,
+          "to_user_id": toUserId,
+        }),
+      );
+
+      debugPrint("🟦 FIND REVIEW API: ${res.body}");
+
+      final jsonData = jsonDecode(res.body);
+
+      if (res.statusCode == 200 && jsonData["status"] == true) {
+        if (mounted) {
+          setState(() {
+            _hasGivenReview = true;
+            _givenReviewData = jsonData["data"];
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _hasGivenReview = false;
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("🔴 ERROR _checkExistingReview(): $e");
+    }
+  }
+
+  Widget _buildGivenRatingCard() {
+    if (_givenReviewData == null) return const SizedBox();
+
+    final rating = _givenReviewData!["rating"];
+    final message = _givenReviewData!["message"];
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              "Your Given Rating",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: List.generate(
+                5,
+                (index) => Icon(
+                  index < rating ? Icons.star : Icons.star_border,
+                  color: Colors.amber,
+                ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              message ?? "",
+              style: const TextStyle(fontSize: 15),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _generateAIReview() async {
+    try {
+      if (_selectedRating == 0) return;
+
+      final int? toUserId = widget.userId;
+      if (toUserId == null) return;
+
+      setState(() {
+        _isGeneratingAI = true;
+      });
+
+      final url = Uri.parse("$_baseUrl/reviews/generate");
+
+      final res = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          "to_user_id": toUserId,
+          "rating": _selectedRating,
+        }),
+      );
+
+      final jsonData = jsonDecode(res.body);
+
+      debugPrint("🤖 AI REVIEW RESPONSE: ${res.body}");
+
+      if (res.statusCode == 200 && jsonData["success"] == true) {
+        final content = jsonData["content"] ?? "";
+
+        setState(() {
+          _feedbackController.text = content;
+        });
+      } else {
+        TopAlert.show(context, "Failed to generate AI review", isError: true);
+      }
+    } catch (e) {
+      debugPrint("🔴 ERROR _generateAIReview(): $e");
+      TopAlert.show(context, "Network error", isError: true);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isGeneratingAI = false;
+        });
+      }
     }
   }
 
@@ -1009,6 +1304,51 @@ class _ProfilePageState extends State<ProfilePage> {
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             ),
             maxLines: 3,
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              // onPressed: () {
+              //   final jsonData = {
+              //     "to_user_id": widget.userId,
+              //     "rating": _selectedRating
+              //   };
+
+              //   debugPrint("🤖 GENERATE AI JSON: ${jsonEncode(jsonData)}");
+
+              //   TopAlert.show(context, "AI request printed in console",
+              //       isSuccess: true);
+              // },
+              onPressed: _selectedRating == 0 || _isGeneratingAI
+                  ? null
+                  : _generateAIReview,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              // child: const Text(
+              //   "Generate AI",
+              //   style: TextStyle(fontSize: 16),
+              // ),
+              child: _isGeneratingAI
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Text(
+                      "Generate AI",
+                      style: TextStyle(fontSize: 16),
+                    ),
+            ),
           ),
           const SizedBox(height: 16),
           SizedBox(
@@ -1337,7 +1677,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
     final String fullName = _getFullName();
     final String address = apiMasterUser?['address']?.toString() ?? "-";
-    final String phone = apiMasterUser?['mobile']?.toString() ?? "9406037478";
+    final String phone =
+        apiMasterUser?['mobile_one']?.toString() ?? "9406037478";
 
     final String? apiProfilePic = apiMasterUser?['profile_pic'];
 
@@ -1356,9 +1697,16 @@ class _ProfilePageState extends State<ProfilePage> {
     // ✅ Move screenHeight here, outside of children list
     final double screenHeight = MediaQuery.of(context).size.height;
 
+    final String? apiProfileVideo = apiMasterUser?['profile_video'];
+
+    final String? apiProfileVideoUrl =
+        (apiProfileVideo != null && apiProfileVideo.toString().isNotEmpty)
+            ? "$_imgBaseUrl/$apiProfileVideo"
+            : null;
+
     debugPrint("🟦 FINAL PROFILE PIC URL = $apiProfilePicUrl");
     debugPrint("🟦 FINAL PROFILE Logo URL = $apiProfileLogoUrl");
-
+    debugPrint("🟦 FINAL PROFILE video URL = $apiProfileVideoUrl");
     return Scaffold(
       backgroundColor: colorScheme.surface,
       body: profileProvider.isLoading && profile == null && _userDetails == null
@@ -1371,16 +1719,46 @@ class _ProfilePageState extends State<ProfilePage> {
 
                   SizedBox(
                     width: double.infinity,
-                    height: MediaQuery.of(context).size.height * 0.75,
+                    height: MediaQuery.of(context).size.height * 0.65,
                     child: Stack(
                       children: [
                         /// FULL WIDTH PROFILE COVER IMAGE
                         Positioned.fill(
                           child: (apiProfilePicUrl != null &&
                                   apiProfilePicUrl.isNotEmpty)
-                              ? Image.network(
-                                  apiProfilePicUrl,
-                                  fit: BoxFit.cover,
+                              ? Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    /// Profile Image
+                                    AnimatedOpacity(
+                                      opacity: _showVideo ? 0.0 : 1.0,
+                                      duration:
+                                          const Duration(milliseconds: 600),
+                                      child: Image.network(
+                                        apiProfilePicUrl!,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+
+                                    /// Profile Video
+                                    if (_isVideoInitialized)
+                                      AnimatedOpacity(
+                                        opacity: _showVideo ? 1.0 : 0.0,
+                                        duration:
+                                            const Duration(milliseconds: 600),
+                                        child: FittedBox(
+                                          fit: BoxFit.cover,
+                                          child: SizedBox(
+                                            width: _videoController!
+                                                .value.size.width,
+                                            height: _videoController!
+                                                .value.size.height,
+                                            child:
+                                                VideoPlayer(_videoController!),
+                                          ),
+                                        ),
+                                      ),
+                                  ],
                                 )
                               : Container(
                                   color: colorScheme.surfaceContainerHighest,
@@ -1430,36 +1808,6 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
                         ),
 
-                        /// EDIT BUTTON (ONLY OWNER)
-                        // if (!isViewerMode)
-                        //   Positioned(
-                        //     // top: MediaQuery.of(context).padding.top + 8,
-                        //     right: 12,
-                        //     child: GestureDetector(
-                        //       onTap: () {
-                        //         Navigator.push(
-                        //           context,
-                        //           MaterialPageRoute(
-                        //             builder: (context) => EditProfilePage(
-                        //               userDetails: _userDetails,
-                        //             ),
-                        //           ),
-                        //         );
-                        //       },
-                        //       child: Container(
-                        //         width: 56,
-                        //         height: 56,
-                        //         alignment: Alignment.center,
-                        //         color: Colors.transparent,
-                        //         child: const Icon(
-                        //           Icons.edit,
-                        //           color: Colors.white,
-                        //           size: 24,
-                        //         ),
-                        //       ),
-                        //     ),
-                        //   ),
-
                         if (!isViewerMode)
                           Positioned(
                             right: 12,
@@ -1504,68 +1852,102 @@ class _ProfilePageState extends State<ProfilePage> {
                           ),
 
                         /// PROFILE INFO BOTTOM CENTER
-                        Positioned(
-                          bottom: 24,
-                          left: 16,
-                          right: 16,
-                          child: Column(
-                            children: [
-                              CircleAvatar(
-                                radius: 40,
-                                backgroundColor:
-                                    colorScheme.surfaceContainerHighest,
-                                backgroundImage: apiProfileLogoUrl != null
-                                    ? NetworkImage(apiProfileLogoUrl)
-                                    : null,
-                                child: apiProfileLogoUrl == null
-                                    ? const Icon(Icons.person,
-                                        size: 42, color: Colors.white)
-                                    : null,
-                              ),
-
-                              const SizedBox(height: 14),
-
-                              /// FULL NAME
-                              Text(
-                                _capitalize(fullName),
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-
-                              const SizedBox(height: 6),
-
-                              /// BUSINESS NAME
-                              Text(
-                                _userDetails?['business_info']?['legal_name'] ??
-                                    "",
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Colors.white70,
-                                ),
-                              ),
-
-                              const SizedBox(height: 4),
-
-                              /// INDUSTRY
-                              Text(
-                                _userDetails?['business_info']?['industry']
-                                        ?['title'] ??
-                                    "",
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.white54,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
                       ],
+                    ),
+                  ),
+
+                  /// ================= PROFILE INFO CARD =================
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 0),
+                    child: Container(
+                      width: double.infinity,
+                      // transform: Matrix4.translationValues(
+                      //     0, -50, 0), // card half over image
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                          // color: isDark
+                          //     ? colorScheme.surfaceContainerHighest
+                          //     : colorScheme.surface,
+                          // borderRadius: BorderRadius.circular(0),
+                          // borderRadius: const BorderRadius.only(
+                          //   bottomLeft: Radius.circular(20),
+                          //   bottomRight: Radius.circular(20),
+                          // ),
+                          // boxShadow: isDark
+                          //     ? []
+                          //     : [
+                          //         BoxShadow(
+                          //           color: Colors.black.withOpacity(0.12),
+                          //           blurRadius: 10,
+                          //           spreadRadius: 1,
+                          //           offset: const Offset(0, 4),
+                          //         ),
+                          //       ],
+                          // border: Border.all(
+                          //   color: colorScheme.outlineVariant,
+                          //   width: 0.2,
+                          // ),
+                          ),
+                      child: Column(
+                        children: [
+                          /// PROFILE LOGO
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor:
+                                colorScheme.surfaceContainerHighest,
+                            backgroundImage: apiProfileLogoUrl != null
+                                ? NetworkImage(apiProfileLogoUrl)
+                                : null,
+                            child: apiProfileLogoUrl == null
+                                ? Icon(
+                                    Icons.person,
+                                    size: 40,
+                                    color: colorScheme.onSurfaceVariant,
+                                  )
+                                : null,
+                          ),
+
+                          const SizedBox(height: 14),
+
+                          /// FULL NAME
+                          Text(
+                            _capitalize(fullName),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+
+                          const SizedBox(height: 6),
+
+                          /// BUSINESS NAME
+                          Text(
+                            _userDetails?['business_info']?['legal_name'] ?? "",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+
+                          const SizedBox(height: 4),
+
+                          /// INDUSTRY
+                          Text(
+                            _userDetails?['business_info']?['industry']
+                                    ?['title'] ??
+                                "",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
 
@@ -1583,70 +1965,24 @@ class _ProfilePageState extends State<ProfilePage> {
                               color: isDark
                                   ? colorScheme.surfaceContainerHighest
                                   : colorScheme.surface,
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: isDark
-                                  ? []
-                                  : [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        spreadRadius: 1,
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                              border: isDark
-                                  ? null
-                                  : Border.all(
-                                      color: colorScheme.outlineVariant,
-                                      width: 1,
-                                    ),
+                              // borderRadius: BorderRadius.circular(18),
+                              // boxShadow: isDark
+                              //     ? []
+                              //     : [
+                              //         BoxShadow(
+                              //           color: Colors.black.withOpacity(0.1),
+                              //           spreadRadius: 1,
+                              //           blurRadius: 6,
+                              //           offset: const Offset(0, 2),
+                              //         ),
+                              //       ],
+                              // border: isDark
+                              //     ? null
+                              //     : Border.all(
+                              //         color: colorScheme.outlineVariant,
+                              //         width: 0.2,
+                              //       ),
                             ),
-                            // child: ElevatedButton(
-                            //   onPressed: () async {
-                            //     final connection = _userDetails?['connection']
-                            //         as Map<String, dynamic>?;
-
-                            //     if (widget.fromConnectionTab == 'pending' ||
-                            //         _isIncomingPendingRequest(connection)) {
-                            //       _acceptPendingRequest();
-                            //     } else if (widget.fromConnectionTab == 'sent' ||
-                            //         _isOutgoingPendingRequest(connection)) {
-                            //       _removeSentRequest();
-                            //     } else {
-                            //       if (widget.userId == null) return;
-
-                            //       final error = await _sendConnectionRequest(
-                            //           widget.userId!);
-
-                            //       if (error == null) {
-                            //         TopAlert.show(
-                            //             context, "✅ Connection request sent",
-                            //             isSuccess: true);
-                            //         _fetchUserDetails();
-                            //       } else {
-                            //         TopAlert.show(context, error,
-                            //             isError: true);
-                            //       }
-                            //     }
-                            //   },
-                            //   style: ElevatedButton.styleFrom(
-                            //     backgroundColor: colorScheme.primary,
-                            //     foregroundColor: colorScheme.onPrimary,
-                            //     padding:
-                            //         const EdgeInsets.symmetric(vertical: 14),
-                            //     shape: RoundedRectangleBorder(
-                            //       borderRadius: BorderRadius.circular(14),
-                            //     ),
-                            //   ),
-                            //   child: Text(
-                            //     _getConnectionActionLabel(
-                            //       _userDetails?['connection']
-                            //           as Map<String, dynamic>?,
-                            //     ),
-                            //     style: const TextStyle(fontSize: 12),
-                            //   ),
-                            // ),
-
                             child: _buildConnectionButton(),
                           ),
                         ],
@@ -1715,7 +2051,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                       ),
 
-                    if (!_isLoadingMasterLinks && _masterLinks.isNotEmpty)
+                    // if (!_isLoadingMasterLinks && _masterLinks.isNotEmpty)
+                    if (isViewerMode)
 
                       /// ================= HAVE A QUESTION SECTION ==================
                       Padding(
@@ -1836,13 +2173,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                                 horizontal: 16,
                                                 vertical: 12,
                                               ),
-                                              suffixIcon: IconButton(
-                                                icon: Icon(
-                                                  Icons.camera_alt,
-                                                  color: colorScheme.primary,
-                                                ),
-                                                onPressed: _pickImageForMessage,
-                                              ),
+                                              // suffixIcon: IconButton(
+                                              //   icon: Icon(
+                                              //     Icons.camera_alt,
+                                              //     color: colorScheme.primary,
+                                              //   ),
+                                              //   onPressed: _pickImageForMessage,
+                                              // ),
                                             ),
                                           ),
                                         ),
@@ -1899,125 +2236,24 @@ class _ProfilePageState extends State<ProfilePage> {
                             const EdgeInsets.all(16), // ✅ 16 padding applied
                         child: Column(
                           children: [
-                            _buildRatingsSection(),
+                            // _buildRatingsSection(),
 
+                            _hasGivenReview
+                                ? _buildGivenRatingCard()
+                                : _buildRatingsSection(),
                             // const SizedBox(height: 12), // spacing after section
                           ],
                         ),
                       ),
 
                     /// ================= PRODUCTS SECTION ==================
-                    if (_products.isNotEmpty)
+
+                    if (_products.isNotEmpty || _isLoadingProducts)
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Products & Services',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SizedBox(
-                              height: 240,
-                              child: ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: _products.length,
-                                itemBuilder: (context, index) {
-                                  final p =
-                                      _products[index] as Map<String, dynamic>;
-                                  final imageUrl = _getFullProductImageUrl(p);
-                                  return Container(
-                                    width: 180,
-                                    margin: const EdgeInsets.only(right: 12),
-                                    decoration: BoxDecoration(
-                                      color: isDark
-                                          ? colorScheme.surfaceContainerHighest
-                                          : Colors.grey[100],
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                          color: colorScheme.onSurface
-                                              .withOpacity(0.05)),
-                                    ),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        ClipRRect(
-                                          borderRadius:
-                                              const BorderRadius.vertical(
-                                                  top: Radius.circular(12)),
-                                          child: imageUrl.isNotEmpty
-                                              ? Image.network(
-                                                  imageUrl,
-                                                  height: 120,
-                                                  width: 180,
-                                                  fit: BoxFit.cover,
-                                                  errorBuilder: (context, error,
-                                                          stackTrace) =>
-                                                      Container(
-                                                    height: 120,
-                                                    color: Colors.grey[300],
-                                                    child: const Icon(Icons
-                                                        .image_not_supported),
-                                                  ),
-                                                )
-                                              : Container(
-                                                  height: 120,
-                                                  color: Colors.grey[300],
-                                                  child:
-                                                      const Icon(Icons.image),
-                                                ),
-                                        ),
-                                        Padding(
-                                          padding: const EdgeInsets.all(8.0),
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                p["product_name"] ?? "-",
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                "₹ ${p["product_price"] ?? "0"}",
-                                                style: const TextStyle(
-                                                  color: Colors.green,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 13,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                p["description"] ?? "",
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontSize: 11,
-                                                  color: colorScheme.onSurface
-                                                      .withOpacity(0.6),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                          ],
+                        child: ProductListWidget(
+                          products: _products,
+                          isLoading: _isLoadingProducts,
                         ),
                       ),
 
@@ -2083,46 +2319,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                             child: ListView.builder(
                                               scrollDirection: Axis.horizontal,
                                               itemCount: _reviews.length,
-                                              // itemBuilder: (context, index) {
-                                              //   final r = _reviews[index]
-                                              //       as Map<String, dynamic>;
-
-                                              //   final fromUser =
-                                              //       (r["from_user"] ?? {})
-                                              //           as Map<String, dynamic>;
-
-                                              //   final username =
-                                              //       (fromUser["user_name"] ??
-                                              //               "Unknown User")
-                                              //           .toString();
-
-                                              //   final reviewer_name =
-                                              //       (r["reviewer_name"] ?? "anonymous")
-                                              //           as Map<String, dynamic>;
-
-                                              //           //reviewer_name
-
-                                              //   final message =
-                                              //       (r["message"] ?? "")
-                                              //           .toString();
-
-                                              //   final rating = int.tryParse(
-                                              //         r["rating"].toString(),
-                                              //       ) ??
-                                              //       0;
-
-                                              //   final createdAt =
-                                              //       (r["created_at"] ?? "")
-                                              //           .toString();
-
-                                              //   return _reviewCardHorizontal(
-                                              //     username: username,
-                                              //     rating: rating,
-                                              //     message: message,
-                                              //     createdAt: createdAt,
-                                              //   );
-                                              // },
-
                                               itemBuilder: (context, index) {
                                                 final r = _reviews[index]
                                                     as Map<String, dynamic>;
@@ -2131,10 +2327,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                                 final fromUser = r["from_user"]
                                                     as Map<String, dynamic>?;
 
-                                                // Determine username:
-                                                // 1. If fromUser exists and has user_name, use it.
-                                                // 2. Else if reviewer_name (string) exists, use it.
-                                                // 3. Else fallback to "Anonymous".
                                                 String username;
                                                 if (fromUser != null &&
                                                     fromUser["user_name"] !=
