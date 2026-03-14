@@ -1,10 +1,13 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'package:gridcard/core/services/leads-service.dart';
 import 'package:gridcard/core/services/leads_provider.dart';
+import 'package:gridcard/core/utils/file_exporter.dart';
 
 import 'package:gridcard/models/lead_model.dart';
 import './lead_details.dart';
@@ -13,6 +16,7 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import './manage_category_page.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:intl/intl.dart';
 
 class LeadsPage extends StatefulWidget {
   const LeadsPage({super.key});
@@ -29,6 +33,7 @@ class _LeadsPageState extends State<LeadsPage> {
   // List<String> _categories = [];
   List<Map<String, dynamic>> _categories = [];
   bool _isCategoryLoading = false;
+  bool _isExporting = false;
 
   int? _currentUserId; // Store user ID after fetching.....
 
@@ -48,6 +53,13 @@ class _LeadsPageState extends State<LeadsPage> {
     _loadUserIdAndFetchLeads();
     _fetchLeadCategories();
     _scrollCtrl.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchLeadCategories() async {
@@ -238,6 +250,161 @@ class _LeadsPageState extends State<LeadsPage> {
             _scrollCtrl.position.maxScrollExtent - 100 &&
         !provider.isPaginating) {
       provider.loadNextPage(); // 🔁 Now uses new provider's pagination
+    }
+  }
+
+  String _escapeExcelCell(String? value) {
+    final text = (value ?? '').trim();
+    return text
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&apos;');
+  }
+
+  String _selectedCategoryName() {
+    if (_selectedCategory == 'All') return 'All';
+
+    for (final category in _categories) {
+      if (category['id']?.toString() == _selectedCategory) {
+        return category['name']?.toString() ?? 'Category';
+      }
+    }
+
+    return 'Category';
+  }
+
+  Future<List<LeadModel>> _fetchAllLeadsForExport(LeadProviders provider) async {
+    if (_currentUserId == null) return const [];
+
+    final exportedLeads = <LeadModel>[];
+    var page = 1;
+    var lastPage = 1;
+
+    do {
+      final result = await LeadServices.fetchLeadsByUserId(
+        userId: _currentUserId!,
+        perPage: 100,
+        page: page,
+        category: provider.selectedCategory,
+      );
+
+      if (result == null) {
+        throw Exception('Failed to fetch leads for export.');
+      }
+
+      final leads = result['leads'] as List<LeadModel>;
+      final meta = result['meta'] as Map<String, dynamic>;
+
+      exportedLeads.addAll(leads);
+      lastPage = (meta['last_page'] as num?)?.toInt() ?? page;
+      page++;
+    } while (page <= lastPage);
+
+    return exportedLeads;
+  }
+
+  String _buildExcelXml(List<LeadModel> leads) {
+    final now = DateTime.now();
+    final categoryName = _selectedCategoryName();
+    final rows = <String>[
+      '''
+      <Row>
+        <Cell><Data ss:Type="String">ID</Data></Cell>
+        <Cell><Data ss:Type="String">Name</Data></Cell>
+        <Cell><Data ss:Type="String">Company</Data></Cell>
+        <Cell><Data ss:Type="String">Mobile 1</Data></Cell>
+        <Cell><Data ss:Type="String">Mobile 2</Data></Cell>
+        <Cell><Data ss:Type="String">Mobile 3</Data></Cell>
+        <Cell><Data ss:Type="String">Email 1</Data></Cell>
+        <Cell><Data ss:Type="String">Email 2</Data></Cell>
+        <Cell><Data ss:Type="String">Website</Data></Cell>
+        <Cell><Data ss:Type="String">Address</Data></Cell>
+      </Row>
+      ''',
+    ];
+
+    for (final lead in leads) {
+      rows.add('''
+      <Row>
+        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.id?.toString())}</Data></Cell>
+        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.name)}</Data></Cell>
+        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.company_name)}</Data></Cell>
+        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.mobile_no_1)}</Data></Cell>
+        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.mobile_no_2)}</Data></Cell>
+        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.mobile_no_3)}</Data></Cell>
+        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.email)}</Data></Cell>
+        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.email2)}</Data></Cell>
+        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.website)}</Data></Cell>
+        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.address)}</Data></Cell>
+      </Row>
+      ''');
+    }
+
+    return '''<?xml version="1.0"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+ <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
+  <Author>GridCard</Author>
+  <Created>${now.toUtc().toIso8601String()}</Created>
+ </DocumentProperties>
+ <Worksheet ss:Name="Leads">
+  <Table>
+   ${rows.join('\n')}
+  </Table>
+ </Worksheet>
+ <Worksheet ss:Name="Summary">
+  <Table>
+   <Row><Cell><Data ss:Type="String">Exported At</Data></Cell><Cell><Data ss:Type="String">${_escapeExcelCell(DateFormat('dd MMM yyyy, hh:mm a').format(now))}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Category</Data></Cell><Cell><Data ss:Type="String">${_escapeExcelCell(categoryName)}</Data></Cell></Row>
+   <Row><Cell><Data ss:Type="String">Lead Count</Data></Cell><Cell><Data ss:Type="String">${leads.length}</Data></Cell></Row>
+  </Table>
+ </Worksheet>
+</Workbook>''';
+  }
+
+  Future<void> _exportLeadsToExcel(LeadProviders provider) async {
+    if (_isExporting) return;
+    if (_currentUserId == null) {
+      TopAlert.show(context, 'User not found. Login again', isError: true);
+      return;
+    }
+
+    setState(() => _isExporting = true);
+
+    try {
+      final leads = await _fetchAllLeadsForExport(provider);
+
+      if (leads.isEmpty) {
+        if (!mounted) return;
+        TopAlert.show(context, 'No leads available to export', isError: true);
+        return;
+      }
+
+      final xml = _buildExcelXml(leads);
+      final bytes = Uint8List.fromList(utf8.encode(xml));
+      final fileName =
+          'leads_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xls';
+
+      await exportFileBytes(
+        bytes: bytes,
+        fileName: fileName,
+        mimeType: 'application/vnd.ms-excel',
+        shareText: 'Leads export',
+      );
+
+      if (!mounted) return;
+      TopAlert.show(context, 'Excel exported successfully', isSuccess: true);
+    } catch (e) {
+      if (!mounted) return;
+      TopAlert.show(context, 'Export failed: $e', isError: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isExporting = false);
+      }
     }
   }
 
@@ -684,42 +851,80 @@ class _LeadsPageState extends State<LeadsPage> {
   }
 
   Widget _buildTopBar(LeadProviders provider) {
+    final searchField = SizedBox(
+      height: 42,
+      child: TextField(
+        controller: _searchCtrl,
+        decoration: InputDecoration(
+          prefixIcon: Icon(CupertinoIcons.search,
+              size: 18,
+              color: Theme.of(context).colorScheme.onSurfaceVariant),
+          hintText: "Search lead...",
+          hintStyle:
+              TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide:
+                BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide:
+                BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+          ),
+          filled: true,
+          fillColor: Theme.of(context)
+              .colorScheme
+              .surfaceContainerHighest
+              .withOpacity(0.3),
+        ),
+        onChanged: (val) {
+          // agar future me search implement karna ho
+          // provider.searchLeads(val);
+        },
+      ),
+    );
+
+    final exportButton = SizedBox(
+      height: 42,
+      child: FilledButton.tonalIcon(
+        onPressed: _isExporting ? null : () => _exportLeadsToExcel(provider),
+        icon: _isExporting
+            ? const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Icon(Icons.table_view_outlined, size: 18),
+        label: const Text('Export Excel'),
+      ),
+    );
+
     return Padding(
       padding: const EdgeInsets.all(12),
-      child: SizedBox(
-        height: 42,
-        child: TextField(
-          controller: _searchCtrl,
-          decoration: InputDecoration(
-            prefixIcon: Icon(CupertinoIcons.search,
-                size: 18,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-            hintText: "Search lead...",
-            hintStyle: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.outlineVariant),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                  color: Theme.of(context).colorScheme.outlineVariant),
-            ),
-            filled: true,
-            fillColor: Theme.of(context)
-                .colorScheme
-                .surfaceContainerHighest
-                .withOpacity(0.3),
-          ),
-          onChanged: (val) {
-            // agar future me search implement karna ho
-            // provider.searchLeads(val);
-          },
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (constraints.maxWidth < 560) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                searchField,
+                const SizedBox(height: 10),
+                exportButton,
+              ],
+            );
+          }
+
+          return Row(
+            children: [
+              Expanded(child: searchField),
+              const SizedBox(width: 12),
+              exportButton,
+            ],
+          );
+        },
       ),
     );
   }

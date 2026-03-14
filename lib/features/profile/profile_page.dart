@@ -1740,7 +1740,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                       ),
                                     ),
 
-                                    /// Profile Video
+                                    /// Profile Video............
                                     if (_isVideoInitialized)
                                       AnimatedOpacity(
                                         opacity: _showVideo ? 1.0 : 0.0,
