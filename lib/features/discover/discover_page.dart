@@ -273,6 +273,86 @@ class _DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
+  // Widget _buildEventCard(dynamic event) {
+  //   final colorScheme = Theme.of(context).colorScheme;
+
+  //   final String title = (event['title'] ?? '').toString();
+  //   final String desc = (event['description'] ?? '').toString();
+
+  //   String shortText(String text) {
+  //     if (text.length <= 20) return text;
+  //     return "${text.substring(0, 20)}...";
+  //   }
+
+  //   return Container(
+  //     width: 280,
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       color: colorScheme.primary,
+  //       borderRadius: BorderRadius.circular(16),
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         Icon(
+  //           CupertinoIcons.calendar_badge_plus,
+  //           color: colorScheme.onPrimary,
+  //           size: 38,
+  //         ),
+  //         const SizedBox(width: 14),
+
+  //         // Title + desc
+  //         Expanded(
+  //           child: Column(
+  //             crossAxisAlignment: CrossAxisAlignment.start,
+  //             mainAxisAlignment: MainAxisAlignment.center,
+  //             children: [
+  //               Text(
+  //                 shortText(title),
+  //                 maxLines: 1,
+  //                 overflow: TextOverflow.ellipsis,
+  //                 style: TextStyle(
+  //                   color: colorScheme.onPrimary,
+  //                   fontWeight: FontWeight.bold,
+  //                   fontSize: 15,
+  //                 ),
+  //               ),
+  //               const SizedBox(height: 6),
+  //               Text(
+  //                 shortText(desc),
+  //                 maxLines: 1,
+  //                 overflow: TextOverflow.ellipsis,
+  //                 style: TextStyle(
+  //                   color: colorScheme.onPrimary.withOpacity(0.75),
+  //                   fontSize: 12,
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+
+  //         const SizedBox(width: 10),
+
+  //         GestureDetector(
+  //           onTap: () {
+  //             final int? eventId = event['id'];
+
+  //             Navigator.push(
+  //               context,
+  //               MaterialPageRoute(
+  //                 builder: (context) => BusinessEventPage(openEventId: eventId),
+  //               ),
+  //             );
+  //           },
+  //           child: Icon(
+  //             CupertinoIcons.chevron_right,
+  //             color: colorScheme.onPrimary.withOpacity(0.8),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
   Widget _buildEventCard(dynamic event) {
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -284,71 +364,72 @@ class _DiscoverPageState extends State<DiscoverPage> {
       return "${text.substring(0, 20)}...";
     }
 
-    return Container(
-      width: 280,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.primary,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            CupertinoIcons.calendar_badge_plus,
-            color: colorScheme.onPrimary,
-            size: 38,
-          ),
-          const SizedBox(width: 14),
+    final int? eventId = event['id'];
 
-          // Title + desc
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  shortText(title),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colorScheme.onPrimary,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  shortText(desc),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: colorScheme.onPrimary.withOpacity(0.75),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => BusinessEventPage(openEventId: eventId),
+          ),
+        );
+      },
+      child: Container(
+        width: 280,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: colorScheme.primary,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              CupertinoIcons.calendar_badge_plus,
+              color: colorScheme.onPrimary,
+              size: 38,
             ),
-          ),
 
-          const SizedBox(width: 10),
+            const SizedBox(width: 14),
 
-          GestureDetector(
-            onTap: () {
-              final int? eventId = event['id'];
+            // Title + desc
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    shortText(title),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colorScheme.onPrimary,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    shortText(desc),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: colorScheme.onPrimary.withOpacity(0.75),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
 
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BusinessEventPage(openEventId: eventId),
-                ),
-              );
-            },
-            child: Icon(
+            const SizedBox(width: 10),
+
+            Icon(
               CupertinoIcons.chevron_right,
               color: colorScheme.onPrimary.withOpacity(0.8),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
