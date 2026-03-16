@@ -1,0 +1,32 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Existing permissions -->
+    
+    <!-- NFC Permissions -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature android:name="android.hardware.nfc" android:required="true" />
+    
+    <application
+        android:label="ByndAI"
+        android:name="${applicationName}"
+        android:icon="@mipmap/launcher_icon"
+        android:extractNativeLibs="false">
+        
+        <!-- Existing activity -->
+        
+        <!-- NFC intent filter for foreground dispatch -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <!-- Existing intent filter -->
+            
+            <!-- NFC Intent Filter -->
+            <intent-filter>
+                <action android:name="android.nfc.action.NDEF_DISCOVERED" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="application/vnd.byndai.connection" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

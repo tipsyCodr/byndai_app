@@ -7,9 +7,12 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import '../../models/login_response.dart';
+import 'nfc_service.dart';
 
 import '../../models/user_model.dart';
 import 'auth_service.dart';
+import 'package:get/get.dart';
+
 
 enum GoogleSignInResult { loggedIn, needsRegistration, failed }
 
@@ -41,6 +44,13 @@ class AuthProvider extends ChangeNotifier {
   Map<String, dynamic>? get pendingRegisterUser => _pendingRegisterUser;
   Map<String, String>? get googleSignInData => _googleSignInData;
 
+  Future<void> initializeNfcService(BuildContext context) async {
+    if (_isAuthenticated) {
+      final nfcService = NfcService();
+      await nfcService.initialize(context: context);
+    }
+  }
+
   void updateUserFromDetails(Map<String, dynamic> userDetails) {
     try {
       final user = UserModel.fromJson(userDetails);
@@ -61,6 +71,12 @@ class AuthProvider extends ChangeNotifier {
       _isAuthenticated = true;
       debugPrint('Auth: ✅ Session restored from main()');
       _syncFCMToken(); // Sync token on app start
+
+      // Initialize NFC service
+      if (Get.context != null) {
+        initializeNfcService(Get.context!);
+      }
+
       notifyListeners();
     }
   }
@@ -336,6 +352,11 @@ class AuthProvider extends ChangeNotifier {
     await _clearPendingState();
     _syncFCMToken(); // Sync token after successful login
     // Fluttertoast.showToast(msg: message);
+
+    // Initialize NFC service after successful login
+    if (Get.context != null) {
+      await initializeNfcService(Get.context!);
+    }
   }
 
   Future<void> _prepareForRegistration(

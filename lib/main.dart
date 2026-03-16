@@ -19,6 +19,7 @@ import 'package:gridcard/core/services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:ui';
 import 'firebase_options.dart';
+import 'package:gridcard/core/services/nfc_service.dart';
 
 late final FirebaseAnalytics analytics;
 
@@ -72,6 +73,7 @@ void main() async {
         ChangeNotifierProvider(create: (context) => SocialProvider()),
         ChangeNotifierProvider(create: (context) => ChatProvider()),
         ChangeNotifierProvider(create: (context) => ThemeProvider()),
+         ChangeNotifierProvider(create: (context) => NfcService()), // Add this line
       ],
       child: MyApp(initialRoute: initialRoute),
     ),

@@ -158,3 +158,4 @@ class _ShareProfileWidgetState extends State<ShareProfileWidget> {
     );
   }
 }
+//K:\amit\bynd-ai\byndai_app-main\lib\features\qr_scan\profile_qr_code.dart
