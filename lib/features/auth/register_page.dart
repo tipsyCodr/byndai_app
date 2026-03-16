@@ -257,7 +257,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 controller: _usernameController,
                 focusNode: _usernameFocusNode,
                 inputFormatters: [
-                  FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                  FilteringTextInputFormatter.deny(RegExp(r'[\s\(\)\{\}\[\]]')),
                 ],
                 decoration: _inputDecoration(
                   "Username",
@@ -265,12 +265,31 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderColor:
                       _isUsernameAvailable == false ? Colors.red : null,
                 ),
+                // validator: (v) {
+                //   if (v == null || v.isEmpty) return "Enter username";
+                //   if (v.contains(' ')) return "Space not allowed in username";
+                //   if (v.length < 4) return "Minimum 4 characters";
+                //   return null;
+                // },
                 validator: (v) {
                   if (v == null || v.isEmpty) return "Enter username";
                   if (v.contains(' ')) return "Space not allowed in username";
+                  if (RegExp(r'[\(\)\{\}\[\]]').hasMatch(v)) {
+                    return "Brackets not allowed";
+                  }
                   if (v.length < 4) return "Minimum 4 characters";
                   return null;
                 },
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  "Use letters, numbers, and wildcard characters",
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
               ),
 
               if (_isCheckingUsername)

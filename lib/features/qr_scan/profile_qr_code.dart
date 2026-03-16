@@ -6,6 +6,13 @@ import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/services/auth_provider.dart';
 import './qr_scanner.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:share_plus/share_plus.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
+import 'dart:ui' as ui;
+import 'package:flutter/rendering.dart';
+import 'package:flutter/foundation.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class ProfileQRCodePage extends StatefulWidget {
   const ProfileQRCodePage({super.key});
@@ -16,9 +23,124 @@ class ProfileQRCodePage extends StatefulWidget {
 
 class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
   int _selectedTab = 0; // 0 = Connect, 1 = Add to Contact
-
+  final GlobalKey _qrKey = GlobalKey(); // ADD THIS
+  bool _isSharing = false;
   String jsonEncode(Map<String, dynamic> data) {
     return json.encode(data);
+  }
+
+// Future<Uint8List?> _captureQr() async {
+//   try {
+//     RenderRepaintBoundary boundary =
+//         _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+
+//     ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+
+//     ByteData? byteData =
+//         await image.toByteData(format: ui.ImageByteFormat.png);
+
+//     return byteData?.buffer.asUint8List();
+//   } catch (e) {
+//     debugPrint("QR capture error: $e");
+//   }
+//   return null;
+// }
+
+  Future<Uint8List?> _generateShareCard(
+    String qrData,
+    String userName,
+    String userMobile,
+    String userEmail,
+  ) async {
+    try {
+      final painter = QrPainter(
+        data: qrData,
+        version: QrVersions.auto,
+        gapless: true,
+      );
+
+      final qrImage = await painter.toImageData(600);
+      final qrBytes = qrImage!.buffer.asUint8List();
+
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+
+      const width = 800.0;
+      const height = 1000.0;
+
+      final paint = Paint()..color = Colors.white;
+
+      canvas.drawRect(
+        Rect.fromLTWH(0, 0, width, height),
+        paint,
+      );
+
+      final textPainter = TextPainter(
+        textDirection: TextDirection.ltr,
+      );
+
+      void drawText(String text, double y, double size,
+          {FontWeight weight = FontWeight.normal}) {
+        textPainter.text = TextSpan(
+          text: text,
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: size,
+            fontWeight: weight,
+          ),
+        );
+
+        textPainter.layout();
+        textPainter.paint(canvas, Offset((width - textPainter.width) / 2, y));
+      }
+
+      drawText("USER PROFILE", 60, 40, weight: FontWeight.bold);
+      drawText(userName, 150, 32, weight: FontWeight.w600);
+      drawText(userMobile, 200, 26);
+      drawText(userEmail, 240, 24);
+
+      final codec = await ui.instantiateImageCodec(qrBytes);
+      final frame = await codec.getNextFrame();
+      final qr = frame.image;
+
+      canvas.drawImageRect(
+        qr,
+        Rect.fromLTWH(0, 0, qr.width.toDouble(), qr.height.toDouble()),
+        Rect.fromLTWH(200, 350, 400, 400),
+        Paint(),
+      );
+
+      final picture = recorder.endRecording();
+      final img = await picture.toImage(width.toInt(), height.toInt());
+
+      final byteData = await img.toByteData(format: ui.ImageByteFormat.png);
+
+      return byteData!.buffer.asUint8List();
+    } catch (e) {
+      debugPrint("Share card error: $e");
+    }
+
+    return null;
+  }
+
+  Future<Uint8List?> _captureQr() async {
+    try {
+      // RenderRepaintBoundary boundary =
+      //     _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;_captureQr
+
+      RenderRepaintBoundary boundary =
+          _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+
+      var image = await boundary.toImage(pixelRatio: 3.0);
+      // ByteData? byteData = await image.toByteData(format: ImageByteFormat.png);
+      ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+
+      return byteData?.buffer.asUint8List();
+    } catch (e) {
+      debugPrint("QR capture error: $e");
+    }
+    return null;
   }
 
   // Function to generate QR data for CONNECT tab - सिर्फ ID के लिए
@@ -43,6 +165,84 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
       'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
     };
     return jsonEncode(data);
+  }
+
+  // Future<void> _shareQrCode(
+  //     BuildContext context, String qrData, String userName) async {
+  //   if (_isSharing) return;
+
+  //   _isSharing = true;
+
+  //   try {
+  //     final bytes = await _captureQr();
+  //     if (bytes == null) return;
+
+  //     if (kIsWeb) {
+  //       final base64 = base64Encode(bytes);
+  //       final url = "data:image/png;base64,$base64";
+
+  //       await Share.share(url, subject: "$userName QR Code");
+  //     } else {
+  //       final tempDir = await getTemporaryDirectory();
+  //       final file = File('${tempDir.path}/qr_code.png');
+
+  //       await file.writeAsBytes(bytes);
+
+  //       await Share.shareXFiles(
+  //         [XFile(file.path)],
+  //         text: "$userName QR Code",
+  //       );
+  //     }
+  //   } catch (e) {
+  //     debugPrint("Share error: $e");
+  //   } finally {
+  //     _isSharing = false;
+  //   }
+  // }
+
+  Future<void> _shareQrCode(
+      BuildContext context, String qrData, String userName) async {
+    if (_isSharing) return;
+
+    _isSharing = true;
+
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final user = authProvider.user;
+
+      final userMobile = user?.userMobile ?? '';
+      final userEmail = user?.email ?? '';
+
+      final bytes = await _generateShareCard(
+        qrData,
+        userName,
+        userMobile,
+        userEmail,
+      );
+
+      if (bytes == null) return;
+
+      if (kIsWeb) {
+        final base64 = base64Encode(bytes);
+        final url = "data:image/png;base64,$base64";
+
+        await Share.share(url, subject: "$userName QR Code");
+      } else {
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/profile_qr_card.png');
+
+        await file.writeAsBytes(bytes);
+
+        await Share.shareXFiles(
+          [XFile(file.path)],
+          text: "Scan this QR to connect with $userName",
+        );
+      }
+    } catch (e) {
+      debugPrint("Share error: $e");
+    } finally {
+      _isSharing = false;
+    }
   }
 
   // Get appropriate QR data based on selected tab
@@ -422,31 +622,64 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                 border: Border.all(
                                     color: Colors.grey[300]!, width: 1),
                               ),
+                              // child: Center(
+                              //   child: QrImageView(
+                              //     data: qrData,
+                              //     version: QrVersions.auto,
+                              //     size: isPortrait
+                              //         ? size.width * 0.5
+                              //         : size.height * 0.35,
+                              //     eyeStyle: const QrEyeStyle(
+                              //       eyeShape: QrEyeShape.square,
+                              //       color: Colors.black,
+                              //     ),
+                              //     dataModuleStyle: const QrDataModuleStyle(
+                              //       dataModuleShape: QrDataModuleShape.square,
+                              //       color: Colors.black,
+                              //     ),
+                              //     embeddedImage: user.masterUser
+                              //                 ?.toJson()['profile_pic'] !=
+                              //             null
+                              //         ? NetworkImage(user.masterUser!
+                              //             .toJson()['profile_pic']!)
+                              //         : const AssetImage('assets/app_logo.png')
+                              //             as ImageProvider,
+                              //     embeddedImageStyle:
+                              //         const QrEmbeddedImageStyle(
+                              //       size: Size(40, 40),
+                              //     ),
+                              //   ),
+                              // ),
+
                               child: Center(
-                                child: QrImageView(
-                                  data: qrData,
-                                  version: QrVersions.auto,
-                                  size: isPortrait
-                                      ? size.width * 0.5
-                                      : size.height * 0.35,
-                                  eyeStyle: const QrEyeStyle(
-                                    eyeShape: QrEyeShape.square,
-                                    color: Colors.black,
-                                  ),
-                                  dataModuleStyle: const QrDataModuleStyle(
-                                    dataModuleShape: QrDataModuleShape.square,
-                                    color: Colors.black,
-                                  ),
-                                  embeddedImage: user.masterUser
-                                              ?.toJson()['profile_pic'] !=
-                                          null
-                                      ? NetworkImage(user.masterUser!
-                                          .toJson()['profile_pic']!)
-                                      : const AssetImage('assets/app_logo.png')
-                                          as ImageProvider,
-                                  embeddedImageStyle:
-                                      const QrEmbeddedImageStyle(
-                                    size: Size(40, 40),
+                                child: RepaintBoundary(
+                                  key: _qrKey,
+                                  child: QrImageView(
+                                    data: qrData,
+                                    version: QrVersions.auto,
+                                    size: isPortrait
+                                        ? size.width * 0.5
+                                        : size.height * 0.35,
+                                    eyeStyle: const QrEyeStyle(
+                                      eyeShape: QrEyeShape.square,
+                                      color: Colors.black,
+                                    ),
+                                    dataModuleStyle: const QrDataModuleStyle(
+                                      dataModuleShape: QrDataModuleShape.square,
+                                      color: Colors.black,
+                                    ),
+                                    embeddedImage: user.masterUser
+                                                ?.toJson()['profile_pic'] !=
+                                            null
+                                        ? NetworkImage(user.masterUser!
+                                            .toJson()['profile_pic']!)
+                                        : const AssetImage(
+                                                'assets/app_logo.png')
+                                            as ImageProvider,
+                                    embeddedImageStyle:
+                                        const QrEmbeddedImageStyle(
+                                      size: Size(40, 40),
+                                    ),
                                   ),
                                 ),
                               ),
@@ -552,9 +785,14 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                   // Share Button (New)
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {
-                        _shareQrCode(context, qrData, userName);
-                      },
+                      // onPressed: () {
+                      //   _shareQrCode(context, qrData, userName);
+                      // },
+                      onPressed: _isSharing
+                          ? null
+                          : () {
+                              _shareQrCode(context, qrData, userName);
+                            },
                       style: OutlinedButton.styleFrom(
                         backgroundColor: Theme.of(context)
                             .colorScheme
@@ -697,10 +935,44 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
     }
   }
 
-  void _shareQrCode(BuildContext context, String qrData, String userName) {
-    TopAlert.show(context, 'Share $userName\'s QR code');
-    // Note: Action handling might be simplified as TopAlert doesn't strictly follow SnackBarAction pattern
-    // If the user needs copy functionality, we should keep it or integrate into TopAlert
-    // For now, I'll just show the alert.
-  }
+  // void _shareQrCode(BuildContext context, String qrData, String userName) {
+  //   TopAlert.show(context, 'Share $userName\'s QR code');
+  //   // Note: Action handling might be simplified as TopAlert doesn't strictly follow SnackBarAction pattern
+  //   // If the user needs copy functionality, we should keep it or integrate into TopAlert
+  //   // For now, I'll just show the alert.
+  // }
+
+//   Future<void> _shareQrCode(
+//       BuildContext context, String qrData, String userName) async {
+//     final bytes = await _captureQr();
+
+//     if (bytes == null) return;
+
+//     final tempDir = await getTemporaryDirectory();
+//     final file = File('${tempDir.path}/qr_code.png');
+
+//     await file.writeAsBytes(bytes);
+
+//     await Share.shareXFiles(
+//       [XFile(file.path)],
+//       text: "$userName QR Code",
+//     );
+//   }
+// }
+
+// Future<Uint8List?> _captureQr() async {
+//   try {
+//     RenderRepaintBoundary boundary =
+//         _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+
+//     ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+
+//     ByteData? byteData =
+//         await image.toByteData(format: ui.ImageByteFormat.png);
+
+//     return byteData?.buffer.asUint8List();
+//   } catch (e) {
+//     debugPrint("QR capture error: $e");
+//   }
+//   return null;
 }
