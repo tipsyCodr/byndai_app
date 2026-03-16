@@ -23,59 +23,80 @@ import 'firebase_options.dart';
 late final FirebaseAnalytics analytics;
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+    debugPrint('[MAIN] Initializing Firebase...');
+    try {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+      
+      // Initialize Analytics & Crashlytics only if Firebase init succeeded
+      analytics = FirebaseAnalytics.instance;
+      FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+      PlatformDispatcher.instance.onError = (error, stack) {
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
+      debugPrint('[MAIN] Firebase & Crashlytics Initialized.');
+    } catch (e) {
+      debugPrint('[MAIN] ⚠️ Firebase Initialization failed: $e');
+    }
 
-  // Initialize Analytics
-  analytics = FirebaseAnalytics.instance;
+    debugPrint('[MAIN] Initializing Notifications...');
+    try {
+      await NotificationService.initialize();
+      FirebaseMessaging.onBackgroundMessage(NotificationService.firebaseMessagingBackgroundHandler);
+      debugPrint('[MAIN] Notifications Initialized.');
+    } catch (e) {
+      debugPrint('[MAIN] ⚠️ Notification Initialization failed: $e');
+    }
 
-  // Initialize Crashlytics
-  FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
-  PlatformDispatcher.instance.onError = (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
-    return true;
-  };
+    // Load session determining initial route
+    debugPrint('[MAIN] Checking for existing session...');
+    bool hasValidSession = false;
+    UserSession? session;
+    try {
+      final storageService = UserStorageService();
+      session = await storageService.loadSession();
+      hasValidSession = session.isValid;
+      debugPrint('[MAIN] Session valid: $hasValidSession');
+    } catch (e) {
+      debugPrint('[MAIN] ⚠️ Session loading failed: $e');
+    }
 
-  // Initialize Notifications
-  await NotificationService.initialize();
-  FirebaseMessaging.onBackgroundMessage(NotificationService.firebaseMessagingBackgroundHandler);
+    final initialRoute = hasValidSession ? RouteNames.home : RouteNames.splash;
+    debugPrint('[MAIN] Initial route: $initialRoute');
 
-  // Load session BEFORE running app to determine initial route
-  debugPrint('[MAIN] Checking for existing session...');
-  final storageService = UserStorageService();
-  final session = await storageService.loadSession();
-  final hasValidSession = session.isValid;
-  debugPrint('[MAIN] Session valid: $hasValidSession');
-
-  final initialRoute = hasValidSession ? RouteNames.home : RouteNames.splash;
-  debugPrint('[MAIN] Initial route: $initialRoute');
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (context) {
-          final auth = AuthProvider();
-          // Pre-populate auth state if session is valid
-          if (hasValidSession) {
-            auth.restoreSession(session);
-          }
-          return auth;
-        }),
-        ChangeNotifierProvider(create: (context) => LeadProvider()),
-        ChangeNotifierProvider(create: (context) => LeadProviders()),
-        ChangeNotifierProvider(create: (context) => ProfileProvider()),
-        ChangeNotifierProvider(create: (context) => ProductProvider()),
-        ChangeNotifierProvider(create: (context) => SocialProvider()),
-        ChangeNotifierProvider(create: (context) => ChatProvider()),
-        ChangeNotifierProvider(create: (context) => ThemeProvider()),
-      ],
-      child: MyApp(initialRoute: initialRoute),
-    ),
-  );
+    runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (context) {
+            final auth = AuthProvider();
+            if (hasValidSession && session != null) {
+              auth.restoreSession(session);
+            }
+            return auth;
+          }),
+          ChangeNotifierProvider(create: (context) => LeadProvider()),
+          ChangeNotifierProvider(create: (context) => LeadProviders()),
+          ChangeNotifierProvider(create: (context) => ProfileProvider()),
+          ChangeNotifierProvider(create: (context) => ProductProvider()),
+          ChangeNotifierProvider(create: (context) => SocialProvider()),
+          ChangeNotifierProvider(create: (context) => ChatProvider()),
+          ChangeNotifierProvider(create: (context) => ThemeProvider()),
+        ],
+        child: MyApp(initialRoute: initialRoute),
+      ),
+    );
+  } catch (e, stack) {
+    debugPrint('[MAIN] 🚨 FATAL ERROR during initialization: $e');
+    debugPrint(stack.toString());
+    
+    // Attempt to run app anyway with splash screen if something really weird happened
+    runApp(const MaterialApp(home: Scaffold(body: Center(child: Text('Initialization Error. Please restart the app.')))));
+  }
 }
 
 class MyApp extends StatelessWidget {
