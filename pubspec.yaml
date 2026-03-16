@@ -54,6 +54,7 @@ dependencies:
   flutter_local_notifications: ^21.0.0
   nfc_manager: ^3.4.0
   get: ^4.6.6
+  app_links: ^7.0.0
 
 
   

@@ -20,6 +20,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:ui';
 import 'firebase_options.dart';
 import 'package:gridcard/core/services/nfc_service.dart';
+import 'package:gridcard/core/services/deep_link_service.dart';
 
 late final FirebaseAnalytics analytics;
 
@@ -53,6 +54,9 @@ void main() async {
     } catch (e) {
       debugPrint('[MAIN] ⚠️ Notification Initialization failed: $e');
     }
+
+    // Initialize Deep Links
+    DeepLinkService().initialize();
 
     // Load session determining initial route
     debugPrint('[MAIN] Checking for existing session...');
@@ -142,6 +146,7 @@ class MyApp extends StatelessWidget {
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: analytics),
       ],
+      navigatorKey: DeepLinkService().navigatorKey,
       routes: AppRoutes.routes,
       title: AppConfig.appName,
     );
