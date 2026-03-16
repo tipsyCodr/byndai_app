@@ -19,6 +19,7 @@ import 'package:gridcard/core/services/notification_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'dart:ui';
 import 'firebase_options.dart';
+import 'package:gridcard/core/services/nfc_service.dart';
 
 late final FirebaseAnalytics analytics;
 

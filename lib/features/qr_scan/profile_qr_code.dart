@@ -13,6 +13,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/foundation.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:gridcard/config/app_config.dart';
 
 class ProfileQRCodePage extends StatefulWidget {
   const ProfileQRCodePage({super.key});
@@ -28,23 +29,6 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
   String jsonEncode(Map<String, dynamic> data) {
     return json.encode(data);
   }
-
-// Future<Uint8List?> _captureQr() async {
-//   try {
-//     RenderRepaintBoundary boundary =
-//         _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-
-//     ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-
-//     ByteData? byteData =
-//         await image.toByteData(format: ui.ImageByteFormat.png);
-
-//     return byteData?.buffer.asUint8List();
-//   } catch (e) {
-//     debugPrint("QR capture error: $e");
-//   }
-//   return null;
-// }
 
   Future<Uint8List?> _generateShareCard(
     String qrData,
@@ -167,39 +151,6 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
     return jsonEncode(data);
   }
 
-  // Future<void> _shareQrCode(
-  //     BuildContext context, String qrData, String userName) async {
-  //   if (_isSharing) return;
-
-  //   _isSharing = true;
-
-  //   try {
-  //     final bytes = await _captureQr();
-  //     if (bytes == null) return;
-
-  //     if (kIsWeb) {
-  //       final base64 = base64Encode(bytes);
-  //       final url = "data:image/png;base64,$base64";
-
-  //       await Share.share(url, subject: "$userName QR Code");
-  //     } else {
-  //       final tempDir = await getTemporaryDirectory();
-  //       final file = File('${tempDir.path}/qr_code.png');
-
-  //       await file.writeAsBytes(bytes);
-
-  //       await Share.shareXFiles(
-  //         [XFile(file.path)],
-  //         text: "$userName QR Code",
-  //       );
-  //     }
-  //   } catch (e) {
-  //     debugPrint("Share error: $e");
-  //   } finally {
-  //     _isSharing = false;
-  //   }
-  // }
-
   Future<void> _shareQrCode(
       BuildContext context, String qrData, String userName) async {
     if (_isSharing) return;
@@ -220,6 +171,11 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
         userEmail,
       );
 
+      final user1 = context.read<AuthProvider>().user;
+      final profileId = user1?.userName ?? user?.id?.toString() ?? 'me';
+      final baseUrl = AppConfig.apiBaseUrl.replaceAll(RegExp(r'/api$'), '');
+      final profileUrl = "$baseUrl/u/$profileId";
+
       if (bytes == null) return;
 
       if (kIsWeb) {
@@ -235,7 +191,9 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
 
         await Share.shareXFiles(
           [XFile(file.path)],
-          text: "Scan this QR to connect with $userName",
+          // text: "Scan this QR to connect with $userName",
+          text:
+              "Connect with $userName on Bynd AI by visiting $profileUrl or scanning the QR code.",
         );
       }
     } catch (e) {
@@ -622,35 +580,6 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                 border: Border.all(
                                     color: Colors.grey[300]!, width: 1),
                               ),
-                              // child: Center(
-                              //   child: QrImageView(
-                              //     data: qrData,
-                              //     version: QrVersions.auto,
-                              //     size: isPortrait
-                              //         ? size.width * 0.5
-                              //         : size.height * 0.35,
-                              //     eyeStyle: const QrEyeStyle(
-                              //       eyeShape: QrEyeShape.square,
-                              //       color: Colors.black,
-                              //     ),
-                              //     dataModuleStyle: const QrDataModuleStyle(
-                              //       dataModuleShape: QrDataModuleShape.square,
-                              //       color: Colors.black,
-                              //     ),
-                              //     embeddedImage: user.masterUser
-                              //                 ?.toJson()['profile_pic'] !=
-                              //             null
-                              //         ? NetworkImage(user.masterUser!
-                              //             .toJson()['profile_pic']!)
-                              //         : const AssetImage('assets/app_logo.png')
-                              //             as ImageProvider,
-                              //     embeddedImageStyle:
-                              //         const QrEmbeddedImageStyle(
-                              //       size: Size(40, 40),
-                              //     ),
-                              //   ),
-                              // ),
-
                               child: Center(
                                 child: RepaintBoundary(
                                   key: _qrKey,
@@ -934,45 +863,4 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
       );
     }
   }
-
-  // void _shareQrCode(BuildContext context, String qrData, String userName) {
-  //   TopAlert.show(context, 'Share $userName\'s QR code');
-  //   // Note: Action handling might be simplified as TopAlert doesn't strictly follow SnackBarAction pattern
-  //   // If the user needs copy functionality, we should keep it or integrate into TopAlert
-  //   // For now, I'll just show the alert.
-  // }
-
-//   Future<void> _shareQrCode(
-//       BuildContext context, String qrData, String userName) async {
-//     final bytes = await _captureQr();
-
-//     if (bytes == null) return;
-
-//     final tempDir = await getTemporaryDirectory();
-//     final file = File('${tempDir.path}/qr_code.png');
-
-//     await file.writeAsBytes(bytes);
-
-//     await Share.shareXFiles(
-//       [XFile(file.path)],
-//       text: "$userName QR Code",
-//     );
-//   }
-// }
-
-// Future<Uint8List?> _captureQr() async {
-//   try {
-//     RenderRepaintBoundary boundary =
-//         _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
-
-//     ui.Image image = await boundary.toImage(pixelRatio: 3.0);
-
-//     ByteData? byteData =
-//         await image.toByteData(format: ui.ImageByteFormat.png);
-
-//     return byteData?.buffer.asUint8List();
-//   } catch (e) {
-//     debugPrint("QR capture error: $e");
-//   }
-//   return null;
 }
