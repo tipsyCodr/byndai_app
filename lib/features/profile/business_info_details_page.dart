@@ -1,6 +1,7 @@
 
 
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:gridcard/config/app_config.dart';
 
 class BusinessInfoDetailsPage extends StatelessWidget {
@@ -134,7 +135,8 @@ class BusinessInfoDetailsPage extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
 
-    debugPrint("Business Info => $businessInfo");
+    // debugPrint("Business Info => $businessInfo");
+    print("Business Info => ${jsonEncode(businessInfo)}");
 
     final qrPath = _safe(businessInfo["payment_qr"]);
     final qrUrl = qrPath.isEmpty ? "" : "$_baseUrl/$qrPath";
@@ -242,7 +244,7 @@ class BusinessInfoDetailsPage extends StatelessWidget {
                   _infoRow(context, Icons.business_center, "Legal Name",
                       _safe(businessInfo["legal_name"])),
                   _infoRow(context, Icons.category, "Industry ID",
-                      _safe(businessInfo["industry_id"])),
+                      _safe(businessInfo["industry"]["title"])),
                   _infoRow(context, Icons.receipt_long, "GST Number",
                       _safe(businessInfo["gst_no"])),
                 ],
