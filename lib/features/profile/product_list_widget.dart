@@ -108,48 +108,60 @@ class _ProductListWidgetState extends State<ProductListWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Product Image
-                  // ClipRRect(
-                  //   borderRadius: const BorderRadius.vertical(
-                  //     top: Radius.circular(12),
-                  //   ),
-                  //   child: imageUrl.isNotEmpty
-                  //       ? Image.network(
-                  //           imageUrl,
-                  //           width: double.infinity,
-                  //           height: 150,
-                  //           fit: BoxFit.cover,
-                  //           errorBuilder: (context, error, stackTrace) =>
-                  //               Container(
-                  //             width: double.infinity,
-                  //             height: 150,
-                  //             color: Colors.grey[300],
-                  //             child: const Icon(Icons.image_not_supported),
-                  //           ),
-                  //         )
-                  //       : Container(
-                  //           width: double.infinity,
-                  //           height: 150,
-                  //           color: Colors.grey[300],
-                  //           child: const Icon(Icons.image),
-                  //         ),
-                  // ),
-
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(12),
                     ),
+                    // child: imageUrl.isNotEmpty
+                    //     ? Image.network(
+                    //         imageUrl,
+                    //         width: double.infinity,
+                    //         fit: BoxFit.contain, // ✅ image crop नहीं होगा
+                    //         errorBuilder: (context, error, stackTrace) =>
+                    //             Container(
+                    //           height: 150,
+                    //           color: Colors.grey[300],
+                    //           child: const Icon(Icons.image_not_supported),
+                    //         ),
+                    //       )
+                    //     : Container(
+                    //         width: double.infinity,
+                    //         height: 150,
+                    //         color: Colors.grey[300],
+                    //         child: const Center(
+                    //           child: Column(
+                    //             mainAxisSize: MainAxisSize.min,
+                    //             children: [
+                    //               Icon(Icons.image, size: 32),
+                    //               SizedBox(height: 6),
+                    //               Text("No Image"),
+                    //             ],
+                    //           ),
+                    //         ),
+                    //       ),
+
                     child: imageUrl.isNotEmpty
                         ? Image.network(
                             imageUrl,
                             width: double.infinity,
-                            fit: BoxFit.contain, // ✅ image crop नहीं होगा
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                              height: 150,
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.image_not_supported),
-                            ),
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                height: 150,
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.image, size: 32),
+                                      SizedBox(height: 6),
+                                      Text("Not found"),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           )
                         : Container(
                             width: double.infinity,

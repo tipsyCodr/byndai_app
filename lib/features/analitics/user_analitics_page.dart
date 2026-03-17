@@ -313,12 +313,28 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
     }
   }
 
+  // String _formatSeconds(int seconds) {
+  //   if (seconds <= 0) return "0s";
+  //   final m = seconds ~/ 60;
+  //   final s = seconds % 60;
+  //   if (m <= 0) return "${s}s";
+  //   return "${m}m ${s}s";
+  // }
+
   String _formatSeconds(int seconds) {
     if (seconds <= 0) return "0s";
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    if (m <= 0) return "${s}s";
-    return "${m}m ${s}s";
+
+    final hours = seconds ~/ 3600;
+    final minutes = (seconds % 3600) ~/ 60;
+    final secs = seconds % 60;
+
+    if (hours > 0) {
+      return "${hours}h";
+    } else if (minutes > 0) {
+      return "${minutes}m";
+    } else {
+      return "${secs}s";
+    }
   }
 
   Widget _sectionTitle(String title, {String? subtitle}) {
@@ -1017,7 +1033,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                               SizedBox(
                                 width: cardWidth,
                                 child: _statCard(
-                                  title: "Total Views",
+                                  title: "Views",
                                   value: _totalViews.toString(),
                                   icon: Icons.remove_red_eye,
                                 ),
@@ -1025,7 +1041,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                               SizedBox(
                                 width: cardWidth,
                                 child: _statCard(
-                                  title: "Total Time",
+                                  title: "Time",
                                   value: _formatSeconds(_totalTimeSeconds),
                                   icon: Icons.timer,
                                 ),
@@ -1055,31 +1071,104 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                         if (_platformTotals.isEmpty)
                           _emptyBox("No platform click data found.")
                         else
-                          SizedBox(
-                            height: 110,
-                            child: ListView.builder(
-                              scrollDirection: Axis.horizontal,
-                              itemCount: _platformTotals.length,
-                              itemBuilder: (context, index) {
-                                final item = _platformTotals[index];
-                                final platform =
-                                    (item["platform"] ?? "-").toString();
-                                final clicks =
-                                    (item["total_clicks"] ?? "0").toString();
-                                final unique =
-                                    (item["unique_users"] ?? 0).toString();
+                          // SizedBox(
+                          //   height: 110,
+                          //   child: ListView.builder(
+                          //     scrollDirection: Axis.horizontal,
+                          //     itemCount: _platformTotals.length,
+                          //     itemBuilder: (context, index) {
+                          //       final item = _platformTotals[index];
+                          //       final platform =
+                          //           (item["platform"] ?? "-").toString();
+                          //       final clicks =
+                          //           (item["total_clicks"] ?? "0").toString();
+                          //       final unique =
+                          //           (item["unique_users"] ?? 0).toString();
 
-                                return Container(
-                                  width: 160,
+                          //       return Container(
+                          //         width: 160,
+                          //         padding: const EdgeInsets.all(14),
+                          //         margin: const EdgeInsets.only(right: 12),
+                          //         decoration: BoxDecoration(
+                          //           color: cs.surfaceContainerHighest
+                          //               .withOpacity(0.3),
+                          //           borderRadius: BorderRadius.circular(16),
+                          //           border: Border.all(
+                          //               color:
+                          //                   cs.outlineVariant.withOpacity(0.5)),
+                          //         ),
+                          //         child: Column(
+                          //           crossAxisAlignment:
+                          //               CrossAxisAlignment.start,
+                          //           children: [
+                          //             Row(
+                          //               children: [
+                          //                 Icon(
+                          //                   _platformIcon(platform),
+                          //                   size: 18,
+                          //                   color:
+                          //                       cs.onSurface.withOpacity(0.8),
+                          //                 ),
+                          //                 const SizedBox(width: 8),
+                          //                 Expanded(
+                          //                   child: Text(
+                          //                     platform.toUpperCase(),
+                          //                     maxLines: 1,
+                          //                     overflow: TextOverflow.ellipsis,
+                          //                     style: const TextStyle(
+                          //                       fontSize: 13,
+                          //                       fontWeight: FontWeight.w800,
+                          //                     ),
+                          //                   ),
+                          //                 ),
+                          //               ],
+                          //             ),
+                          //             const SizedBox(height: 10),
+                          //             Text(
+                          //               "$clicks clicks",
+                          //               style: const TextStyle(
+                          //                 fontSize: 16,
+                          //                 fontWeight: FontWeight.w900,
+                          //               ),
+                          //             ),
+                          //             const SizedBox(height: 4),
+                          //             Text(
+                          //               "$unique unique users",
+                          //               style: TextStyle(
+                          //                 fontSize: 12,
+                          //                 color: cs.onSurface.withOpacity(0.7),
+                          //                 fontWeight: FontWeight.w600,
+                          //               ),
+                          //             ),
+                          //           ],
+                          //         ),
+                          //       );
+                          //     },
+                          //   ),
+                          // ),
+
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: _platformTotals.map((item) {
+                              final platform =
+                                  (item["platform"] ?? "-").toString();
+                              final clicks =
+                                  (item["total_clicks"] ?? "0").toString();
+                              final unique =
+                                  (item["unique_users"] ?? 0).toString();
+
+                              return SizedBox(
+                                width: cardWidth,
+                                child: Container(
                                   padding: const EdgeInsets.all(14),
-                                  margin: const EdgeInsets.only(right: 12),
                                   decoration: BoxDecoration(
                                     color: cs.surfaceContainerHighest
                                         .withOpacity(0.3),
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
-                                        color:
-                                            cs.outlineVariant.withOpacity(0.5)),
+                                      color: cs.outlineVariant.withOpacity(0.5),
+                                    ),
                                   ),
                                   child: Column(
                                     crossAxisAlignment:
@@ -1117,7 +1206,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        "$unique unique users",
+                                        "$unique users",
                                         style: TextStyle(
                                           fontSize: 12,
                                           color: cs.onSurface.withOpacity(0.7),
@@ -1126,9 +1215,9 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                                       ),
                                     ],
                                   ),
-                                );
-                              },
-                            ),
+                                ),
+                              );
+                            }).toList(),
                           ),
 
                         const SizedBox(height: 22),
