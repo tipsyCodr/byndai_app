@@ -2,7 +2,7 @@ name: gridcard
 description: A new Flutter project.
 publish_to: 'none' # Remove if publishing to pub.dev
 
-version: 1.0.10+10
+version: 1.0.11+11
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -54,6 +54,7 @@ dependencies:
   flutter_local_notifications: ^21.0.0
   nfc_manager: ^3.4.0
   get: ^4.6.6
+  app_links: ^7.0.0
 
 
   

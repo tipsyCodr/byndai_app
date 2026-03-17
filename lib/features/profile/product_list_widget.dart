@@ -179,7 +179,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                             ),
                           ),
                   ),
-                  // Product Info
+                  // Product Info.....
                   Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
