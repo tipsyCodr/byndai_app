@@ -14,6 +14,7 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/foundation.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/core/theme/app_theme.dart';
 
 class ProfileQRCodePage extends StatefulWidget {
   const ProfileQRCodePage({super.key});
@@ -232,6 +233,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
     final user = authProvider.user;
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = Theme.of(context).extension<AppThemeColors>();
     // Check if user is available
     if (user == null) {
       return Scaffold(
@@ -589,13 +591,13 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                     size: isPortrait
                                         ? size.width * 0.5
                                         : size.height * 0.35,
-                                    eyeStyle: const QrEyeStyle(
+                                    eyeStyle: QrEyeStyle(
                                       eyeShape: QrEyeShape.square,
-                                      color: Colors.black,
+                                      color: palette?.neonAccent ?? Colors.black,
                                     ),
-                                    dataModuleStyle: const QrDataModuleStyle(
+                                    dataModuleStyle: QrDataModuleStyle(
                                       dataModuleShape: QrDataModuleShape.square,
-                                      color: Colors.black,
+                                      color: palette?.neonAccent ?? Colors.black,
                                     ),
                                     embeddedImage: user.masterUser
                                                 ?.toJson()['profile_pic'] !=
@@ -683,8 +685,8 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                         _showScanDialog(context, _selectedTab);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: colorScheme.primary,
-                        foregroundColor: colorScheme.onPrimary,
+                        backgroundColor: palette?.neonAccent ?? colorScheme.primary,
+                        foregroundColor: palette?.neonAccent != null ? Colors.white : colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -733,7 +735,7 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
-                            color: colorScheme.primary,
+                            color: palette?.neonAccent ?? colorScheme.primary,
                           ),
                         ),
                         side: BorderSide(

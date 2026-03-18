@@ -343,6 +343,11 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
               child: TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                style: TextStyle(
+                  color: colors.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+                cursorColor: colors.primary,
                 textInputAction:
                     TextInputAction.done, // 👈 Enter key shows DONE
                 inputFormatters: [
@@ -359,9 +364,32 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
                 },
                 decoration: InputDecoration(
                   hintText: "Mobile Number",
+                  hintStyle: TextStyle(
+                    color: colors.onSurface.withValues(alpha: 0.58),
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).brightness == Brightness.dark
+                      ? colors.onSurface.withValues(alpha: 0.08)
+                      : Colors.white.withValues(alpha: 0.94),
                   prefixIcon: Icon(Icons.phone, color: colors.primary),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: colors.primary.withValues(alpha: 0.24),
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: colors.primary.withValues(alpha: 0.24),
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: colors.primary.withValues(alpha: 0.7),
+                      width: 1.4,
+                    ),
                   ),
                 ),
               ),

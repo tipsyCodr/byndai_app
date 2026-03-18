@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/widgets/glass_box.dart';
 
 class ProductListWidget extends StatefulWidget {
   final List products;
@@ -94,20 +95,15 @@ class _ProductListWidgetState extends State<ProductListWidget> {
             final description = p["description"] ?? "";
             final productLinks = p["product_link"] as List?;
 
-            return Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? colorScheme.surfaceContainerHighest
-                    : Colors.grey[100],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: colorScheme.onSurface.withOpacity(0.05),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: GlassBox(
+                padding: EdgeInsets.zero,
+                borderRadius: 12,
+                opacity: isDark ? 0.05 : 0.03,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                   // Product Image
                   // ClipRRect(
                   //   borderRadius: const BorderRadius.vertical(
@@ -311,7 +307,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                       ],
                     ),
                   ),
-                ],
+                  ],
+                ),
               ),
             );
           },

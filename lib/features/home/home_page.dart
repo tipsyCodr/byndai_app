@@ -1,4 +1,4 @@
-import 'package:flutter/cupertino.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // ✅ Added for SystemNavigator
 import 'package:gridcard/features/discover/discover_page.dart';
@@ -12,8 +12,9 @@ import 'package:provider/provider.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/routes/route_names.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/widgets/glass_box.dart';
+import 'package:gridcard/core/theme/app_theme.dart';
 import '../qr_scan/profile_qr_code.dart';
-import 'dart:ui';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/nfc_service.dart';
 
@@ -26,15 +27,12 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   DateTime? _lastBackPressed;
-  // String? _profileLogoUrl;
 
   final GlobalKey<FeedPageState> _feedKey = GlobalKey<FeedPageState>();
 
   @override
   void initState() {
     super.initState();
-    // _loadProfileLogo();
-    // Start NFC service after widget is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeNfc();
     });
@@ -42,7 +40,6 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    // Stop NFC when home page is disposed (user logs out)
     final nfcService = Provider.of<NfcService>(context, listen: false);
     nfcService.stopListening();
     super.dispose();
@@ -56,19 +53,17 @@ class _HomePageState extends State<HomePage> {
   Future<void> _onPop(bool didPop, Object? result) async {
     if (didPop) return;
 
-    // If not on the Home tab, navigate back to Home first
     if (_selectedIndex != 0) {
       setState(() => _selectedIndex = 0);
-      _lastBackPressed = null; // Reset so double-press starts fresh on Home
+      _lastBackPressed = null;
       return;
     }
 
-    // On Home tab: double-press to exit
     final now = DateTime.now();
     if (_lastBackPressed == null ||
         now.difference(_lastBackPressed!) > const Duration(seconds: 2)) {
       _lastBackPressed = now;
-      TopAlert.show(context, "Press back again to exit");
+      TopAlert.show(context, 'Press back again to exit');
       return;
     }
 
@@ -76,8 +71,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   int _selectedIndex = 0;
-
-  // Screens for each tab
 
   List<Widget> _screens() {
     return [
@@ -95,10 +88,6 @@ class _HomePageState extends State<HomePage> {
     'Settings',
   ];
 
-  // void _onItemTapped(int index) {
-  //   setState(() => _selectedIndex = index);
-  // }
-
   void _onItemTapped(int index) {
     setState(() => _selectedIndex = index);
 
@@ -113,13 +102,14 @@ class _HomePageState extends State<HomePage> {
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
 
-    // Redirect to login if not authenticated
     if (!auth.isAuthenticated) {
       Future.microtask(() {
         if (mounted) {
-          // Clear the stack and go to login so back does not return to home
           Navigator.pushNamedAndRemoveUntil(
-              context, RouteNames.phone, (route) => false);
+            context,
+            RouteNames.phone,
+            (route) => false,
+          );
         }
       });
     }
@@ -127,43 +117,53 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final palette = theme.extension<AppThemeColors>();
+    final isDark = theme.brightness == Brightness.dark;
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
 
     final logoUrl = user?.masterUser?.profilePic != null
-        ? "${AppConfig.apiProfileImg}/${user!.masterUser!.profilePic}"
+        ? '${AppConfig.apiProfileImg}/${user!.masterUser!.profilePic}'
         : null;
+
     return PopScope<Object?>(
-      canPop: false, // disable default popping
+      canPop: false,
       onPopInvokedWithResult: _onPop,
       child: Scaffold(
-        backgroundColor: colorScheme.surface,
+        backgroundColor: palette?.backgroundStart ?? colorScheme.surface,
         extendBody: true,
         appBar: AppBar(
-          backgroundColor: colorScheme.surface.withOpacity(0.8),
+          backgroundColor: Colors.transparent,
           elevation: 0,
-          foregroundColor: colorScheme.primary,
+          foregroundColor: colorScheme.onSurface,
           title: Text(
             _titles[_selectedIndex],
-            style: const TextStyle(fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: colorScheme.onSurface,
+              letterSpacing: 0.7,
+            ),
           ),
           centerTitle: true,
           automaticallyImplyLeading: false,
           leading: IconButton(
             icon: CircleAvatar(
               radius: 28,
-              backgroundColor: Colors.grey.shade200,
+              backgroundColor: (palette?.glassTop ?? colorScheme.surface)
+                  .withValues(alpha: 0.95),
               backgroundImage: logoUrl != null ? NetworkImage(logoUrl) : null,
               child: logoUrl == null
-                  ? Icon(Icons.person, color: colorScheme.primary)
+                  ? Icon(FontAwesomeIcons.user,
+                      color: colorScheme.primary, size: 18)
                   : null,
             ),
             onPressed: () async {
               final userId = await UserStorageService().getUserId();
-
+              if (!mounted) return;
               if (userId == null) {
-                TopAlert.show(context, "User ID not found", isError: true);
+                TopAlert.show(context, 'User ID not found', isError: true);
                 return;
               }
 
@@ -171,7 +171,7 @@ class _HomePageState extends State<HomePage> {
                 MaterialPageRoute(
                   builder: (context) => ProfilePage(
                     userId: userId,
-                    viewerUserId: userId, // self view
+                    viewerUserId: userId,
                   ),
                 ),
               );
@@ -179,7 +179,16 @@ class _HomePageState extends State<HomePage> {
           ),
           actions: [
             IconButton(
-              icon: Icon(CupertinoIcons.qrcode, color: colorScheme.primary),
+              style: IconButton.styleFrom(
+                backgroundColor: palette?.glassTop?.withValues(alpha: 0.3),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              icon: Icon(
+                FontAwesomeIcons.qrcode,
+                color: palette?.neonAccent,
+              ),
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
@@ -189,71 +198,209 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             IconButton(
-              icon: Icon(CupertinoIcons.chat_bubble_text,
-                  color: colorScheme.primary),
+              icon: Icon(
+                FontAwesomeIcons.commentDots,
+                color: isDark ? colorScheme.onSurface : colorScheme.primary,
+              ),
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                      builder: (context) => const ConnectionsPage()),
+                    builder: (context) => const ConnectionsPage(),
+                  ),
                 );
               },
             ),
           ],
         ),
-        body: Stack(
-          children: [
-            _screens()[_selectedIndex],
-            _buildFloatingDock(),
-          ],
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                palette?.backgroundStart ?? colorScheme.surface,
+                palette?.backgroundMid ?? colorScheme.surface,
+                palette?.backgroundEnd ?? colorScheme.surface,
+              ],
+            ),
+          ),
+          child: Stack(
+            children: [
+              if (isDark) _buildDarkModePattern(context),
+              if (!isDark) _buildLightModePattern(context),
+              _screens()[_selectedIndex],
+              _buildFloatingDock(),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildFloatingDock() {
+  Widget _buildLightModePattern(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -150,
+            right: -120,
+            child: Container(
+              width: 360,
+              height: 360,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    colorScheme.primary.withValues(alpha: 0.16),
+                    colorScheme.primary.withValues(alpha: 0.02),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 40,
+            left: -180,
+            child: Container(
+              width: 520,
+              height: 320,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(240),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.secondary.withValues(alpha: 0.14),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -120,
+            right: -120,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    colorScheme.secondary.withValues(alpha: 0.12),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDarkModePattern(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -110,
+            right: -140,
+            child: Container(
+              width: 340,
+              height: 340,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    colorScheme.secondary.withValues(alpha: 0.05),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 140,
+            left: -150,
+            child: Container(
+              width: 420,
+              height: 280,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(220),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.primary.withValues(alpha: 0.08),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -180,
+            left: 20,
+            child: Container(
+              width: 360,
+              height: 360,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    colorScheme.primary.withValues(alpha: 0.09),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingDock() {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
+    final palette = theme.extension<AppThemeColors>();
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
     final profilePicUrl = user?.masterUser?.profilePic != null
-        ? "${AppConfig.apiProfileImg}/${user!.masterUser!.profilePic}"
+        ? '${AppConfig.apiProfileImg}/${user!.masterUser!.profilePic}'
         : null;
 
     return Positioned(
       bottom: 12,
       left: 16,
       right: 16,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(26),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-          child: Container(
-            height: 56,
-            decoration: BoxDecoration(
-              color: isDark
-                  ? colorScheme.surfaceContainerHighest.withOpacity(0.9)
-                  : const Color(0xFF21254A).withOpacity(0.92),
-              borderRadius: BorderRadius.circular(26),
-              border:
-                  Border.all(color: Colors.white.withOpacity(0.08), width: 0.5),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.18),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildDockItem(0, CupertinoIcons.home),
-                _buildDockItem(1, CupertinoIcons.news),
-                _buildDockItem(2, CupertinoIcons.compass),
-                _buildDockItem(3, CupertinoIcons.settings,
-                    imageUrl: profilePicUrl),
-              ],
-            ),
+      child: GlassBox(
+        padding: EdgeInsets.zero,
+        borderRadius: 28,
+        blur: 15,
+        opacity: isDark ? 0.2 : 0.12,
+        gradientColors: [
+          (palette?.glassTop ?? colorScheme.surface)
+              .withValues(alpha: isDark ? 0.7 : 0.8),
+          (palette?.glassBottom ?? colorScheme.surface)
+              .withValues(alpha: isDark ? 0.58 : 0.7),
+        ],
+        child: SizedBox(
+          height: 56,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildDockItem(0, FontAwesomeIcons.house),
+              _buildDockItem(1, FontAwesomeIcons.addressCard),
+              _buildDockItem(2, FontAwesomeIcons.compass),
+              _buildDockItem(3, FontAwesomeIcons.gear, imageUrl: profilePicUrl),
+            ],
           ),
         ),
       ),
@@ -261,8 +408,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildDockItem(int index, IconData icon, {String? imageUrl}) {
+    final theme = Theme.of(context);
+    final palette = theme.extension<AppThemeColors>();
     final isSelected = _selectedIndex == index;
-    final colorScheme = Theme.of(context).colorScheme;
 
     return Expanded(
       child: GestureDetector(
@@ -275,9 +423,21 @@ class _HomePageState extends State<HomePage> {
           margin: const EdgeInsets.symmetric(horizontal: 4),
           decoration: BoxDecoration(
             color: isSelected
-                ? Colors.white.withOpacity(0.15)
+                ? (palette?.dockActive ?? theme.colorScheme.primary).withValues(
+                    alpha: theme.brightness == Brightness.dark ? 0.2 : 0.14,
+                  )
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(28),
+            border: isSelected
+                ? (theme.brightness == Brightness.dark
+                    ? Border.all(color: Colors.transparent, width: 0)
+                    : Border.all(
+                        color:
+                            (palette?.neonAccent ?? theme.colorScheme.secondary)
+                                .withValues(alpha: 0.45),
+                        width: 0.8,
+                      ))
+                : null,
           ),
           child: Center(
             child: (index == 3 && imageUrl != null)
@@ -288,7 +448,12 @@ class _HomePageState extends State<HomePage> {
                   )
                 : Icon(
                     icon,
-                    color: isSelected ? Colors.white : Colors.white60,
+                    color: isSelected
+                        ? (theme.brightness == Brightness.dark
+                            ? Colors.white
+                            : theme.colorScheme.primary)
+                        : (palette?.dockInactive ??
+                            theme.colorScheme.onSurface.withValues(alpha: 0.6)),
                     size: 24,
                   ),
           ),

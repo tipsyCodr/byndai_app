@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:intl/intl.dart';
@@ -10,6 +11,7 @@ import './report_page.dart';
 import './industry_icon_mapper.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'full_screen_image_viewer.dart';
+import 'package:gridcard/widgets/glass_box.dart';
 
 class PostCard extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -429,7 +431,7 @@ class _PostCardState extends State<PostCard> {
                         "Image load failed",
                         style: TextStyle(
                           color: isDark
-                              ? colorScheme.onSurface.withOpacity(0.6)
+                              ? colorScheme.onSurface.withValues(alpha: 0.6)
                               : Colors.grey.shade700,
                         ),
                       ),
@@ -484,21 +486,21 @@ class _PostCardState extends State<PostCard> {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         _footerReactionBtn(
-          icon: Icons.thumb_up_alt_outlined,
+          icon: FontAwesomeIcons.thumbsUp,
           label: _likesCount.toString(),
           active: _myReaction == "like",
           isAnimating: _isLikeAnimating,
           onTap: () => _sendReaction("like"),
         ),
         _footerReactionBtn(
-          icon: Icons.thumb_down_alt_outlined,
+          icon: FontAwesomeIcons.thumbsDown,
           label: _dislikesCount.toString(),
           active: _myReaction == "dislike",
           isAnimating: _isDislikeAnimating,
           onTap: () => _sendReaction("dislike"),
         ),
         _footerBtn(
-          icon: Icons.mode_comment_outlined,
+          icon: FontAwesomeIcons.comment,
           label: comments.toString(),
           onTap: () {
             Navigator.push(
@@ -513,14 +515,14 @@ class _PostCardState extends State<PostCard> {
           },
         ),
         _footerSaveBtn(
-          icon: _isSaved ? Icons.bookmark : Icons.bookmark_border,
+          icon: FontAwesomeIcons.bookmark,
           label: "",
           active: _isSaved,
           isAnimating: _isSaveAnimating,
           onTap: _toggleSave,
         ),
         _footerBtn(
-          icon: Icons.flag_outlined,
+          icon: FontAwesomeIcons.flag,
           label: "",
           onTap: _showReportDialog,
         ),
@@ -537,23 +539,24 @@ class _PostCardState extends State<PostCard> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final inactiveColor =
-        isDark ? colorScheme.onSurface.withOpacity(0.6) : Colors.grey.shade700;
+    final inactiveColor = isDark
+        ? colorScheme.onSurface.withValues(alpha: 0.6)
+        : Colors.grey.shade700;
     final activeColor = colorScheme.primary;
 
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Row(
           children: [
             Icon(
               icon,
-              size: 18,
+              size: 21,
               color: active ? activeColor : inactiveColor,
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
@@ -578,18 +581,20 @@ class _PostCardState extends State<PostCard> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final inactiveColor =
-        isDark ? colorScheme.onSurface.withOpacity(0.6) : Colors.grey.shade700;
+    final inactiveColor = isDark
+        ? colorScheme.onSurface.withValues(alpha: 0.6)
+        : Colors.grey.shade700;
     final activeColor = colorScheme.primary;
 
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color:
-              isAnimating ? activeColor.withOpacity(0.1) : Colors.transparent,
+          color: isAnimating
+              ? activeColor.withValues(alpha: 0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -599,11 +604,11 @@ class _PostCardState extends State<PostCard> {
               child: Icon(
                 icon,
                 key: ValueKey<bool>(active),
-                size: 18,
+                size: 21,
                 color: active ? activeColor : inactiveColor,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
@@ -628,18 +633,20 @@ class _PostCardState extends State<PostCard> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final inactiveColor =
-        isDark ? colorScheme.onSurface.withOpacity(0.6) : Colors.grey.shade700;
+    final inactiveColor = isDark
+        ? colorScheme.onSurface.withValues(alpha: 0.6)
+        : Colors.grey.shade700;
     final activeColor = colorScheme.secondary;
 
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
-          color:
-              isAnimating ? activeColor.withOpacity(0.1) : Colors.transparent,
+          color: isAnimating
+              ? activeColor.withValues(alpha: 0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -649,11 +656,11 @@ class _PostCardState extends State<PostCard> {
               child: Icon(
                 icon,
                 key: ValueKey<bool>(active),
-                size: 18,
+                size: 21,
                 color: active ? activeColor : inactiveColor,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
@@ -686,19 +693,11 @@ class _PostCardState extends State<PostCard> {
     final description = (_postData["description"] ?? "").toString();
     final updatedAt = _formatTime(_postData["updated_at"]?.toString());
 
-    // final cardColor = isDark
-    //     ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
-    //     : const Color(0xFFDCDEF7);
-
-    final cardColor = isDark
-        ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
-        : Colors.white;
-
     final avatarBgColor =
         isDark ? colorScheme.surfaceVariant : Colors.grey.shade200;
 
     final timeColor =
-        isDark ? colorScheme.onSurface.withOpacity(0.6) : Colors.grey.shade600;
+        isDark ? colorScheme.onSurface.withValues(alpha: 0.6) : Colors.grey.shade600;
 
     final readMoreColor =
         isDark ? colorScheme.primary : const Color.fromARGB(255, 45, 47, 190);
@@ -707,25 +706,28 @@ class _PostCardState extends State<PostCard> {
         isDark ? colorScheme.primary : const Color.fromARGB(255, 45, 47, 190);
 
     return InkWell(
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(20),
       onTap: _openPostDetails,
-      child: Card(
-        color: cardColor,
-        // elevation: 2,
-        elevation: isDark ? 2 : 1,
+      child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        // shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: isDark
-              ? BorderSide.none
-              : BorderSide(
-                  color: colorScheme.primary,
-                  width: 0.2,
-                ),
-        ),
-        child: Padding(
+        child: GlassBox(
           padding: const EdgeInsets.all(14),
+          borderRadius: 20,
+          blur: 10,
+          opacity: isDark ? 0.18 : 0.24,
+          border: Border.all(
+            color: colorScheme.primary.withValues(alpha: isDark ? 0.16 : 0.12),
+            width: 0.8,
+          ),
+          gradientColors: isDark
+              ? [
+                  const Color(0xFF1A2342).withValues(alpha: 0.9),
+                  const Color(0xFF121A34).withValues(alpha: 0.86),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.94),
+                  const Color(0xFFEEF4FF).withValues(alpha: 0.82),
+                ],
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -744,19 +746,21 @@ class _PostCardState extends State<PostCard> {
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
                                 return Icon(
-                                  Icons.person,
-                                  size: 22,
+                                  FontAwesomeIcons.user,
+                                  size: 16,
                                   color: isDark
-                                      ? colorScheme.onSurface.withOpacity(0.6)
+                                      ? colorScheme.onSurface
+                                          .withValues(alpha: 0.6)
                                       : Colors.grey,
                                 );
                               },
                             )
                           : Icon(
-                              Icons.person,
-                              size: 22,
+                              FontAwesomeIcons.user,
+                              size: 16,
                               color: isDark
-                                  ? colorScheme.onSurface.withOpacity(0.6)
+                                  ? colorScheme.onSurface
+                                      .withValues(alpha: 0.6)
                                   : Colors.grey,
                             ),
                     ),
@@ -818,9 +822,9 @@ class _PostCardState extends State<PostCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Icon(
-                      Icons.star,
+                      FontAwesomeIcons.star,
                       size: 18,
-                      color: isDark ? colorScheme.primary : null,
+                      color: colorScheme.primary,
                     ),
                     const SizedBox(width: 6),
                     Expanded(

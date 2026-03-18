@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:nfc_manager/nfc_manager.dart';
+import 'package:nfc_manager/ndef_record.dart';
+import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
 import 'user_storage_service.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:http/http.dart' as http;
@@ -62,6 +65,11 @@ class NfcService with ChangeNotifier {
     notifyListeners();
 
     NfcManager.instance.startSession(
+      pollingOptions: const {
+        NfcPollingOption.iso14443,
+        NfcPollingOption.iso15693,
+        NfcPollingOption.iso18092,
+      },
       onDiscovered: (NfcTag tag) async {
         try {
           await _handleNfcTag(context, tag);
@@ -106,7 +114,7 @@ class NfcService with ChangeNotifier {
     final payload = utf8.decode(records.first.payload);
     final data = jsonDecode(payload);
 
-    final otherUserId = data['user_id'];
+    final otherUserId = data['user_id'] is int ? data['user_id'] : int.tryParse(data['user_id'].toString());
 
     if (otherUserId == null) {
       debugPrint("❌ Invalid NFC data");
@@ -209,12 +217,18 @@ class NfcService with ChangeNotifier {
       "version": "1.0",
     });
 
-    return NdefMessage([
-      NdefRecord.createMime(
-        "application/vnd.byndai.connection",
-        utf8.encode(data),
-      ),
-    ]);
+    return NdefMessage(
+      records: [
+        NdefRecord(
+          typeNameFormat: TypeNameFormat.media,
+          type: Uint8List.fromList(
+            utf8.encode("application/vnd.byndai.connection"),
+          ),
+          identifier: Uint8List(0),
+          payload: Uint8List.fromList(utf8.encode(data)),
+        ),
+      ],
+    );
   }
 
   // ===============================

@@ -15,6 +15,7 @@ import './about_dynamic_page.dart';
 import './privacy_dynamic_page.dart';
 import './support_dynamic_page.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/widgets/glass_box.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -137,6 +138,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 subtitle: "Update name, email, and bio",
                 onTap: () async {
                   final userId = await UserStorageService().getUserId();
+                  if (!mounted) return;
 
                   Navigator.push(
                       context,
@@ -153,25 +155,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: CupertinoIcons.briefcase,
                 title: "Business Information",
                 subtitle: "Company name, designation, etc.",
-                // onTap: () {
-                //   Navigator.push(
-                //       context,
-                //       MaterialPageRoute(
-                //           builder: (context) => const BusinessInfoPage()));
-                // },
-                // onTap: () async {
-                //   final userId = await UserStorageService().getUserId();
-
-                //   Navigator.push(
-                //     context,
-                //     MaterialPageRoute(
-                //       builder: (context) => EditProfilePage(
-                //         userDetails: _userDetails,
-                //         initialTabIndex: 3, // 👈 Business Info tab index
-                //       ),
-                //     ),
-                //   );
-                // },
 
                 onTap: () async {
                   if (_userDetails == null) {
@@ -212,8 +195,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   );
                 },
               ),
-              Divider(
-                  color: colorScheme.onSurface.withOpacity(0.05), height: 40),
+              const SizedBox(height: 16),
               _buildSettingsHeader(context, "Appearance"),
               _buildSettingsTile(
                 context: context,
@@ -229,8 +211,7 @@ class _SettingsPageState extends State<SettingsPage> {
                   activeTrackColor: colorScheme.primary,
                 ),
               ),
-              Divider(
-                  color: colorScheme.onSurface.withOpacity(0.05), height: 40),
+              const SizedBox(height: 16),
               _buildSettingsHeader(context, "Account"),
               _buildSettingsTile(
                 context: context,
@@ -253,18 +234,8 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
                 showTrailing: false,
               ),
-              Divider(
-                  color: colorScheme.onSurface.withOpacity(0.05), height: 40),
+              const SizedBox(height: 16),
               _buildSettingsHeader(context, "Support & Info"),
-              // _buildSettingsTile(
-              //   context: context,
-              //   icon: CupertinoIcons.info_circle,
-              //   title: "About ByndAI",
-              //   onTap: () {
-              //     _showInfoPage(context, "About ByndAI",
-              //         "ByndAI is your ultimate digital networking companion. Scan business cards, manage leads, and grow your professional presence with ease.\n\nVersion 1.0.0");
-              //   },
-              // ),
               _buildSettingsTile(
                 context: context,
                 icon: CupertinoIcons.info_circle,
@@ -272,6 +243,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () async {
                   final pageData = await _fetchAboutPage();
 
+                  if (!mounted) return;
                   if (pageData != null) {
                     Navigator.push(
                       context,
@@ -282,15 +254,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
               ),
-              // _buildSettingsTile(
-              //   context: context,
-              //   icon: CupertinoIcons.doc_text,
-              //   title: "Privacy Policy",
-              //   onTap: () {
-              //     _showInfoPage(context, "Privacy Policy",
-              //         "Your privacy is important to us. We never share your data with third parties without your explicit consent. All business card data is stored securely.\n\nRead more on our website.");
-              //   },
-              // ),
 
               _buildSettingsTile(
                 context: context,
@@ -299,6 +262,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () async {
                   final pageData = await _fetchPrivacyPage();
 
+                  if (!mounted) return;
                   if (pageData != null) {
                     Navigator.push(
                       context,
@@ -310,15 +274,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
 
-              // _buildSettingsTile(
-              //   context: context,
-              //   icon: CupertinoIcons.question_circle,
-              //   title: "Support",
-              //   onTap: () {
-              //     _showInfoPage(context, "Support",
-              //         "Need help? Contact us at support@byndai.com or visit our help center in the app.");
-              //   },
-              // ),
 
               _buildSettingsTile(
                 context: context,
@@ -327,6 +282,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onTap: () async {
                   final pageData = await _fetchSupportPage();
 
+                  if (!mounted) return;
                   if (pageData != null) {
                     Navigator.push(
                       context,
@@ -345,35 +301,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  void _showInfoPage(BuildContext context, String title, String content) {
-    final colorScheme = Theme.of(context).colorScheme;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Scaffold(
-          backgroundColor: colorScheme.surface,
-          appBar: AppBar(
-            title: Text(title, style: TextStyle(color: colorScheme.primary)),
-            backgroundColor: colorScheme.surface,
-            leading: IconButton(
-              icon: Icon(CupertinoIcons.back, color: colorScheme.primary),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ),
-          body: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Text(
-              content,
-              style: TextStyle(
-                  color: colorScheme.onSurface.withOpacity(0.7),
-                  fontSize: 16,
-                  height: 1.6),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 
   Widget _buildSettingsHeader(BuildContext context, String title) {
     return Padding(
@@ -382,8 +309,9 @@ class _SettingsPageState extends State<SettingsPage> {
         title,
         style: TextStyle(
             color: Theme.of(context).colorScheme.primary,
-            fontWeight: FontWeight.bold,
-            fontSize: 14),
+            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            letterSpacing: 0.5),
       ),
     );
   }
@@ -399,22 +327,43 @@ class _SettingsPageState extends State<SettingsPage> {
     Widget? trailing,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
-    return ListTile(
-      leading: Icon(icon, color: titleColor ?? colorScheme.primary),
-      title: Text(title,
-          style: TextStyle(
-              color: titleColor ?? colorScheme.onSurface,
-              fontWeight: FontWeight.w500)),
-      subtitle: subtitle != null
-          ? Text(subtitle,
-              style: TextStyle(color: colorScheme.onSurface.withOpacity(0.5)))
-          : null,
-      trailing: trailing ??
-          (showTrailing
-              ? Icon(Icons.chevron_right,
-                  color: colorScheme.onSurface.withOpacity(0.1))
-              : null),
-      onTap: onTap,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: GlassBox(
+        padding: EdgeInsets.zero,
+        borderRadius: 16,
+        opacity: isDark ? 0.03 : 0.05,
+        child: ListTile(
+          leading: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: (titleColor ?? colorScheme.primary).withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: titleColor ?? colorScheme.primary, size: 20),
+          ),
+          title: Text(title,
+              style: TextStyle(
+                  color: titleColor ?? colorScheme.onSurface,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                  letterSpacing: 0.2)),
+          subtitle: subtitle != null
+              ? Text(subtitle,
+                  style: TextStyle(
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                      fontSize: 12))
+              : null,
+          trailing: trailing ??
+              (showTrailing
+                  ? Icon(CupertinoIcons.chevron_forward,
+                      color: colorScheme.onSurface.withValues(alpha: 0.2), size: 18)
+                  : null),
+          onTap: onTap,
+        ),
+      ),
     );
   }
 
@@ -426,17 +375,13 @@ class _SettingsPageState extends State<SettingsPage> {
         backgroundColor: colorScheme.surface,
         title: Text("Logout", style: TextStyle(color: colorScheme.primary)),
         content: Text("Are you sure you want to logout?",
-            style: TextStyle(color: colorScheme.onSurface.withOpacity(0.7))),
+            style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7))),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Cancel"),
           ),
           TextButton(
-            // onPressed: () {
-            //   context.read<AuthProvider>().logout();
-            //   Navigator.pop(context); // Close dialog
-            // },
             onPressed: () async {
               await context.read<AuthProvider>().logout();
 
@@ -456,3 +401,4 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 }
+

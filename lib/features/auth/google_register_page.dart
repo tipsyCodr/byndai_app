@@ -282,7 +282,7 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
           Text(
             "We got your info from Google. Fill in the remaining details.",
             style: TextStyle(
-              color: cs.onSurface.withOpacity(0.6),
+              color: cs.onSurface.withValues(alpha: 0.7),
               fontSize: 14,
             ),
           ),
@@ -331,10 +331,10 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
             controller: _emailController,
             decoration: _inputDecoration("Email", Icons.email).copyWith(
               filled: true,
-              fillColor: cs.onSurface.withOpacity(0.05),
+              fillColor: cs.onSurface.withValues(alpha: 0.08),
             ),
             readOnly: true,
-            style: TextStyle(color: cs.onSurface.withOpacity(0.6)),
+            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.78)),
           ),
           const SizedBox(height: 20),
 
@@ -405,7 +405,7 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
         Text(
           "Enter your mobile number to receive an OTP for verification.",
           style: TextStyle(
-            color: cs.onSurface.withOpacity(0.6),
+            color: cs.onSurface.withValues(alpha: 0.7),
             fontSize: 14,
           ),
         ),
@@ -428,6 +428,11 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
               child: TextField(
                 controller: _phoneController,
                 keyboardType: TextInputType.phone,
+                style: TextStyle(
+                  color: cs.onSurface,
+                  fontWeight: FontWeight.w600,
+                ),
+                cursorColor: cs.primary,
                 textInputAction: TextInputAction.done,
                 inputFormatters: [
                   FilteringTextInputFormatter.digitsOnly,
@@ -440,9 +445,30 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
                 },
                 decoration: InputDecoration(
                   hintText: "Mobile Number",
+                  hintStyle: TextStyle(
+                    color: cs.onSurface.withValues(alpha: 0.58),
+                  ),
+                  filled: true,
+                  fillColor: Theme.of(context).brightness == Brightness.dark
+                      ? cs.onSurface.withValues(alpha: 0.08)
+                      : Colors.white.withValues(alpha: 0.94),
                   prefixIcon: Icon(Icons.phone, color: cs.primary),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(14),
+                    borderSide:
+                        BorderSide(color: cs.primary.withValues(alpha: 0.24)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide:
+                        BorderSide(color: cs.primary.withValues(alpha: 0.24)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide(
+                      color: cs.primary.withValues(alpha: 0.7),
+                      width: 1.4,
+                    ),
                   ),
                 ),
               ),
@@ -473,19 +499,39 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
     IconData icon, {
     Color? borderColor,
   }) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon),
+      labelStyle: TextStyle(
+        color: cs.onSurface.withValues(alpha: 0.8),
+      ),
+      floatingLabelStyle: TextStyle(
+        color: cs.primary,
+        fontWeight: FontWeight.w600,
+      ),
+      prefixIcon: Icon(icon, color: cs.primary),
+      filled: true,
+      fillColor: isDark
+          ? cs.onSurface.withValues(alpha: 0.08)
+          : Colors.white.withValues(alpha: 0.94),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
+        borderSide:
+            BorderSide(color: borderColor ?? cs.primary.withValues(alpha: 0.24)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: borderColor ?? Colors.grey),
+        borderSide:
+            BorderSide(color: borderColor ?? cs.primary.withValues(alpha: 0.24)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: borderColor ?? Colors.blue),
+        borderSide: BorderSide(
+          color: borderColor ?? cs.primary.withValues(alpha: 0.75),
+          width: 1.4,
+        ),
       ),
     );
   }

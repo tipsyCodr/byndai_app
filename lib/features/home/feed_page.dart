@@ -1,30 +1,27 @@
 import 'dart:convert';
-
-import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/cupertino.dart';
+import 'dart:typed_data';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/features/business_feed/business_feed_page.dart';
 import 'package:gridcard/widgets/action_dock.dart';
 import 'package:gridcard/widgets/connection_suggest.dart';
 import 'package:gridcard/widgets/share_profile_widget.dart';
 import 'package:provider/provider.dart';
-import 'dart:typed_data';
 import '../leads/lead_scanner_2.dart';
 import '../../features/qr_generator/qr_generator_page.dart';
 
 // OLD PostCard (provider model)
-//K:\amit\bynd-ai\byndai_app-main\lib\features\business_feed\home_post_card.dart
 import 'package:gridcard/widgets/post_card.dart' as old_post_card;
 import '../../features/business_feed/home_post_card.dart';
-import 'package:provider/provider.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/core/services/auth_provider.dart';
-
 import 'package:gridcard/core/services/social_provider.dart';
+import 'package:gridcard/core/theme/app_theme.dart';
 import '../../features/analitics/user_analitics_page.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/widgets/glass_box.dart';
 
 // class FeedPage extends StatefulWidget {
 //   const FeedPage({super.key});
@@ -60,7 +57,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   // =============================
   // NEW: Latest 5 Posts
   // =============================
-  static const String _baseUrl = AppConfig.apiBaseUrl;
+  // static const String _baseUrl = AppConfig.apiBaseUrl;
 
   List<Map<String, dynamic>> _latestPosts = [];
   bool _isLatestLoading = false;
@@ -80,8 +77,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
         return;
       }
 
-      final uri =
-          Uri.parse("$_baseUrl/qr/store"); // Replace with your actual endpoint
+      final uri = Uri.parse("${AppConfig.apiBaseUrl}/qr/store");
       var request = http.MultipartRequest('POST', uri);
       request.headers.addAll(await _getHeaders()); // includes auth token
 
@@ -123,13 +119,16 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   Future<void> _fetchProfileCompletion() async {
     if (_isCompletionLoading) return;
 
+    final userId = await UserStorageService().getUserId();
+    if (userId == null) return;
+
     setState(() => _isCompletionLoading = true);
 
     try {
-      final userId = await UserStorageService().getUserId();
-      if (userId == null) return;
+      // final userId = await UserStorageService().getUserId();
+      // if (userId == null) return;
 
-      final uri = Uri.parse("$_baseUrl/profile-completion");
+      final uri = Uri.parse("${AppConfig.apiBaseUrl}/profile-completion");
       final headers = await _getHeaders();
 
       final response = await http.post(
@@ -160,11 +159,15 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   }
 
   Future<void> _fetchAverageRating() async {
-    try {
-      final userId = await UserStorageService().getUserId();
-      if (userId == null) return;
+    final userId = await UserStorageService().getUserId();
+    if (userId == null) return;
 
-      final uri = Uri.parse("$_baseUrl/user-reviews/$userId/average");
+    try {
+      // final userId = await UserStorageService().getUserId();
+      // if (userId == null) return;
+
+      final uri =
+          Uri.parse("${AppConfig.apiBaseUrl}/user-reviews/$userId/average");
       final headers = await _getHeaders();
 
       final response = await http.get(uri, headers: headers);
@@ -220,7 +223,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
       final userId = await UserStorageService().getUserId();
       if (userId == null) return;
 
-      final uri = Uri.parse("$_baseUrl/user-analytics");
+      final uri = Uri.parse("${AppConfig.apiBaseUrl}/user-analytics");
       final headers = await _getHeaders();
 
       final response = await http.post(
@@ -274,7 +277,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     setState(() => _isLatestLoading = true);
 
     try {
-      final uri = Uri.parse("$_baseUrl/posts/list?page=1");
+      final uri = Uri.parse("${AppConfig.apiBaseUrl}/posts/list?page=1");
       final headers = await _getHeaders();
 
       final response = await http.get(uri, headers: headers);
@@ -303,6 +306,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   Widget _buildPerformanceDashboard() {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = Theme.of(context).extension<AppThemeColors>();
 
     return GestureDetector(
       onTap: () {
@@ -313,50 +317,89 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
           ),
         );
       },
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(20),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              colorScheme.primary,
-              isDark
-                  ? colorScheme.surfaceContainerHighest
-                  : colorScheme.primary.withOpacity(0.85),
-            ],
+      child: GlassBox(
+        padding: EdgeInsets.zero,
+        borderRadius: 24,
+        border: Border(
+          bottom: BorderSide(
+            color: (palette?.neonAccent ?? colorScheme.secondary)
+                .withValues(alpha: isDark ? 0.42 : 0.55),
+            width: 5,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.4 : 0.25),
-              blurRadius: 18,
-              offset: const Offset(0, 8),
-            ),
-          ],
         ),
-        child: Column(
+        gradientColors: [
+          isDark
+              ? const Color(0xFF353D5A).withValues(alpha: 0.94)
+              : colorScheme.primary.withValues(alpha: 0.92),
+          isDark
+              ? const Color(0xFF2D3550).withValues(alpha: 0.9)
+              : colorScheme.primary.withValues(alpha: 0.88),
+        ],
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Colors.white.withValues(alpha: isDark ? 0.11 : 0.16),
+                        Colors.white.withValues(alpha: isDark ? 0.04 : 0.08),
+                        Colors.transparent,
+                      ],
+                      stops: const [0.0, 0.42, 1.0],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: -52,
+              left: -42,
+              child: IgnorePointer(
+                child: Container(
+                  width: 220,
+                  height: 170,
+                  decoration: BoxDecoration(
+                    gradient: RadialGradient(
+                      colors: [
+                        Colors.white.withValues(alpha: isDark ? 0.12 : 0.18),
+                        Colors.transparent,
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             /// 🔹 HEADER
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'YOUR NETWORK IMPACT',
+                Text(
+                  'NETWORK IMPACT',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.94)
+                        : colorScheme.onPrimary.withValues(alpha: 0.92),
                     fontWeight: FontWeight.bold,
-                    fontSize: 11,
-                    letterSpacing: 1.5,
+                    fontSize: 10,
+                    letterSpacing: 2.0,
                   ),
                 ),
                 Container(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.18)
+                        : Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Text(
@@ -371,125 +414,129 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
               ],
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 16),
 
             /// 🔹 LOADING
             if (_isAnalyticsLoading)
-              const Center(
-                child: CircularProgressIndicator(color: Colors.white),
+              Center(
+                child: CircularProgressIndicator(color: colorScheme.onPrimary),
               )
             else ...[
               /// 🔢 TOTAL PROFILE VIEWS
-              Text(
-                _totalViewCount.toString(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 36,
-                  fontWeight: FontWeight.bold,
-                ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.baseline,
+                textBaseline: TextBaseline.alphabetic,
+                children: [
+                  Text(
+                    _totalViewCount.toString(),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 48,
+                      fontWeight: FontWeight.w900,
+                      height: 1.0,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        )
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    "views",
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.8),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 4),
-              // const Text(
-              //   "Total Profile Views",
-              //   style: TextStyle(
-              //     color: Colors.white70,
-              //     fontSize: 13,
-              //   ),
-              // ),
-
-              // const SizedBox(height: 18),
-
-              /// 📊 MINI STATS ROW
-              // Row(
-              //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              //   children: [
-              //     /// ⭐ Rating Card
-              //     _miniStatCard(
-              //       icon: Icons.star,
-              //       value: _averageRating.toStringAsFixed(1),
-              //       label: "Rating",
-              //     ),
-
-              //     /// 📝 Reviews Card
-              //     _miniStatCard(
-              //       icon: Icons.rate_review,
-              //       value: _totalReviews.toString(),
-              //       label: "Reviews",
-              //     ),
-
-              //     /// ⏱ Time Spent Card
-              //     _miniStatCard(
-              //       icon: Icons.timer,
-              //       value: "${_totalTimeSeconds}s",
-              //       label: "Watch",
-              //     ),
-              //   ],
-              // ),
-
-              // const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
               /// 📈 PROFILE COMPLETION
-              const Text(
-                "Profile Completion",
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 12,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    "Profile Progress",
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.9),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  Text(
+                    "${_profileCompletionPercent.toInt()}%",
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
 
               /// Progress Bar
               Stack(
                 children: [
                   Container(
-                    height: 8,
+                    height: 10,
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
                   ),
-                  FractionallySizedBox(
-                    // widthFactor: 0.85, // 85%
-                    widthFactor:
+                  AnimatedContainer(
+                    duration: const Duration(seconds: 1),
+                    curve: Curves.easeOutCubic,
+                    height: 10,
+                    width: (MediaQuery.of(context).size.width - 72) *
                         (_profileCompletionPercent / 100).clamp(0.0, 1.0),
-                    child: Container(
-                      height: 8,
-                      decoration: BoxDecoration(
-                        color: Colors.greenAccent,
-                        borderRadius: BorderRadius.circular(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          palette?.neonAccent ?? colorScheme.secondary,
+                          (palette?.neonAccent ?? colorScheme.secondary)
+                              .withValues(alpha: 0.9),
+                        ],
                       ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: colorScheme.secondary.withValues(alpha: 0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        )
+                      ],
                     ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 6),
-
-              // const Align(
-              //   alignment: Alignment.centerRight,
-              //   child: Text(
-              //     "85%",
-              //     style: TextStyle(
-              //       color: Colors.white,
-              //       fontSize: 12,
-              //       fontWeight: FontWeight.bold,
-              //     ),
-              //   ),
-              // ),
-
-              Align(
-                alignment: Alignment.centerRight,
-                child: Text(
-                  "${_profileCompletionPercent.toInt()}%",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  _miniStatCard(
+                    icon: FontAwesomeIcons.clock,
+                    value: "${(_totalTimeSeconds / 60).toStringAsFixed(1)}m",
+                    label: "Time Spent",
                   ),
-                ),
+                  _miniStatCard(
+                    icon: FontAwesomeIcons.star,
+                    value: _averageRating.toStringAsFixed(1),
+                    label: "$_totalReviews reviews",
+                  ),
+                ],
               ),
             ]
+          ],
+              ),
+            ),
           ],
         ),
       ),
@@ -501,12 +548,16 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     required String value,
     required String label,
   }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Expanded(
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 4),
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 6),
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.12),
+          color: isDark
+              ? const Color(0xFF58607B).withValues(alpha: 0.45)
+              : Colors.white.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(14),
         ),
         child: Column(
@@ -532,15 +583,23 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: Colors.white70, size: 14),
+                Icon(
+                  icon,
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.94)
+                      : colorScheme.onPrimary.withValues(alpha: 0.78),
+                  size: 14,
+                ),
                 const SizedBox(width: 4),
                 Flexible(
                   child: Text(
                     label,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white70,
+                    style: TextStyle(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.94)
+                          : colorScheme.onPrimary.withValues(alpha: 0.90),
                       fontSize: 11,
                     ),
                   ),
@@ -569,7 +628,8 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: colorScheme.primary.withOpacity(isDark ? 0.2 : 0.1),
+                  color:
+                      colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.1),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),
@@ -577,8 +637,10 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
             ),
             child: FilledButton.icon(
               style: FilledButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: colorScheme.onPrimary,
+                backgroundColor:
+                    isDark ? const Color(0xFFBEC3F9) : colorScheme.primary,
+                foregroundColor:
+                    isDark ? const Color(0xFF232A45) : colorScheme.onPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
@@ -590,7 +652,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                   builder: (context) => const ShareProfileWidget(),
                 );
               },
-              icon: const Icon(CupertinoIcons.share, size: 20),
+              icon: const Icon(FontAwesomeIcons.shareNodes, size: 20),
               label: const Text("Share Card",
                   style: TextStyle(
                       fontWeight: FontWeight.w800,
@@ -604,9 +666,8 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(16),
-              // border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
               border: isDark
-                  ? Border.all(color: colorScheme.primary.withOpacity(0.1))
+                  ? Border.all(color: Colors.white.withValues(alpha: 0.08))
                   : Border.all(
                       color: colorScheme.primary,
                       width: 0.2,
@@ -614,8 +675,11 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
             ),
             child: FilledButton(
               style: FilledButton.styleFrom(
-                backgroundColor: colorScheme.primary.withOpacity(0.05),
-                foregroundColor: colorScheme.primary,
+                backgroundColor: isDark
+                    ? const Color(0xFF131D3E)
+                    : colorScheme.primary.withValues(alpha: 0.05),
+                foregroundColor:
+                    isDark ? colorScheme.onSurface : colorScheme.primary,
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
@@ -625,7 +689,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                 Navigator.of(context).push(MaterialPageRoute(
                     builder: (context) => const LeadScanner2()));
               },
-              child: const Icon(CupertinoIcons.viewfinder, size: 24),
+              child: const Icon(FontAwesomeIcons.camera, size: 24),
             ),
           ),
         ),
@@ -647,41 +711,30 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
           MaterialPageRoute(builder: (_) => const BusinessFeedPage()),
         );
       },
-      child: Container(
-        width: double.infinity,
+      child: GlassBox(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark
-              ? colorScheme.surfaceVariant.withOpacity(0.3)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          // border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
-          border: isDark
-              ? Border.all(color: colorScheme.primary.withOpacity(0.1))
-              : Border.all(
-                  color: colorScheme.primary,
-                  width: 0.2,
-                ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        borderRadius: 20,
+        opacity: isDark ? 0.18 : 0.1,
+        gradientColors: isDark
+            ? [
+                const Color(0xFF1B2442).withValues(alpha: 0.88),
+                const Color(0xFF151E39).withValues(alpha: 0.84),
+              ]
+            : null,
         child: Row(
           children: [
             // 🔹 Left Side: Icon with Background
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.1),
+                color: isDark
+                    ? colorScheme.onSurface.withValues(alpha: 0.12)
+                    : colorScheme.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
-                Icons.business_center_rounded,
-                color: colorScheme.primary,
+                FontAwesomeIcons.briefcase,
+                color: isDark ? colorScheme.onSurface : colorScheme.primary,
                 size: 30,
               ),
             ),
@@ -698,13 +751,14 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                       color: colorScheme.onSurface,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: 0.25,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Stay updated with recent activities',
                     style: TextStyle(
-                      color: colorScheme.onSurface.withOpacity(0.6),
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
                       fontSize: 12,
                     ),
                   ),
@@ -716,8 +770,11 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.1),
+                color:
+                    colorScheme.primary.withValues(alpha: isDark ? 0.2 : 0.1),
                 borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                    color: colorScheme.primary.withValues(alpha: 0.2)),
               ),
               child: Text(
                 'View all',
@@ -734,44 +791,10 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     );
   }
 
-  // Widget _buildGeneratedQrHeader(BuildContext context) {
-  //   final colorScheme = Theme.of(context).colorScheme;
-
-  //   return Padding(
-  //     padding: const EdgeInsets.symmetric(vertical: 24.0),
-  //     child: Row(
-  //       mainAxisAlignment: MainAxisAlignment.spaceBetween,
-  //       children: [
-  //         Text(
-  //           'Generated QR',
-  //           style: TextStyle(
-  //             color: colorScheme.primary,
-  //             fontSize: 20,
-  //             fontWeight: FontWeight.bold,
-  //           ),
-  //         ),
-  //         IconButton(
-  //           onPressed: () {
-  //             Navigator.push(
-  //               context,
-  //               MaterialPageRoute(
-  //                 builder: (_) =>
-  //                     const QrGeneratorPage(), // onGenerate hata diya
-  //               ),
-  //             );
-  //           },
-  //           icon: const Icon(Icons.add_circle_outline),
-  //           color: colorScheme.primary,
-  //           iconSize: 26,
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   Widget _buildGeneratedQrHeader(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    const shareAccent = Color(0xFFBEC3F9);
 
     return GestureDetector(
       onTap: () {
@@ -780,41 +803,30 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
           MaterialPageRoute(builder: (_) => const QrGeneratorPage()),
         );
       },
-      child: Container(
-        width: double.infinity,
+      child: GlassBox(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isDark
-              ? colorScheme.surfaceContainerHighest.withOpacity(0.3)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          // border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
-          border: isDark
-              ? Border.all(color: colorScheme.primary.withOpacity(0.1))
-              : Border.all(
-                  color: colorScheme.primary,
-                  width: 0.2,
-                ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
+        borderRadius: 20,
+        opacity: isDark ? 0.2 : 0.1,
+        gradientColors: isDark
+            ? [
+                const Color(0xFF1C2545).withValues(alpha: 0.9),
+                const Color(0xFF141D38).withValues(alpha: 0.86),
+              ]
+            : null,
         child: Row(
           children: [
             // 🔹 Left Side: Icon with Background
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.1),
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.12)
+                    : colorScheme.secondary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
-                Icons.qr_code_2_rounded,
-                color: colorScheme.primary,
+                FontAwesomeIcons.qrcode,
+                color: isDark ? shareAccent : colorScheme.secondary,
                 size: 30,
               ),
             ),
@@ -831,13 +843,14 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                       color: colorScheme.onSurface,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      letterSpacing: 0.25,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     'Make your own QR Codes',
                     style: TextStyle(
-                      color: colorScheme.onSurface.withOpacity(0.6),
+                      color: colorScheme.onSurface.withValues(alpha: 0.6),
                       fontSize: 12,
                     ),
                   ),
@@ -849,13 +862,24 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: colorScheme.primary,
+                color: isDark
+                    ? colorScheme.onSurface.withValues(alpha: 0.2)
+                    : colorScheme.secondary,
                 shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        (isDark ? colorScheme.onSurface : colorScheme.secondary)
+                            .withValues(alpha: 0.28),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  )
+                ],
               ),
-              child: const Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: Colors.white,
-                size: 20,
+              child: Icon(
+                FontAwesomeIcons.circleChevronRight,
+                color: isDark ? shareAccent : Colors.white,
+                size: 16,
               ),
             ),
           ],
@@ -868,22 +892,24 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   // NEW: Latest 5 Posts Carousel
   // ===========================
   Widget _buildLatestBusinessCarousel() {
+    final colorScheme = Theme.of(context).colorScheme;
     if (_isLatestLoading) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: 25),
         child: Center(
-          child: CircularProgressIndicator(color: Color(0xFF21254A)),
+          child: CircularProgressIndicator(color: colorScheme.primary),
         ),
       );
     }
 
     if (_latestPosts.isEmpty) {
-      return const Padding(
+      return Padding(
         padding: EdgeInsets.symmetric(vertical: 25),
         child: Center(
           child: Text(
             "No business updates yet",
-            style: TextStyle(color: Colors.white54),
+            style:
+                TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.6)),
           ),
         ),
       );
@@ -977,8 +1003,8 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                           fontSize: 18,
-                          letterSpacing: 0.5,
-                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.7,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -1007,12 +1033,13 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
 
               // OLD provider post as it is
               if (socialProvider.isLoading && posts.isEmpty)
-                const SliverToBoxAdapter(
+                SliverToBoxAdapter(
                   child: Center(
                     child: Padding(
-                      padding: EdgeInsets.all(32.0),
-                      child:
-                          CircularProgressIndicator(color: Color(0xFF21254A)),
+                      padding: const EdgeInsets.all(32.0),
+                      child: CircularProgressIndicator(
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     ),
                   ),
                 )
@@ -1041,3 +1068,5 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
         ));
   }
 }
+
+

@@ -1,46 +1,42 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/cupertino.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:gridcard/core/theme/app_theme.dart';
 import 'package:gridcard/features/business_feed/business_feed_page.dart';
 import '../features/chat/connections_page.dart';
 import '../features/business_event/business_event_page.dart';
 import '../features/analitics/user_analitics_page.dart';
+import 'package:gridcard/widgets/glass_box.dart';
 
 class ActionDock extends StatelessWidget {
   const ActionDock({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final palette = theme.extension<AppThemeColors>();
 
-    return Container(
+    return GlassBox(
       padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-      decoration: BoxDecoration(
-        color: isDark
-            ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
-            : Colors.grey[100],
-        borderRadius: BorderRadius.circular(24),
-        // border: Border.all(
-        //     color: colorScheme.onSurface.withOpacity(0.05), width: 0.5),
-        border: isDark
-            ? Border.all(
-                color: colorScheme.onSurface.withOpacity(0.05), width: 0.5)
-            : Border.all(
-                color: colorScheme.primary,
-                width: 0.2,
-              ),
-      ),
+      borderRadius: 24,
+      opacity: isDark ? 0.22 : 0.5,
+      gradientColors: [
+        (palette?.glassTop ?? theme.colorScheme.surface)
+            .withValues(alpha: isDark ? 0.88 : 0.75),
+        (palette?.glassBottom ?? theme.colorScheme.surface)
+            .withValues(alpha: isDark ? 0.82 : 0.55),
+      ],
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildActionItem(CupertinoIcons.square_grid_2x2, 'Feed', context,
+          _buildActionItem(FontAwesomeIcons.newspaper, 'Feed', context,
               const BusinessFeedPage()),
-          _buildActionItem(CupertinoIcons.calendar, 'Events', context,
+          _buildActionItem(FontAwesomeIcons.calendarDays, 'Events', context,
               const BusinessEventPage()),
-          _buildActionItem(CupertinoIcons.graph_square, 'Analytics', context,
+          _buildActionItem(FontAwesomeIcons.chartLine, 'Analytics', context,
               const UserAnaliticsPage()),
           _buildActionItem(
-            CupertinoIcons.person_2, 'Connects', context,
+            FontAwesomeIcons.users, 'Connects', context,
             // const ConnectionsPage()
             const ConnectionsPage(initialTabIndex: 0),
           ),
@@ -51,7 +47,10 @@ class ActionDock extends StatelessWidget {
 
   Widget _buildActionItem(
       IconData icon, String label, BuildContext context, Widget page) {
-    final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final colorScheme = theme.colorScheme;
+    final palette = theme.extension<AppThemeColors>();
     return InkWell(
       onTap: () {
         Navigator.of(context).push(
@@ -64,24 +63,31 @@ class ActionDock extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: colorScheme.primary.withOpacity(0.05),
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.07)
+                  : colorScheme.primary.withValues(alpha: 0.12),
               shape: BoxShape.circle,
               border: Border.all(
-                  color: colorScheme.primary.withOpacity(0.1), width: 0.5),
+                color: (isDark
+                        ? Colors.white
+                        : (palette?.neonAccent ?? colorScheme.primary))
+                    .withValues(alpha: 0.2),
+                width: 0.8,
+              ),
             ),
             child: Icon(
               icon,
               size: 26,
-              color: colorScheme.primary,
+              color: isDark ? colorScheme.onSurface : colorScheme.primary,
             ),
           ),
           const SizedBox(height: 10),
           Text(
             label,
             style: TextStyle(
-                color: colorScheme.onSurface.withOpacity(0.6),
+                color: colorScheme.onSurface.withValues(alpha: 0.72),
                 fontSize: 10,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
                 letterSpacing: 0.5),
           ),
         ],
@@ -89,3 +95,4 @@ class ActionDock extends StatelessWidget {
     );
   }
 }
+

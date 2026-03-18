@@ -287,7 +287,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   "Use letters, numbers, and wildcard characters",
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.grey,
+                    color: cs.onSurface.withValues(alpha: 0.66),
                   ),
                 ),
               ),
@@ -407,19 +407,39 @@ class _RegisterPageState extends State<RegisterPage> {
     IconData icon, {
     Color? borderColor,
   }) {
+    final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon),
+      labelStyle: TextStyle(
+        color: cs.onSurface.withValues(alpha: 0.8),
+      ),
+      floatingLabelStyle: TextStyle(
+        color: cs.primary,
+        fontWeight: FontWeight.w600,
+      ),
+      prefixIcon: Icon(icon, color: cs.primary),
+      filled: true,
+      fillColor: isDark
+          ? cs.onSurface.withValues(alpha: 0.08)
+          : Colors.white.withValues(alpha: 0.94),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
+        borderSide:
+            BorderSide(color: borderColor ?? cs.primary.withValues(alpha: 0.24)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: borderColor ?? Colors.grey),
+        borderSide:
+            BorderSide(color: borderColor ?? cs.primary.withValues(alpha: 0.24)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: borderColor ?? Colors.blue),
+        borderSide: BorderSide(
+          color: borderColor ?? cs.primary.withValues(alpha: 0.75),
+          width: 1.4,
+        ),
       ),
     );
   }

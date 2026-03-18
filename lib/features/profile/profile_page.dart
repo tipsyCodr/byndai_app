@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/profile_provider.dart';
@@ -824,7 +825,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   ),
                 ),
                 Icon(
-                  Icons.open_in_new,
+                  CupertinoIcons.arrow_up_right_square,
                   size: 16,
                   color: cs.onSurfaceVariant,
                 )
@@ -1135,7 +1136,8 @@ class _ProfilePageState extends State<ProfilePage> {
               "Your Given Rating",
               style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.4,
               ),
             ),
             const SizedBox(height: 10),
@@ -1225,7 +1227,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 'Your ratings',
                 style: TextStyle(
                   fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.4,
                   color: cs.onSurface,
                 ),
               ),
@@ -1763,7 +1766,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               : Container(
                                   color: colorScheme.surfaceContainerHighest,
                                   child: Icon(
-                                    Icons.person,
+                                    CupertinoIcons.person_fill,
                                     size: 80,
                                     color: colorScheme.onSurfaceVariant,
                                   ),
@@ -1800,7 +1803,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               alignment: Alignment.center,
                               color: Colors.transparent,
                               child: const Icon(
-                                Icons.arrow_back,
+                                CupertinoIcons.back,
                                 color: Colors.white,
                                 size: 24,
                               ),
@@ -1843,7 +1846,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 alignment: Alignment.center,
                                 color: Colors.transparent,
                                 child: const Icon(
-                                  Icons.edit,
+                                  CupertinoIcons.pencil,
                                   color: Colors.white,
                                   size: 24,
                                 ),
@@ -1901,7 +1904,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 : null,
                             child: apiProfileLogoUrl == null
                                 ? Icon(
-                                    Icons.person,
+                                    CupertinoIcons.person_fill,
                                     size: 40,
                                     color: colorScheme.onSurfaceVariant,
                                   )
@@ -1916,7 +1919,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 22,
-                              fontWeight: FontWeight.bold,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.35,
                               color: colorScheme.onSurface,
                             ),
                           ),
@@ -2033,7 +2037,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                     'Social Links',
                                     style: TextStyle(
                                       fontSize: 18,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.4,
                                       color: colorScheme.onSurface,
                                     ),
                                   ),
@@ -2093,7 +2098,8 @@ class _ProfilePageState extends State<ProfilePage> {
                                     'Have a question?',
                                     style: TextStyle(
                                       fontSize: 18,
-                                      fontWeight: FontWeight.bold,
+                                      fontWeight: FontWeight.w700,
+                                      letterSpacing: 0.4,
                                       color: colorScheme.onSurface,
                                     ),
                                   ),
@@ -2377,3 +2383,4 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
+

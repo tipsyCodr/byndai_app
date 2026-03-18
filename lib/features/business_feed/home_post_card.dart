@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
@@ -13,6 +14,7 @@ import 'package:gridcard/widgets/top_alert.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import './full_screen_image_viewer.dart';
+import 'package:gridcard/widgets/glass_box.dart';
 
 class HomePostCard extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -449,55 +451,24 @@ class _HomePostCardState extends State<HomePostCard> {
       height: 640,
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8),
-        // decoration: BoxDecoration(
-        //   color: isDark
-        //       ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
-        //       : const Color.fromARGB(255, 170, 169, 248),
-        //   borderRadius: BorderRadius.circular(20),
-        //   border: isDark
-        //       ? null
-        //       : Border.all(color: colorScheme.primary.withOpacity(0.1)),
-        //   boxShadow: isDark
-        //       ? []
-        //       : [
-        //           BoxShadow(
-        //             color: Colors.black.withOpacity(0.05),
-        //             blurRadius: 10,
-        //             offset: const Offset(0, 4),
-        //           ),
-        //         ],
-        // ),
-
-        decoration: BoxDecoration(
-          color: isDark
-              ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          // border: isDark
-          //     ? null
-          //     : Border.all(
-          //         color: Colors.black.withOpacity(0.25),
-          //         width: 1.2,
-          //       ),
-          border: isDark
-              ? null
-              : Border.all(
-                  color: colorScheme.primary,
-                  width: 0.2,
-                ),
-          boxShadow: isDark
-              ? []
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.08),
-                    blurRadius: 6,
-                    offset: const Offset(0, 3),
-                  ),
-                ],
-        ),
-
-        child: Padding(
+        child: GlassBox(
           padding: const EdgeInsets.all(14),
+          borderRadius: 20,
+          blur: 10,
+          opacity: isDark ? 0.18 : 0.24,
+          border: Border.all(
+            color: colorScheme.primary.withValues(alpha: isDark ? 0.16 : 0.12),
+            width: 0.8,
+          ),
+          gradientColors: isDark
+              ? [
+                  const Color(0xFF1A2342).withValues(alpha: 0.9),
+                  const Color(0xFF121A34).withValues(alpha: 0.86),
+                ]
+              : [
+                  Colors.white.withValues(alpha: 0.94),
+                  const Color(0xFFEEF4FF).withValues(alpha: 0.82),
+                ],
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -537,10 +508,10 @@ class _HomePostCardState extends State<HomePostCard> {
                                         fit: BoxFit.cover,
                                       )
                                     : Icon(
-                                        Icons.person,
-                                        size: 22,
+                                        FontAwesomeIcons.user,
+                                        size: 16,
                                         color: colorScheme.onSurface
-                                            .withOpacity(0.6),
+                                            .withValues(alpha: 0.6),
                                       ),
                               ),
                             ),
@@ -563,7 +534,7 @@ class _HomePostCardState extends State<HomePostCard> {
                                     style: TextStyle(
                                       fontSize: 12,
                                       color: colorScheme.onSurface
-                                          .withOpacity(0.6),
+                                          .withValues(alpha: 0.6),
                                     ),
                                   ),
                                 ],
@@ -605,7 +576,7 @@ class _HomePostCardState extends State<HomePostCard> {
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.star,
+                              Icon(FontAwesomeIcons.star,
                                   size: 18, color: colorScheme.primary),
                               const SizedBox(width: 6),
                               Expanded(
@@ -716,7 +687,7 @@ class _HomePostCardState extends State<HomePostCard> {
                         child: Text(
                           "Image load failed",
                           style: TextStyle(
-                            color: colorScheme.onSurface.withOpacity(0.6),
+                            color: colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
                       );
@@ -780,7 +751,7 @@ class _HomePostCardState extends State<HomePostCard> {
       children: [
         // LIKE
         _footerReactionBtn(
-          icon: Icons.thumb_up_alt_outlined,
+          icon: FontAwesomeIcons.thumbsUp,
           label: _likesCount.toString(),
           active: _myReaction == "like",
           isAnimating: _isLikeAnimating,
@@ -789,7 +760,7 @@ class _HomePostCardState extends State<HomePostCard> {
 
         // DISLIKE
         _footerReactionBtn(
-          icon: Icons.thumb_down_alt_outlined,
+          icon: FontAwesomeIcons.thumbsDown,
           label: _dislikesCount.toString(),
           active: _myReaction == "dislike",
           isAnimating: _isDislikeAnimating,
@@ -798,7 +769,7 @@ class _HomePostCardState extends State<HomePostCard> {
 
         // COMMENT
         _footerBtn(
-          icon: Icons.mode_comment_outlined,
+          icon: FontAwesomeIcons.comment,
           label: comments.toString(),
           onTap: () {
             Navigator.push(
@@ -815,7 +786,7 @@ class _HomePostCardState extends State<HomePostCard> {
 
         // SAVE
         _footerSaveBtn(
-          icon: _isSaved ? Icons.bookmark : Icons.bookmark_border,
+          icon: FontAwesomeIcons.bookmark,
           label: "",
           active: _isSaved,
           isAnimating: _isSaveAnimating,
@@ -824,7 +795,7 @@ class _HomePostCardState extends State<HomePostCard> {
 
         // REPORT
         _footerBtn(
-          icon: Icons.flag_outlined,
+          icon: FontAwesomeIcons.flag,
           label: "",
           onTap: _showReportDialog,
         ),
@@ -844,17 +815,17 @@ class _HomePostCardState extends State<HomePostCard> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Row(
           children: [
             Icon(
               icon,
-              size: 18,
+              size: 21,
               color: active
                   ? colorScheme.primary
-                  : colorScheme.onSurface.withOpacity(0.6),
+                  : colorScheme.onSurface.withValues(alpha: 0.6),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
@@ -862,7 +833,7 @@ class _HomePostCardState extends State<HomePostCard> {
                 fontWeight: FontWeight.w600,
                 color: active
                     ? colorScheme.primary
-                    : colorScheme.onSurface.withOpacity(0.6),
+                    : colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -884,13 +855,13 @@ class _HomePostCardState extends State<HomePostCard> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isAnimating
-              ? colorScheme.primary.withOpacity(0.1)
+              ? colorScheme.primary.withValues(alpha: 0.1)
               : Colors.transparent,
           // color: isAnimating
-          //     ? colorScheme.primary.withOpacity(0.1)
+          //     ? colorScheme.primary.withValues(alpha: 0.1)
           //     : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
@@ -901,13 +872,13 @@ class _HomePostCardState extends State<HomePostCard> {
               child: Icon(
                 icon,
                 key: ValueKey<bool>(active),
-                size: 18,
+                size: 21,
                 color: active
                     ? colorScheme.primary
-                    : colorScheme.onSurface.withOpacity(0.6),
+                    : colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
@@ -915,7 +886,7 @@ class _HomePostCardState extends State<HomePostCard> {
                 fontWeight: FontWeight.w600,
                 color: active
                     ? colorScheme.primary
-                    : colorScheme.onSurface.withOpacity(0.6),
+                    : colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -937,10 +908,10 @@ class _HomePostCardState extends State<HomePostCard> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         decoration: BoxDecoration(
           color: isAnimating
-              ? colorScheme.secondary.withOpacity(0.1)
+              ? colorScheme.secondary.withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
         ),
@@ -951,13 +922,13 @@ class _HomePostCardState extends State<HomePostCard> {
               child: Icon(
                 icon,
                 key: ValueKey<bool>(active),
-                size: 18,
+                size: 21,
                 color: active
                     ? colorScheme.secondary
-                    : colorScheme.onSurface.withOpacity(0.6),
+                    : colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 6),
             Text(
               label,
               style: TextStyle(
@@ -965,7 +936,7 @@ class _HomePostCardState extends State<HomePostCard> {
                 fontWeight: FontWeight.w600,
                 color: active
                     ? colorScheme.secondary
-                    : colorScheme.onSurface.withOpacity(0.6),
+                    : colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),
           ],
@@ -974,3 +945,4 @@ class _HomePostCardState extends State<HomePostCard> {
     );
   }
 }
+

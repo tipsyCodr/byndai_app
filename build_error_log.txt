@@ -1,0 +1,46 @@
+Running Gradle task 'assembleRelease'...                        
+Warning: Flutter support for your project's Kotlin version (1.9.22) will soon be dropped. Please upgrade your Kotlin version to a version of at least 2.1.0 soon.
+Alternatively, use the flag "--android-skip-build-dependency-validation" to bypass this check.
+
+Potential fix: Your project's KGP version is typically defined in the plugins block of the `settings.gradle` file (C:\FlutterProjects\gridcard\android/settings.gradle), by a plugin with the id of org.jetbrains.kotlin.android. 
+If you don't see a plugins block, your project was likely created with an older template version, in which case it is most likely defined in the top-level build.gradle file (C:\FlutterProjects\gridcard\android/build.gradle) by the ext.kotlin_version property.
+
+lib/core/services/nfc_service.dart:197:10: Error: Type 'NdefMessage' not found.
+  Future<NdefMessage> generateNdefMessage() async {
+         ^^^^^^^^^^^
+lib/core/services/nfc_service.dart:64:37: Error: Required named parameter 'pollingOptions' must be provided.
+    NfcManager.instance.startSession(
+                                    ^
+lib/core/services/nfc_service.dart:95:18: Error: The getter 'Ndef' isn't defined for the type 'NfcService'.
+ - 'NfcService' is from 'package:gridcard/core/services/nfc_service.dart' ('lib/core/services/nfc_service.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'Ndef'.
+    final ndef = Ndef.from(tag);
+                 ^^^^
+lib/core/services/nfc_service.dart:213:7: Error: The getter 'NdefRecord' isn't defined for the type 'NfcService'.
+ - 'NfcService' is from 'package:gridcard/core/services/nfc_service.dart' ('lib/core/services/nfc_service.dart').
+Try correcting the name to the name of an existing getter, or defining a getter or field named 'NdefRecord'.
+      NdefRecord.createMime(
+      ^^^^^^^^^^
+lib/core/services/nfc_service.dart:212:12: Error: The method 'NdefMessage' isn't defined for the type 'NfcService'.
+ - 'NfcService' is from 'package:gridcard/core/services/nfc_service.dart' ('lib/core/services/nfc_service.dart').
+Try correcting the name to the name of an existing method, or defining a method named 'NdefMessage'.
+    return NdefMessage([
+           ^^^^^^^^^^^
+Target kernel_snapshot_program failed: Exception
+
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':app:compileFlutterBuildRelease'.
+> Process 'command 'E:\src\flutter_3.24.3\flutter\bin\flutter.bat'' finished with non-zero exit value 1
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 20s
+Running Gradle task 'assembleRelease'...                           20.5s
+Gradle task assembleRelease failed with exit code 1

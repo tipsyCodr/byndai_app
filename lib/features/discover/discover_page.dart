@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import '../business_event/business_event_page.dart';
 import 'package:gridcard/widgets/discover_page_connections.dart';
+import 'package:gridcard/widgets/glass_box.dart';
 
 class DiscoverPage extends StatefulWidget {
   const DiscoverPage({super.key});
@@ -26,9 +27,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
   String eventErrorMessage = '';
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
-  // static const String _imageBaseUrl =
-  //     "https://byndai.in/";
-
   static const String _imageBaseUrl = AppConfig.imageBaseUrl;
 
   // ================= HEADERS (SAME AS COMPONENT 1) =================
@@ -102,7 +100,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
       });
       debugPrint("❌ EXCEPTION: $e");
     } finally {
-      setState(() => isEventLoading = false);
+      if (mounted) setState(() => isEventLoading = false);
     }
   }
 
@@ -209,27 +207,22 @@ class _DiscoverPageState extends State<DiscoverPage> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Container(
+    return GlassBox(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: isDark
-            ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
-            : Colors.grey[100],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.onSurface.withOpacity(0.05)),
-      ),
+      borderRadius: 16,
+      opacity: isDark ? 0.05 : 0.08,
       child: TextField(
         controller: _searchController,
         style: TextStyle(color: colorScheme.onSurface),
         decoration: InputDecoration(
           icon: Icon(
             CupertinoIcons.search,
-            color: colorScheme.onSurface.withOpacity(0.3),
+            color: colorScheme.onSurface.withValues(alpha: 0.3),
             size: 20,
           ),
           hintText: "Search people, products, or industries...",
           hintStyle: TextStyle(
-            color: colorScheme.onSurface.withOpacity(0.2),
+            color: colorScheme.onSurface.withValues(alpha: 0.2),
             fontSize: 14,
           ),
           border: InputBorder.none,
@@ -273,88 +266,10 @@ class _DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
-  // Widget _buildEventCard(dynamic event) {
-  //   final colorScheme = Theme.of(context).colorScheme;
-
-  //   final String title = (event['title'] ?? '').toString();
-  //   final String desc = (event['description'] ?? '').toString();
-
-  //   String shortText(String text) {
-  //     if (text.length <= 20) return text;
-  //     return "${text.substring(0, 20)}...";
-  //   }
-
-  //   return Container(
-  //     width: 280,
-  //     padding: const EdgeInsets.all(16),
-  //     decoration: BoxDecoration(
-  //       color: colorScheme.primary,
-  //       borderRadius: BorderRadius.circular(16),
-  //     ),
-  //     child: Row(
-  //       children: [
-  //         Icon(
-  //           CupertinoIcons.calendar_badge_plus,
-  //           color: colorScheme.onPrimary,
-  //           size: 38,
-  //         ),
-  //         const SizedBox(width: 14),
-
-  //         // Title + desc
-  //         Expanded(
-  //           child: Column(
-  //             crossAxisAlignment: CrossAxisAlignment.start,
-  //             mainAxisAlignment: MainAxisAlignment.center,
-  //             children: [
-  //               Text(
-  //                 shortText(title),
-  //                 maxLines: 1,
-  //                 overflow: TextOverflow.ellipsis,
-  //                 style: TextStyle(
-  //                   color: colorScheme.onPrimary,
-  //                   fontWeight: FontWeight.bold,
-  //                   fontSize: 15,
-  //                 ),
-  //               ),
-  //               const SizedBox(height: 6),
-  //               Text(
-  //                 shortText(desc),
-  //                 maxLines: 1,
-  //                 overflow: TextOverflow.ellipsis,
-  //                 style: TextStyle(
-  //                   color: colorScheme.onPrimary.withOpacity(0.75),
-  //                   fontSize: 12,
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-
-  //         const SizedBox(width: 10),
-
-  //         GestureDetector(
-  //           onTap: () {
-  //             final int? eventId = event['id'];
-
-  //             Navigator.push(
-  //               context,
-  //               MaterialPageRoute(
-  //                 builder: (context) => BusinessEventPage(openEventId: eventId),
-  //               ),
-  //             );
-  //           },
-  //           child: Icon(
-  //             CupertinoIcons.chevron_right,
-  //             color: colorScheme.onPrimary.withOpacity(0.8),
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   Widget _buildEventCard(dynamic event) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final String title = (event['title'] ?? '').toString();
     final String desc = (event['description'] ?? '').toString();
@@ -375,21 +290,26 @@ class _DiscoverPageState extends State<DiscoverPage> {
           ),
         );
       },
-      child: Container(
+      child: GlassBox(
         width: 280,
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: colorScheme.primary,
-          borderRadius: BorderRadius.circular(16),
-        ),
+        borderRadius: 16,
+        gradientColors: isDark
+            ? [
+                colorScheme.primary.withValues(alpha: 0.2),
+                colorScheme.primary.withValues(alpha: 0.1),
+              ]
+            : [
+                colorScheme.primary.withValues(alpha: 0.8),
+                colorScheme.primary.withValues(alpha: 0.6),
+              ],
         child: Row(
           children: [
             Icon(
               CupertinoIcons.calendar_badge_plus,
-              color: colorScheme.onPrimary,
+              color: isDark ? colorScheme.primary : Colors.white,
               size: 38,
             ),
-
             const SizedBox(width: 14),
 
             // Title + desc
@@ -403,18 +323,21 @@ class _DiscoverPageState extends State<DiscoverPage> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: colorScheme.onPrimary,
-                      fontWeight: FontWeight.bold,
+                      color: isDark ? colorScheme.onSurface : Colors.white,
+                      fontWeight: FontWeight.w700,
                       fontSize: 15,
+                      letterSpacing: 0.2,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
                     shortText(desc),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: colorScheme.onPrimary.withOpacity(0.75),
+                      color: isDark
+                          ? colorScheme.onSurface.withValues(alpha: 0.6)
+                          : Colors.white.withValues(alpha: 0.8),
                       fontSize: 12,
                     ),
                   ),
@@ -422,12 +345,14 @@ class _DiscoverPageState extends State<DiscoverPage> {
               ),
             ),
 
-            const SizedBox(width: 10),
+          const SizedBox(width: 10),
 
-            Icon(
-              CupertinoIcons.chevron_right,
-              color: colorScheme.onPrimary.withOpacity(0.8),
-            ),
+          Icon(
+            CupertinoIcons.chevron_right,
+            color: isDark
+                ? colorScheme.onSurface.withValues(alpha: 0.4)
+                : Colors.white.withValues(alpha: 0.6),
+          ),
           ],
         ),
       ),
@@ -445,7 +370,8 @@ class _DiscoverPageState extends State<DiscoverPage> {
           style: TextStyle(
             color: colorScheme.primary,
             fontSize: 18,
-            fontWeight: FontWeight.bold,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.7,
           ),
         ),
         TextButton(

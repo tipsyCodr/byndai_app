@@ -888,8 +888,17 @@ class _LeadsPageState extends State<LeadsPage> {
     );
 
     final exportButton = SizedBox(
-      height: 42,
+      height: 48,
       child: FilledButton.tonalIcon(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          textStyle: const TextStyle(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+          ),
+        ),
         onPressed: _isExporting ? null : () => _exportLeadsToExcel(provider),
         icon: _isExporting
             ? const SizedBox(
@@ -972,6 +981,17 @@ class _LeadsPageState extends State<LeadsPage> {
         itemCount: provider.leads.length,
         itemBuilder: (_, i) {
           final lead = provider.leads[i];
+          final colorScheme = Theme.of(context).colorScheme;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
+          final leadTitleColor = isDark
+              ? Colors.white.withValues(alpha: 0.95)
+              : colorScheme.onSurface;
+          final leadSecondaryColor = isDark
+              ? Colors.white.withValues(alpha: 0.84)
+              : colorScheme.onSurfaceVariant;
+          final leadContactColor = isDark
+              ? Colors.white.withValues(alpha: 0.92)
+              : colorScheme.onSurface;
 
           return InkWell(
             borderRadius: BorderRadius.circular(14),
@@ -1324,9 +1344,10 @@ class _LeadsPageState extends State<LeadsPage> {
                             lead.name ?? "",
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 15.5,
                               fontWeight: FontWeight.w600,
+                              color: leadTitleColor,
                             ),
                           ),
                         ),
@@ -1364,8 +1385,7 @@ class _LeadsPageState extends State<LeadsPage> {
                           icon: Icon(
                             CupertinoIcons.ellipsis_vertical,
                             size: 19,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: leadSecondaryColor,
                           ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -1412,7 +1432,7 @@ class _LeadsPageState extends State<LeadsPage> {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 12.5,
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          color: leadSecondaryColor,
                         ),
                       ),
 
@@ -1422,13 +1442,14 @@ class _LeadsPageState extends State<LeadsPage> {
                     Row(
                       children: [
                         Icon(CupertinoIcons.phone,
-                            size: 13,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant),
+                            size: 13, color: leadSecondaryColor),
                         const SizedBox(width: 4),
                         Text(
                           lead.mobile_no_1 ?? "",
-                          style: const TextStyle(fontSize: 12.5),
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            color: leadContactColor,
+                          ),
                         ),
                       ],
                     ),
@@ -1439,17 +1460,17 @@ class _LeadsPageState extends State<LeadsPage> {
                       Row(
                         children: [
                           Icon(CupertinoIcons.mail,
-                              size: 13,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant),
+                              size: 13, color: leadSecondaryColor),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
                               lead.email!,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 12.5),
+                              style: TextStyle(
+                                fontSize: 12.5,
+                                color: leadContactColor,
+                              ),
                             ),
                           ),
                         ],
