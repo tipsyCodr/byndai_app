@@ -137,6 +137,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.5+3"
+  carousel_slider:
+    dependency: "direct main"
+    description:
+      name: carousel_slider
+      sha256: febf4b0163e0242adc13d7a863b04965351f59e7dfea56675c7c2caa7bcd7476
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.1.2"
   change_app_package_name:
     dependency: "direct main"
     description:
@@ -265,6 +273,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  draggable_widget:
+    dependency: "direct main"
+    description:
+      name: draggable_widget
+      sha256: d7f6b1eb9cb79b724b02dc2ac699f82d1ab20b99920b8b1f25812054d72ca803
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.0"
   fake_async:
     dependency: transitive
     description:
@@ -462,6 +478,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.4.1"
+  flutter_colorpicker:
+    dependency: "direct main"
+    description:
+      name: flutter_colorpicker
+      sha256: "969de5f6f9e2a570ac660fb7b501551451ea2a1ab9e2097e89475f60e07816ea"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.0"
   flutter_contacts:
     dependency: "direct main"
     description:
@@ -582,6 +606,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.2.2"
+  flutter_staggered_grid_view:
+    dependency: "direct main"
+    description:
+      name: flutter_staggered_grid_view
+      sha256: "19e7abb550c96fbfeb546b23f3ff356ee7c59a019a651f8f102a4ba9b7349395"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
   flutter_svg:
     dependency: "direct main"
     description:
@@ -632,6 +664,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.3"
+  google_fonts:
+    dependency: "direct main"
+    description:
+      name: google_fonts
+      sha256: ba03d03bcaa2f6cb7bd920e3b5027181db75ab524f8891c8bc3aa603885b8055
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.3.3"
   google_identity_services_web:
     dependency: transitive
     description:
@@ -728,6 +768,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.8.0"
+  image_gallery_saver:
+    dependency: "direct main"
+    description:
+      name: image_gallery_saver
+      sha256: "0aba74216a4d9b0561510cb968015d56b701ba1bd94aace26aacdd8ae5761816"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.3"
   image_picker:
     dependency: "direct main"
     description:
@@ -1144,6 +1192,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.5.0"
+  pro_image_editor:
+    dependency: "direct main"
+    description:
+      name: pro_image_editor
+      sha256: "6e50809e8edc15be36d8caaac290806a50576288e4f7bbf6a2483ede923d1114"
+      url: "https://pub.dev"
+    source: hosted
+    version: "12.0.7"
   provider:
     dependency: "direct main"
     description:
@@ -1622,5 +1678,5 @@ packages:
     source: hosted
     version: "3.1.3"
 sdks:
-  dart: ">=3.10.3 <4.0.0"
-  flutter: ">=3.38.4"
+  dart: ">=3.11.0 <4.0.0"
+  flutter: ">=3.41.0"
