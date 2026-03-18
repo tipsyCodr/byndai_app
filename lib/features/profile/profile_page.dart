@@ -2260,6 +2260,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         child: ProductListWidget(
                           products: _products,
                           isLoading: _isLoadingProducts,
+                          viewerUserId: widget.viewerUserId, // 👈 PASS
+                          profileUserId: widget.userId,
                         ),
                       ),
 

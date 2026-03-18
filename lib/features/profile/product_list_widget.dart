@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'dart:convert';
+import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:http/http.dart' as http;
 import 'package:gridcard/widgets/glass_box.dart';
 
 class ProductListWidget extends StatefulWidget {
   final List products;
   final bool isLoading;
+  final int? viewerUserId; // 👈 NEW
+  final int? profileUserId;
 
   const ProductListWidget({
     super.key,
     required this.products,
     required this.isLoading,
+    this.viewerUserId, // 👈 NEW
+    this.profileUserId,
   });
 
   @override
@@ -22,11 +29,69 @@ class _ProductListWidgetState extends State<ProductListWidget> {
   void initState() {
     super.initState();
     debugPrint("🟩 Products Data: ${widget.products}");
+    debugPrint("🟩 viewerUserId: ${widget.viewerUserId}"); // 👈 NEW
+    debugPrint("🟩 profileUserId: ${widget.profileUserId}"); // 👈 NEW
   }
 
   @override
   void didUpdateWidget(covariant ProductListWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
+  }
+
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await UserStorageService().getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
+  // void _handleProductAction(Map<String, dynamic> product) {
+  //   final productId = product["id"];
+
+  //   final data = {
+  //     "product_id": productId,
+  //     "viewer_user_id": widget.viewerUserId,
+  //     "profile_user_id": widget.profileUserId,
+  //   };
+
+  //   debugPrint("🟦 Product Clicked JSON:");
+  //   debugPrint(jsonEncode(data)); // 👈 JSON print
+  // }
+
+  Future<void> _handleProductAction(Map<String, dynamic> product) async {
+    final productId = product["id"];
+
+    final data = {
+      "product_id": productId,
+      "viewer_user_id": widget.viewerUserId,
+      "profile_user_id": widget.profileUserId,
+    };
+
+    debugPrint("🟦 Product Clicked JSON:");
+    debugPrint(jsonEncode(data));
+
+    try {
+      final headers = await _getHeaders();
+
+      final url = Uri.parse("${AppConfig.apiBaseUrl}/product-click");
+
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode(data),
+      );
+
+      if (response.statusCode == 200) {
+        debugPrint("✅ API Success: ${response.body}");
+      } else {
+        debugPrint("❌ API Error: ${response.statusCode}");
+        debugPrint(response.body);
+      }
+    } catch (e) {
+      debugPrint("🚨 API Exception: $e");
+    }
   }
 
   String _getFullProductImageUrl(Map<String, dynamic> product) {
@@ -94,6 +159,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
             final productPrice = p["product_price"];
             final description = p["description"] ?? "";
             final productLinks = p["product_link"] as List?;
+            final hasLinks = productLinks != null && productLinks.isNotEmpty;
+            final isOwner = widget.viewerUserId == widget.profileUserId;
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 12),
@@ -104,33 +171,6 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                  // Product Image
-                  // ClipRRect(
-                  //   borderRadius: const BorderRadius.vertical(
-                  //     top: Radius.circular(12),
-                  //   ),
-                  //   child: imageUrl.isNotEmpty
-                  //       ? Image.network(
-                  //           imageUrl,
-                  //           width: double.infinity,
-                  //           height: 150,
-                  //           fit: BoxFit.cover,
-                  //           errorBuilder: (context, error, stackTrace) =>
-                  //               Container(
-                  //             width: double.infinity,
-                  //             height: 150,
-                  //             color: Colors.grey[300],
-                  //             child: const Icon(Icons.image_not_supported),
-                  //           ),
-                  //         )
-                  //       : Container(
-                  //           width: double.infinity,
-                  //           height: 150,
-                  //           color: Colors.grey[300],
-                  //           child: const Icon(Icons.image),
-                  //         ),
-                  // ),
-
                   ClipRRect(
                     borderRadius: const BorderRadius.vertical(
                       top: Radius.circular(12),
@@ -139,13 +179,24 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                         ? Image.network(
                             imageUrl,
                             width: double.infinity,
-                            fit: BoxFit.contain, // ✅ image crop नहीं होगा
-                            errorBuilder: (context, error, stackTrace) =>
-                                Container(
-                              height: 150,
-                              color: Colors.grey[300],
-                              child: const Icon(Icons.image_not_supported),
-                            ),
+                            fit: BoxFit.contain,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                width: double.infinity,
+                                height: 150,
+                                color: Colors.grey[300],
+                                child: const Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.image, size: 32),
+                                      SizedBox(height: 6),
+                                      Text("Not found"),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           )
                         : Container(
                             width: double.infinity,
@@ -163,7 +214,7 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                             ),
                           ),
                   ),
-                  // Product Info
+                  // Product Info.....
                   Padding(
                     padding: const EdgeInsets.all(12),
                     child: Column(
@@ -205,46 +256,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                           softWrap: true,
                         ),
                         const SizedBox(height: 12),
-                        // Links (if any) - now styled as in the image
-                        if (productLinks != null && productLinks.isNotEmpty)
-                          // Column(
-                          //   crossAxisAlignment: CrossAxisAlignment.start,
-                          //   children: productLinks.map<Widget>((linkObj) {
-                          //     final title = linkObj["title"] ?? "Link";
-                          //     final url = linkObj["links"] ?? "";
-                          //     return Padding(
-                          //       padding: const EdgeInsets.symmetric(vertical: 4),
-                          //       child: InkWell(
-                          //         onTap: url.isNotEmpty
-                          //             ? () async {
-                          //                 final uri = Uri.tryParse(url);
-                          //                 if (uri != null &&
-                          //                     await canLaunchUrl(uri)) {
-                          //                   await launchUrl(uri);
-                          //                 }
-                          //               }
-                          //             : null,
-                          //         child: Row(
-                          //           mainAxisSize: MainAxisSize.min,
-                          //           children: [
-                          //             Text(
-                          //               title,
-                          //               style: const TextStyle(
-                          //                 color: Colors.blue,
-                          //                 fontSize: 14,
-                          //                 decoration: TextDecoration.underline,
-                          //               ),
-                          //             ),
-                          //             const SizedBox(width: 4),
-                          //             const Icon(Icons.arrow_forward,
-                          //                 size: 16, color: Colors.blue),
-                          //           ],
-                          //         ),
-                          //       ),
-                          //     );
-                          //   }).toList(),
-                          // ),
 
+                        if (hasLinks)
                           Column(
                             children: productLinks.map<Widget>((linkObj) {
                               final title = linkObj["title"] ?? "Link";
@@ -257,12 +270,16 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                   borderRadius: BorderRadius.circular(10),
                                   onTap: url.isNotEmpty
                                       ? () async {
+                                          await _handleProductAction(p);
+
                                           final uri = Uri.tryParse(url);
                                           if (uri != null &&
                                               await canLaunchUrl(uri)) {
-                                            await launchUrl(uri,
-                                                mode: LaunchMode
-                                                    .externalApplication);
+                                            await launchUrl(
+                                              uri,
+                                              mode: LaunchMode
+                                                  .externalApplication,
+                                            );
                                           }
                                         }
                                       : null,
@@ -276,8 +293,6 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                           Color(0xFF6A8DC7),
                                           Color(0xFF4F78B8),
                                         ],
-                                        begin: Alignment.centerLeft,
-                                        end: Alignment.centerRight,
                                       ),
                                     ),
                                     child: Row(
@@ -303,6 +318,33 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                                 ),
                               );
                             }).toList(),
+                          )
+
+                        // 👇 ONLY show if NOT owner
+                        else if (!isOwner)
+                          Container(
+                            width: double.infinity,
+                            margin: const EdgeInsets.only(top: 8),
+                            child: ElevatedButton(
+                              onPressed: () async {
+                                await _handleProductAction(p); // 👈 await add
+                              },
+                              style: ElevatedButton.styleFrom(
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                backgroundColor: Colors.green,
+                              ),
+                              child: const Text(
+                                "Add to Cart",
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
                           ),
                       ],
                     ),

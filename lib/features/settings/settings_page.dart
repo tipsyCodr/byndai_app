@@ -15,8 +15,11 @@ import './about_dynamic_page.dart';
 import './privacy_dynamic_page.dart';
 import './support_dynamic_page.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import '../flyer module/pages/flyer_home.dart';
+
 import 'package:gridcard/widgets/glass_box.dart';
 
+// \features\flyer module\pages\flyer_home.dart
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
@@ -288,6 +291,24 @@ class _SettingsPageState extends State<SettingsPage> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => SupportDynamicPage(pageData: pageData),
+                      ),
+                    );
+                  }
+                },
+              ),
+
+              _buildSettingsTile(
+                context: context,
+                icon: CupertinoIcons.question_circle,
+                title: "ByndCanvas",
+                onTap: () async {
+                  final pageData = await _fetchSupportPage();
+
+                  if (pageData != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FlyerHomePage(),
                       ),
                     );
                   }
