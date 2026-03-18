@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
+import 'package:gridcard/core/services/profile_provider.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:universal_html/html.dart' as html;
@@ -17,13 +18,11 @@ class _OverlayItem {
   Offset position;
   double size; 
   bool visible;
-  double initialScale;
 
   _OverlayItem({
     required this.position,
     this.size = 80,
     this.visible = false,
-    this.initialScale = 1.0,
   });
 }
 
@@ -47,14 +46,10 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
   bool _isSaving = false;
   bool _imageLoaded = false;
 
-  // Profile styles
   double _borderWidth = 3.0;
   Color _borderColor = Colors.white;
-
-  // QR styles
   double _qrBorderRadius = 8.0;
 
-  // Info Bar styles
   Color _barBgColor = Colors.white;
   Color _barTextColor = Colors.black;
   double _barOpacity = 0.9;
@@ -67,7 +62,7 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
     _profileOverlay = _OverlayItem(position: const Offset(20, 20), size: 100, visible: true);
     _onlineQrOverlay = _OverlayItem(position: const Offset(20, 140), size: 100, visible: false);
     _offlineQrOverlay = _OverlayItem(position: const Offset(140, 140), size: 100, visible: false);
-    _infoBarOverlay = _OverlayItem(position: const Offset(20, 300), size: 300, visible: false); // size is width for bar
+    _infoBarOverlay = _OverlayItem(position: const Offset(20, 300), size: 300, visible: false);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       precacheImage(NetworkImage(widget.imageUrl), context).then((_) {
@@ -164,8 +159,6 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                     const SizedBox(height: 16),
                     Text("Overlay Settings", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: colorScheme.onSurface)),
                     const SizedBox(height: 20),
-
-                    // Info Bar Settings
                     if (_infoBarOverlay.visible) ...[
                       _buildSectionHeader("Info Bar Styles", colorScheme),
                       _buildSectionTitle("Bar Width", colorScheme),
@@ -178,8 +171,6 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                       _buildColorPicker(_barTextColor, (c) { setSheetState((){}); setState(() => _barTextColor = c); }),
                       const Divider(height: 32),
                     ],
-
-                    // Profile Settings
                     if (_profileOverlay.visible) ...[
                       _buildSectionHeader("Profile Settings", colorScheme),
                       _buildSectionTitle("Size", colorScheme),
@@ -188,8 +179,6 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                       _buildColorPicker(_borderColor, (c) { setSheetState((){}); setState(() => _borderColor = c); }),
                       const Divider(height: 32),
                     ],
-
-                    // QR Settings
                     if (_onlineQrOverlay.visible || _offlineQrOverlay.visible) ...[
                       _buildSectionHeader("QR Settings", colorScheme),
                       if (_onlineQrOverlay.visible) ...[
@@ -243,11 +232,10 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
       left: item.position.dx,
       top: item.position.dy,
       child: GestureDetector(
-        onScaleStart: (details) => item.initialScale = item.size / 100.0,
         onScaleUpdate: (details) {
           setState(() {
             if (details.pointerCount == 2) {
-              item.size = (100.0 * item.initialScale * details.scale).clamp(40.0, 450.0);
+              item.size = (item.size * details.scale).clamp(40.0, 450.0);
             }
             item.position = Offset(
               (item.position.dx + details.focalPointDelta.dx).clamp(-item.size / 2, constraints.maxWidth - item.size / 2),
@@ -260,14 +248,22 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
     );
   }
 
-  Widget _buildInfoBar(AuthProvider auth) {
+  Widget _buildInfoBar(AuthProvider auth, ProfileProvider profile) {
     final user = auth.user;
-    final master = user?.masterUser?.toJson();
+    final business = profile.businessInfo;
     final name = user?.masterUser?.fname ?? 'Your Name';
-    final role = master?['desg'] ?? 'Designation';
-    final company = master?['legal_name'] ?? 'Business Name';
+    final role = user?.masterUser?.toJson()['desg'] ?? 'Designation';
+    
+    // Use legal_name for Business Name
+    final company = business?['legal_name'] ?? 
+                    user?.masterUser?.toJson()['legal_name'] ?? 
+                    'Business Name';
+                    
     final contact = user?.userMobile ?? 'Mobile Number';
-    final addr = master?['address'] ?? 'Your Address details here';
+    
+    // Use website_url for Business Website
+    final website = business?['website_url'] ?? 
+                    'Your Website';
 
     return Container(
       width: _infoBarOverlay.size,
@@ -282,20 +278,19 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(name, style: TextStyle(color: _barTextColor, fontSize: _barFontSize + 4, fontWeight: FontWeight.bold)),
-          if (role.isNotEmpty) Text(role, style: TextStyle(color: _barTextColor.withValues(alpha: 0.8), fontSize: _barFontSize, fontWeight: FontWeight.w500)),
+          if (role.toString().isNotEmpty) Text(role.toString(), style: TextStyle(color: _barTextColor.withValues(alpha: 0.8), fontSize: _barFontSize, fontWeight: FontWeight.w500)),
           const SizedBox(height: 4),
           Divider(color: _barTextColor.withValues(alpha: 0.2), height: 8),
           const SizedBox(height: 4),
-          _buildInfoRow(Icons.business, company),
+          _buildInfoRow(Icons.business, company.toString()),
           _buildInfoRow(Icons.phone, contact),
-          _buildInfoRow(Icons.location_on, addr),
+          _buildInfoRow(Icons.language, website.toString()),
         ],
       ),
     );
   }
 
   Widget _buildInfoRow(IconData icon, String text) {
-    if (text.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
       child: Row(
@@ -311,6 +306,7 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
+    final profile = Provider.of<ProfileProvider>(context);
     final profileUrl = _getProfilePicUrl();
     final hasOverlay = _profileOverlay.visible || _onlineQrOverlay.visible || _offlineQrOverlay.visible || _infoBarOverlay.visible;
 
@@ -326,7 +322,7 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                 child: LayoutBuilder(builder: (context, constraints) {
                   return Stack(children: [
                     Image.network(widget.imageUrl, fit: BoxFit.contain, width: constraints.maxWidth, height: constraints.maxHeight),
-                    if (_infoBarOverlay.visible) _buildDraggableOverlay(item: _infoBarOverlay, constraints: constraints, child: _buildInfoBar(auth)),
+                    if (_infoBarOverlay.visible) _buildDraggableOverlay(item: _infoBarOverlay, constraints: constraints, child: _buildInfoBar(auth, profile)),
                     if (_profileOverlay.visible && profileUrl != null) _buildDraggableOverlay(item: _profileOverlay, constraints: constraints, child: Container(width: _profileOverlay.size, height: _profileOverlay.size, decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: _borderColor, width: _borderWidth), boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)]), child: ClipOval(child: Image.network(profileUrl, fit: BoxFit.cover)))),
                     if (_onlineQrOverlay.visible) _buildDraggableOverlay(item: _onlineQrOverlay, constraints: constraints, child: _buildQrWidget(_generateOnlineQrData(), _onlineQrOverlay.size, "Connect")),
                     if (_offlineQrOverlay.visible) _buildDraggableOverlay(item: _offlineQrOverlay, constraints: constraints, child: _buildQrWidget(_generateOfflineQrData(), _offlineQrOverlay.size, "Contact")),
