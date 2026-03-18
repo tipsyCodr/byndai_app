@@ -468,11 +468,11 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                       vertical: 12, horizontal: 16),
                                   decoration: BoxDecoration(
                                     color: _selectedTab == 0
-                                        ? colorScheme.primary
+                                        ? (isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary)
                                         : Colors.transparent,
                                     borderRadius: BorderRadius.circular(25),
                                     border: Border.all(
-                                      color: colorScheme.primary,
+                                      color: isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary,
                                       width: 0.2,
                                     ),
                                   ),
@@ -507,11 +507,11 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                       vertical: 12, horizontal: 16),
                                   decoration: BoxDecoration(
                                     color: _selectedTab == 1
-                                        ? colorScheme.primary
+                                        ? (isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary)
                                         : Colors.transparent,
                                     borderRadius: BorderRadius.circular(25),
                                     border: Border.all(
-                                      color: colorScheme.primary,
+                                      color: isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary,
                                       width: 0.2,
                                     ),
                                   ),
@@ -688,10 +688,8 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
-                            palette?.neonAccent ?? colorScheme.primary,
-                        foregroundColor: palette?.neonAccent != null
-                            ? Colors.white
-                            : colorScheme.onPrimary,
+                            isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary,
+                        foregroundColor: isDark ? Colors.black : Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -740,11 +738,11 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
-                            color: palette?.neonAccent ?? colorScheme.primary,
+                            color: isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary,
                           ),
                         ),
                         side: BorderSide(
-                          color: Theme.of(context).colorScheme.outlineVariant,
+                          color: isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary.withValues(alpha: 0.2),
                           width: 0.2,
                         ),
                       ),
@@ -787,6 +785,10 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
 
 // New method to show contact save dialog
   void _showContactSaveDialog(BuildContext context, Map<String, dynamic> data) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final palette = theme.extension<AppThemeColors>();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -824,6 +826,10 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                 ),
               );
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: palette?.neonAccent ?? colorScheme.primary,
+              foregroundColor: Colors.white,
+            ),
             child: const Text('Save to Phone'),
           ),
         ],
@@ -833,6 +839,10 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
 
   void _handleScannedData(
       BuildContext context, Map<String, dynamic> data, int selectedTab) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final palette = theme.extension<AppThemeColors>();
+
     // Check if this is a contact QR code (Add to Contact tab)
     if (selectedTab == 1) {
       // Show contact save dialog directly
@@ -863,6 +873,10 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                 TopAlert.show(context, 'Connection request sent successfully!',
                     isSuccess: true);
               },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: palette?.neonAccent ?? colorScheme.primary,
+                foregroundColor: Colors.white,
+              ),
               child: const Text('Connect'),
             ),
           ],

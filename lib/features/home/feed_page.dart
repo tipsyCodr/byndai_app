@@ -821,12 +821,12 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
               decoration: BoxDecoration(
                 color: isDark
                     ? Colors.white.withValues(alpha: 0.12)
-                    : colorScheme.secondary.withValues(alpha: 0.15),
+                    : colorScheme.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Icon(
                 FontAwesomeIcons.qrcode,
-                color: isDark ? shareAccent : colorScheme.secondary,
+                color: isDark ? shareAccent : colorScheme.primary,
                 size: 30,
               ),
             ),
@@ -864,12 +864,12 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
               decoration: BoxDecoration(
                 color: isDark
                     ? colorScheme.onSurface.withValues(alpha: 0.2)
-                    : colorScheme.secondary,
+                    : colorScheme.primary,
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
                     color:
-                        (isDark ? colorScheme.onSurface : colorScheme.secondary)
+                        (isDark ? colorScheme.onSurface : colorScheme.primary)
                             .withValues(alpha: 0.28),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
