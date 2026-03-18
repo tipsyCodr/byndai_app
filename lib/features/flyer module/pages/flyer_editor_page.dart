@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
@@ -18,13 +17,13 @@ class _OverlayItem {
   Offset position;
   double size;
   bool visible;
-  double currentScale;
+  double initialScale;
 
   _OverlayItem({
     required this.position,
     this.size = 80,
     this.visible = false,
-    this.currentScale = 1.0,
+    this.initialScale = 1.0,
   });
 }
 
@@ -90,26 +89,31 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
   String _generateOnlineQrData() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    final data = {
-      'user_name': user?.userName?.toString() ?? '',
-      'type': 'gridcard_connect',
-      'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-    };
-    return json.encode(data);
+    final baseUrl = AppConfig.apiBaseUrl.replaceAll(RegExp(r'/api$'), '');
+    final profileId = user?.userName ?? user?.id?.toString() ?? 'me';
+    return "$baseUrl/u/$profileId";
   }
 
   String _generateOfflineQrData() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.user;
-    final data = {
-      'id': user?.id?.toString() ?? '',
-      'user_mobile': user?.userMobile?.toString() ?? '',
-      'email': user?.email?.toString() ?? '',
-      'fname': user?.masterUser?.fname?.toString() ?? '',
-      'type': 'gridcard_contact',
-      'timestamp': DateTime.now().millisecondsSinceEpoch.toString(),
-    };
-    return json.encode(data);
+    final masterJson = user?.masterUser?.toJson();
+    final fname = user?.masterUser?.fname ?? 'User';
+    final mobile = user?.userMobile ?? '';
+    final email = user?.email ?? '';
+    final org = masterJson?['legal_name'] ?? '';
+    final title = masterJson?['desg'] ?? '';
+    final website = AppConfig.apiBaseUrl.replaceAll(RegExp(r'/api$'), '');
+
+    return 'BEGIN:VCARD\n'
+           'VERSION:3.0\n'
+           'FN:$fname\n'
+           'TEL;TYPE=CELL:$mobile\n'
+           'EMAIL:$email\n'
+           'ORG:$org\n'
+           'TITLE:$title\n'
+           'URL:$website\n'
+           'END:VCARD';
   }
 
   Future<void> _saveFlyer() async {
@@ -142,15 +146,11 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
           ..setAttribute("download", "flyer_${DateTime.now().millisecondsSinceEpoch}.png")
           ..click();
         html.Url.revokeObjectUrl(url);
-        debugPrint("WEB: Flyer download initiated");
       } else {
         final tempDir = await getTemporaryDirectory();
         final file = File('${tempDir.path}/flyer_${DateTime.now().millisecondsSinceEpoch}.png');
         await file.writeAsBytes(bytes);
-        debugPrint("FILE: Created at ${file.path}");
-
         await Gal.putImage(file.path);
-        debugPrint("GAL: Successfully saved to gallery");
       }
 
       if (mounted) TopAlert.show(context, "✅ Flyer saved to gallery!", isSuccess: true);
@@ -248,10 +248,13 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
       left: item.position.dx,
       top: item.position.dy,
       child: GestureDetector(
+        onScaleStart: (details) {
+          item.initialScale = item.size / 80.0;
+        },
         onScaleUpdate: (details) {
           setState(() {
             if (details.pointerCount == 2) {
-              item.size = (item.size * details.scale).clamp(40.0, 200.0);
+              item.size = (80.0 * item.initialScale * details.scale).clamp(40.0, 200.0);
             }
             item.position = Offset(
               (item.position.dx + details.focalPointDelta.dx).clamp(-item.size / 2, constraints.maxWidth - item.size / 2),
