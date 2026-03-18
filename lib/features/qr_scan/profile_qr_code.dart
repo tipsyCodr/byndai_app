@@ -593,11 +593,13 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                         : size.height * 0.35,
                                     eyeStyle: QrEyeStyle(
                                       eyeShape: QrEyeShape.square,
-                                      color: palette?.neonAccent ?? Colors.black,
+                                      color:
+                                          palette?.neonAccent ?? Colors.black,
                                     ),
                                     dataModuleStyle: QrDataModuleStyle(
                                       dataModuleShape: QrDataModuleShape.square,
-                                      color: palette?.neonAccent ?? Colors.black,
+                                      color:
+                                          palette?.neonAccent ?? Colors.black,
                                     ),
                                     embeddedImage: user.masterUser
                                                 ?.toJson()['profile_pic'] !=
@@ -685,8 +687,11 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                         _showScanDialog(context, _selectedTab);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: palette?.neonAccent ?? colorScheme.primary,
-                        foregroundColor: palette?.neonAccent != null ? Colors.white : colorScheme.onPrimary,
+                        backgroundColor:
+                            palette?.neonAccent ?? colorScheme.primary,
+                        foregroundColor: palette?.neonAccent != null
+                            ? Colors.white
+                            : colorScheme.onPrimary,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
