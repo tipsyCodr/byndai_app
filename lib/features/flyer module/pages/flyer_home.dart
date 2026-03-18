@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../data/festival_data.dart';
-import 'editor_page.dart';
+import 'flyer_editor_page.dart';
 
 class FlyerHomePage extends StatefulWidget {
   const FlyerHomePage({super.key});
@@ -76,7 +76,7 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => EditorPage(imageUrl: img),
+                        builder: (_) => FlyerEditorPage(imageUrl: img),
                       ),
                     );
                   },
