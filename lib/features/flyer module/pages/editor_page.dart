@@ -28,9 +28,11 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gal/gal.dart';
+import 'dart:io';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/foundation.dart'; // for kIsWeb
-import 'dart:html' as html; // only for web
+import 'package:universal_html/html.dart' as html; // cross-platform html
 
 class EditorPage extends StatelessWidget {
   final String imageUrl;
@@ -70,13 +72,11 @@ class EditorPage extends StatelessWidget {
         html.Url.revokeObjectUrl(url);
       } else {
         /// 📱 MOBILE GALLERY SAVE
-        final result = await ImageGallerySaver.saveImage(
-          bytes,
-          quality: 100,
-          name: "flyer_${DateTime.now().millisecondsSinceEpoch}",
-        );
-
-        debugPrint("Saved: $result");
+        final tempDir = await getTemporaryDirectory();
+        final file = File('${tempDir.path}/flyer_${DateTime.now().millisecondsSinceEpoch}.png');
+        await file.writeAsBytes(bytes);
+        await Gal.putImage(file.path);
+        debugPrint("Saved to gallery");
       }
 
       /// ✅ SUCCESS MESSAGE

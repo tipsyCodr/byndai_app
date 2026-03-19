@@ -187,7 +187,7 @@ class _HomePageState extends State<HomePage> {
               ),
               icon: Icon(
                 FontAwesomeIcons.qrcode,
-                color: palette?.neonAccent,
+                color: isDark ? palette?.neonAccent : colorScheme.primary,
               ),
               onPressed: () {
                 Navigator.of(context).push(

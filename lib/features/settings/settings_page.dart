@@ -158,7 +158,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: CupertinoIcons.briefcase,
                 title: "Business Information",
                 subtitle: "Company name, designation, etc.",
-
                 onTap: () async {
                   if (_userDetails == null) {
                     TopAlert.show(context, "Please wait, loading profile...");
@@ -196,6 +195,23 @@ class _SettingsPageState extends State<SettingsPage> {
                       ),
                     ),
                   );
+                },
+              ),
+              _buildSettingsTile(
+                context: context,
+                icon: CupertinoIcons.question_circle,
+                title: "ByndCanvas",
+                onTap: () async {
+                  final pageData = await _fetchSupportPage();
+
+                  if (pageData != null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => FlyerHomePage(),
+                      ),
+                    );
+                  }
                 },
               ),
               const SizedBox(height: 16),
@@ -257,7 +273,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
               ),
-
               _buildSettingsTile(
                 context: context,
                 icon: CupertinoIcons.doc_text,
@@ -276,8 +291,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
               ),
-
-
               _buildSettingsTile(
                 context: context,
                 icon: CupertinoIcons.question_circle,
@@ -322,7 +335,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-
   Widget _buildSettingsHeader(BuildContext context, String title) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
@@ -363,7 +375,8 @@ class _SettingsPageState extends State<SettingsPage> {
               color: (titleColor ?? colorScheme.primary).withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: titleColor ?? colorScheme.primary, size: 20),
+            child:
+                Icon(icon, color: titleColor ?? colorScheme.primary, size: 20),
           ),
           title: Text(title,
               style: TextStyle(
@@ -380,7 +393,8 @@ class _SettingsPageState extends State<SettingsPage> {
           trailing: trailing ??
               (showTrailing
                   ? Icon(CupertinoIcons.chevron_forward,
-                      color: colorScheme.onSurface.withValues(alpha: 0.2), size: 18)
+                      color: colorScheme.onSurface.withValues(alpha: 0.2),
+                      size: 18)
                   : null),
           onTap: onTap,
         ),
@@ -396,7 +410,8 @@ class _SettingsPageState extends State<SettingsPage> {
         backgroundColor: colorScheme.surface,
         title: Text("Logout", style: TextStyle(color: colorScheme.primary)),
         content: Text("Are you sure you want to logout?",
-            style: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7))),
+            style:
+                TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.7))),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -413,7 +428,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 (route) => false, // 🔥 clears full stack
               );
             },
-
             child:
                 const Text("Logout", style: TextStyle(color: Colors.redAccent)),
           ),
@@ -422,4 +436,3 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 }
-

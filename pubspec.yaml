@@ -61,7 +61,7 @@ dependencies:
   draggable_widget: ^2.0.0
   flutter_colorpicker: ^1.0.3
   pro_image_editor: ^12.0.7  
-  image_gallery_saver: ^2.0.3
+  gal: ^2.3.0
   nfc_manager_ndef: ^1.1.0
 
 
