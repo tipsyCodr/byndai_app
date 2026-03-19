@@ -299,7 +299,7 @@ class _SettingsPageState extends State<SettingsPage> {
 
               _buildSettingsTile(
                 context: context,
-                icon: CupertinoIcons.question_circle,
+                icon: CupertinoIcons.info_circle,
                 title: "ByndCanvas",
                 onTap: () async {
                   final pageData = await _fetchSupportPage();
