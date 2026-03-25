@@ -310,23 +310,23 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
               ),
 
-              _buildSettingsTile(
-                context: context,
-                icon: CupertinoIcons.info_circle,
-                title: "ByndCanvas",
-                onTap: () async {
-                  final pageData = await _fetchSupportPage();
+              // _buildSettingsTile(
+              //   context: context,
+              //   icon: CupertinoIcons.info_circle,
+              //   title: "ByndCanvas",
+              //   onTap: () async {
+              //     final pageData = await _fetchSupportPage();
 
-                  if (pageData != null) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => FlyerHomePage(),
-                      ),
-                    );
-                  }
-                },
-              ),
+              //     if (pageData != null) {
+              //       Navigator.push(
+              //         context,
+              //         MaterialPageRoute(
+              //           builder: (_) => FlyerHomePage(),
+              //         ),
+              //       );
+              //     }
+              //   },
+              // ),
               const SizedBox(height: 80),
             ],
           ),

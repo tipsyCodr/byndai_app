@@ -28,4 +28,20 @@ nfc_service.dart	       🆕 Create new	   NFC core logic (background listener)
 auth_provider.dart	       ✅ Modify	          Login ke baad NFC start karne ke liye
 main.dart	               ✅ Modify	          Provider list mein NFC add karne ke liye
 home_page.dart	           ✅ Modify	          App open hote hi NFC start karne ke liye
-profile_page.dart	       ✅ Already          ready	Connection buttons already hain
+profile_page.dart	       ✅ Already          ready	Connection buttons already hain 
+
+//=====================================  User Subscription  Model ===============================================
+
+1.user automatic free plan subscrib:
+   when new user  rigister then after save user data in user table then user automatic subscribe free plan  in direct backend authApiController -->> function registration -->set user free subscription
+
+2.after login user get subscription model with subscription data 
+
+a.)auth_provider.dart--->>_processSuccessfulLogin--->>call (_fetchSubscriptionDetails)--->getSubscriptionDetails--->>$_baseUrl/user/subscription(get)--->>return user aur all subscription detail----->>auth provider variable _subscriptionDetails store subscription details
+
+b.)auth_provider.dart--->>loadUserFromStorage--->>call (_fetchSubscriptionDetails)--->getSubscriptionDetails--->>$_baseUrl/user/subscription(get)--->>return user aur all subscription detail----->>auth provider variable _subscriptionDetails store subscription details
+
+c.) any page get access user subscription details by this
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    debugPrint("📦 Subscription in HomePage: ${auth.subscriptionDetails}");

@@ -7,6 +7,15 @@ import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:http/http.dart' as http;
 
+// import '../feature_map/feature_access_helper.dart';
+// import '../feature_map/feature_mapper.dart';
+// import '../home/SubscriptionPlans.dart';
+import '../features/feature_map/feature_access_helper.dart';
+import '../features/feature_map/feature_mapper.dart';
+import '../features/home/SubscriptionPlans.dart';
+import 'package:gridcard/core/services/auth_provider.dart';
+import 'package:provider/provider.dart';
+
 class DiscoverConnectionSuggest extends StatefulWidget {
   const DiscoverConnectionSuggest({super.key});
 
@@ -55,6 +64,20 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
       final data = jsonDecode(response.body);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.refreshSubscription();
+
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+
+        int? featureId = FeatureMapper.getFeatureId('connection_request_send');
+
+        bool canUse = FeatureAccessHelper.canUseFeature(
+          featureId: featureId!,
+          subscription: auth.subscriptionDetails,
+        );
+
+        debugPrint(
+            "after api call  discover page connection_request_send: $canUse");
         return null;
       }
 
@@ -93,6 +116,44 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
         _loadNextPage();
       }
     });
+  }
+
+  Future<bool> _viewProfileApi(int profileId) async {
+    try {
+      final headers = await _getHeaders();
+      final url = Uri.parse("$_baseUrl/view-profile");
+
+      final res = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          "profile_id": profileId,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+
+      debugPrint("🟢 DISCOVER VIEW PROFILE API: ${res.statusCode} => $data");
+
+      // ✅ allow
+      if (res.statusCode == 200 && data["message"] == "same") {
+        return true;
+      }
+
+      if (res.statusCode == 200 && data["message"] == "not match") {
+        return true;
+      }
+
+      // ❌ limit exceed
+      if (res.statusCode == 403) {
+        return false;
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint("🔴 ERROR viewProfile API: $e");
+      return false;
+    }
   }
 
   Future<void> _initAndLoad() async {
@@ -179,18 +240,46 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
     final description = business?["description"] ?? "";
 
     return GestureDetector(
-      onTap: () {
+      // onTap: () {
+      //   if (_userId == null) return;
+      //   Navigator.push(
+      //     context,
+      //     MaterialPageRoute(
+      //       builder: (_) => ProfilePage(
+      //         userId: user["id"],
+      //         viewerUserId: _userId,
+      //       ),
+      //     ),
+      //   );
+      // },
+
+      onTap: () async {
         if (_userId == null) return;
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ProfilePage(
-              userId: user["id"],
-              viewerUserId: _userId,
+
+        final profileId = user["id"];
+
+        bool canView = await _viewProfileApi(profileId);
+
+        if (canView) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProfilePage(
+                userId: profileId,
+                viewerUserId: _userId,
+              ),
             ),
-          ),
-        );
+          );
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const SubscriptionPlans(),
+            ),
+          );
+        }
       },
+
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         height: 360,
@@ -321,19 +410,47 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                             foregroundColor: Colors.white,
                             side: const BorderSide(color: Colors.white),
                           ),
-                          onPressed: () {
+                          // onPressed: () {
+                          //   if (_userId == null) return;
+
+                          //   Navigator.push(
+                          //     context,
+                          //     MaterialPageRoute(
+                          //       builder: (_) => ProfilePage(
+                          //         userId: user["id"], // card wala user
+                          //         viewerUserId: _userId, // login user
+                          //         isConnected: user["is_connected"] == true,
+                          //       ),
+                          //     ),
+                          //   );
+                          // },
+
+                          onPressed: () async {
                             if (_userId == null) return;
 
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => ProfilePage(
-                                  userId: user["id"], // card wala user
-                                  viewerUserId: _userId, // login user
-                                  isConnected: user["is_connected"] == true,
+                            final profileId = user["id"];
+
+                            bool canView = await _viewProfileApi(profileId);
+
+                            if (canView) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ProfilePage(
+                                    userId: profileId,
+                                    viewerUserId: _userId,
+                                    isConnected: user["is_connected"] == true,
+                                  ),
                                 ),
-                              ),
-                            );
+                              );
+                            } else {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const SubscriptionPlans(),
+                                ),
+                              );
+                            }
                           },
                           child: const Text("View"),
                         ),
@@ -342,26 +459,58 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
-                            if (_userId == null) return;
+                            final authProvider = Provider.of<AuthProvider>(
+                                context,
+                                listen: false);
 
-                            final receiverId = user["id"];
+                            await authProvider.refreshSubscription();
 
-                            final errorMessage =
-                                await _sendConnectionRequest(receiverId);
+                            final auth = Provider.of<AuthProvider>(context,
+                                listen: false);
 
-                            if (!mounted) return;
+                            int? featureId = FeatureMapper.getFeatureId(
+                                'connection_request_send');
 
-                            if (errorMessage == null) {
-                              TopAlert.show(context, "Connection request sent",
-                                  isSuccess: true);
+                            bool canUse = FeatureAccessHelper.canUseFeature(
+                              featureId: featureId!,
+                              subscription: auth.subscriptionDetails,
+                            );
 
-                              // Optional: Button ko disable karne ke liye
-                              setState(() {
-                                user["is_connected"] = true;
-                              });
+                            debugPrint(
+                                "discover page connect button click connection_request_send: $canUse");
+
+                            if (canUse) {
+                              if (_userId == null) return;
+
+                              final receiverId = user["id"];
+
+                              final errorMessage =
+                                  await _sendConnectionRequest(receiverId);
+
+                              if (!mounted) return;
+
+                              if (errorMessage == null) {
+                                TopAlert.show(
+                                    context, "Connection request sent",
+                                    isSuccess: true);
+
+                                // Optional: Button ko disable karne ke liye
+                                setState(() {
+                                  user["is_connected"] = true;
+                                });
+                              } else {
+                                TopAlert.show(context, errorMessage,
+                                    isError: true);
+                              }
                             } else {
-                              TopAlert.show(context, errorMessage,
-                                  isError: true);
+                              // ❌ Navigate to Subscription Plans
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const SubscriptionPlans(), // 👈 apna page
+                                ),
+                              );
                             }
                           },
                           child: Text(

@@ -13,6 +13,9 @@ import 'package:gridcard/routes/route_names.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/core/services/auth_provider.dart';
+import 'package:provider/provider.dart';
+
 
 class LeadScanner2 extends StatefulWidget {
   final Function(Map<String, dynamic>)? onDataExtracted;
@@ -42,6 +45,7 @@ class _LeadScanner2State extends State<LeadScanner2> {
   void initState() {
     super.initState();
     _initCamera();
+    
   }
 
   Future<void> _initCamera() async {
@@ -617,6 +621,9 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
     super.initState();
     _fillFormFromExtractedData();
     _fetchCategories();
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    auth.refreshSubscription();
+    debugPrint("init page Subscription: ${auth.subscriptionDetails}");
   }
 
   void _fillFormFromExtractedData() {
@@ -940,15 +947,40 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
       final provider = Provider.of<LeadProviders>(context, listen: false);
       final success = await provider.addLeadRaw(data);
 
+      // if (success) {
+      //   TopAlert.show(context, "✅ Lead Added Successfully", isSuccess: true);
+      //   Navigator.of(context).pushNamedAndRemoveUntil(
+      //     RouteNames.home,
+      //     (route) => false,
+      //   );
+      // } else {
+      //   setState(() => isSaving = false);
+      //   TopAlert.show(context, "Failed to save lead", isError: true);
+      // }
+
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+
+// 🔥 IMPORTANT: API ke baad subscription refresh karo
+      await auth.refreshSubscription();
+
+      debugPrint(
+          "📦 After api call Updated Subscription: ${auth.subscriptionDetails}");
+
       if (success) {
         TopAlert.show(context, "✅ Lead Added Successfully", isSuccess: true);
+
         Navigator.of(context).pushNamedAndRemoveUntil(
           RouteNames.home,
           (route) => false,
         );
       } else {
         setState(() => isSaving = false);
-        TopAlert.show(context, "Failed to save lead", isError: true);
+
+        TopAlert.show(
+          context,
+          "❌ Feature limit exceeded", // 👈 temporary (better fix below)
+          isError: true,
+        );
       }
     } catch (e) {
       setState(() => isSaving = false);

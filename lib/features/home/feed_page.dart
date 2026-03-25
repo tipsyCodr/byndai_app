@@ -23,6 +23,9 @@ import '../../features/analitics/user_analitics_page.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:gridcard/widgets/glass_box.dart';
 import '../profile/edit_profile_page.dart';
+import '../feature_map/feature_mapper.dart';
+import '../feature_map/feature_access_helper.dart';
+import './SubscriptionPlans.dart';
 
 // class FeedPage extends StatefulWidget {
 //   const FeedPage({super.key});
@@ -241,31 +244,6 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     );
   }
 
-  // void _navigateToMilestoneScreen(String milestoneKey) {
-  //   // Define routes/screens for each milestone
-  //   switch (milestoneKey) {
-  //     case 'user_details':
-  //       // Navigate to edit profile screen (replace with your actual route)
-  //       // Navigator.push(context, MaterialPageRoute(builder: (_) => EditProfilePage()));
-  //       break;
-  //     case 'links':
-  //       // Navigator.push(context, MaterialPageRoute(builder: (_) => SocialLinksPage()));
-  //       break;
-  //     case 'keywords':
-  //       // Navigator.push(context, MaterialPageRoute(builder: (_) => KeywordsPage()));
-  //       break;
-  //     case 'business_info':
-  //       // Navigator.push(context, MaterialPageRoute(builder: (_) => BusinessInfoPage()));
-  //       break;
-  //     case 'product':
-  //       // Navigator.push(context, MaterialPageRoute(builder: (_) => ProductsPage()));
-  //       break;
-  //     default:
-  //       TopAlert.show(context, 'Screen not defined for $milestoneKey',
-  //           isError: true);
-  //   }
-  // }
-
   void _navigateToMilestoneScreen(String milestoneKey) async {
     int tabIndex;
     switch (milestoneKey) {
@@ -341,6 +319,14 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+
+    // final auth = Provider.of<AuthProvider>(context, listen: false);
+    // auth.refreshSubscription();
+    // debugPrint("lead scanner page Subscription: ${auth.subscriptionDetails}");
+
+    // int? featureId = FeatureMapper.getFeatureId('leads_create');
+
+    // debugPrint("Feature ID (leads_create): $featureId");
 
     _fadeController = AnimationController(
       vsync: this,
@@ -697,30 +683,30 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                     ] else
 
                       /// Optional: show completed badge when 100%
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: 8, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: Colors.green),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check_circle,
-                                color: Colors.green, size: 16),
-                            SizedBox(width: 6),
-                            Text(
-                              "Profile Completed",
-                              style:
-                                  TextStyle(color: Colors.green, fontSize: 12),
-                            ),
-                          ],
-                        ),
-                      ),
+                      // Container(
+                      //   padding: const EdgeInsets.symmetric(
+                      //       vertical: 8, horizontal: 16),
+                      //   decoration: BoxDecoration(
+                      //     color: Colors.green.withValues(alpha: 0.2),
+                      //     borderRadius: BorderRadius.circular(20),
+                      //     border: Border.all(color: Colors.green),
+                      //   ),
+                      //   child: const Row(
+                      //     mainAxisSize: MainAxisSize.min,
+                      //     children: [
+                      //       Icon(Icons.check_circle,
+                      //           color: Colors.green, size: 16),
+                      //       SizedBox(width: 6),
+                      //       Text(
+                      //         "Profile Completed",
+                      //         style:
+                      //             TextStyle(color: Colors.green, fontSize: 12),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
 
-                    const SizedBox(height: 24),
+                    // const SizedBox(height: 24),
 
                     /// 🔹 MINI STATS
                     Row(
@@ -824,6 +810,17 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    int? featureId = FeatureMapper.getFeatureId('leads_create');
+
+    bool canUse = FeatureAccessHelper.canUseFeature(
+      featureId: featureId!,
+      subscription: auth.subscriptionDetails,
+    );
+
+    debugPrint("Can use leads_create: $canUse");
+
     return Row(
       children: [
         Expanded(
@@ -891,8 +888,28 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                 elevation: 0,
               ),
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => const LeadScanner2()));
+                // Navigator.of(context).push(MaterialPageRoute(
+                //     builder: (context) => const LeadScanner2()));
+
+                if (canUse) {
+                  // ✅ allowed → Lead Scanner
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const LeadScanner2(),
+                    ),
+                  );
+                } else {
+                  // ❌ limit reached → Subscription Plan page
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SubscriptionPlans(),
+                    ),
+                  );
+
+                  // (optional alert)
+                  TopAlert.show(context, 'Limit reached, upgrade plan 🚀',
+                      isError: true);
+                }
               },
               child: const Icon(FontAwesomeIcons.camera, size: 24),
             ),

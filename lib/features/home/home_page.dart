@@ -18,6 +18,7 @@ import '../qr_scan/profile_qr_code.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/nfc_service.dart';
 
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -35,6 +36,9 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeNfc();
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+
+      debugPrint("📦 Subscription in HomePage: ${auth.subscriptionDetails}");
     });
   }
 

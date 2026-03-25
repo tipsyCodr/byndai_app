@@ -18,6 +18,12 @@ import 'dart:async';
 import 'dart:ui';
 import './product_list_widget.dart';
 
+import '../feature_map/feature_access_helper.dart';
+import '../feature_map/feature_mapper.dart';
+import '../home/SubscriptionPlans.dart';
+import 'package:gridcard/core/services/auth_provider.dart';
+import 'package:provider/provider.dart';
+
 class ProfilePage extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
   final int? userId;
@@ -545,15 +551,41 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _connectButton() {
     return ElevatedButton(
       onPressed: () async {
-        if (widget.userId == null) return;
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-        final error = await _sendConnectionRequest(widget.userId!);
+        await authProvider.refreshSubscription();
 
-        if (error == null) {
-          TopAlert.show(context, "Connection request sent", isSuccess: true);
-          _checkConnectionStatus();
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+
+        int? featureId = FeatureMapper.getFeatureId('connection_request_send');
+
+        bool canUse = FeatureAccessHelper.canUseFeature(
+          featureId: featureId!,
+          subscription: auth.subscriptionDetails,
+        );
+
+        debugPrint(
+            "connection suggested page connect button click connection_request_send: $canUse");
+
+        if (canUse) {
+          if (widget.userId == null) return;
+
+          final error = await _sendConnectionRequest(widget.userId!);
+
+          if (error == null) {
+            TopAlert.show(context, "Connection request sent", isSuccess: true);
+            _checkConnectionStatus();
+          } else {
+            TopAlert.show(context, error, isError: true);
+          }
         } else {
-          TopAlert.show(context, error, isError: true);
+          // ❌ Navigate to Subscription Plans
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SubscriptionPlans(), // 👈 apna page
+            ),
+          );
         }
       },
       child: const Text("Connect"),
@@ -562,10 +594,43 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _acceptButton() {
     return ElevatedButton(
+      // onPressed: () async {
+      //   await _acceptPendingRequest();
+      //   _checkConnectionStatus();
+      // },
+
       onPressed: () async {
-        await _acceptPendingRequest();
-        _checkConnectionStatus();
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+        await authProvider.refreshSubscription();
+
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+
+        int? featureId =
+            FeatureMapper.getFeatureId('connection_request_accept');
+
+        bool canUse = FeatureAccessHelper.canUseFeature(
+          featureId: featureId!,
+          subscription: auth.subscriptionDetails,
+        );
+
+        debugPrint(
+            "connection suggested page connect button click connection_request_accept: $canUse");
+
+        if (canUse) {
+          await _acceptPendingRequest();
+          _checkConnectionStatus();
+        } else {
+          // ❌ Navigate to Subscription Plans
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SubscriptionPlans(), // 👈 apna page
+            ),
+          );
+        }
       },
+
       child: const Text("Accept"),
     );
   }
@@ -585,6 +650,13 @@ class _ProfilePageState extends State<ProfilePage> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final viewerId = widget.viewerUserId;
+
+      final profileUserId = widget.userId;
+
+      debugPrint("👀 VIEWER USER ID: $viewerId");
+      debugPrint("👤 PROFILE USER ID: $profileUserId");
+
       await _printRatingJson();
       await _startProfileView();
       await _fetchMasterLinks();
@@ -1187,12 +1259,54 @@ class _ProfilePageState extends State<ProfilePage> {
 
       debugPrint("🤖 AI REVIEW RESPONSE: ${res.body}");
 
+      // if (res.statusCode == 200 && jsonData["success"] == true) {
+      //   final content = jsonData["content"] ?? "";
+
+      //   setState(() {
+      //     _feedbackController.text = content;
+      //   });
+
+      //   final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      //   await authProvider.refreshSubscription();
+
+      //   final auth = Provider.of<AuthProvider>(context, listen: false);
+
+      //   int? featureId = FeatureMapper.getFeatureId('ai_generated_feedback');
+
+      //   bool canUse = FeatureAccessHelper.canUseFeature(
+      //     featureId: featureId!,
+      //     subscription: auth.subscriptionDetails,
+      //   );
+
+      //   debugPrint(
+      //       "after api ai_generated_feedback canUse: $canUse");
+      // } else {
+      //   TopAlert.show(context, "Failed to generate AI review", isError: true);
+      // }
+
       if (res.statusCode == 200 && jsonData["success"] == true) {
         final content = jsonData["content"] ?? "";
 
         setState(() {
           _feedbackController.text = content;
         });
+
+        // ✅ refresh subscription (already present logic)
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.refreshSubscription();
+      } else if (res.statusCode == 403) {
+        // 🚫 LIMIT EXCEEDED CASE
+
+        TopAlert.show(context, "Your plan limit is over", isError: true);
+
+        // 👉 Navigate to Subscription Plan page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SubscriptionPlans(),
+          ),
+        );
       } else {
         TopAlert.show(context, "Failed to generate AI review", isError: true);
       }
@@ -1504,27 +1618,114 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // Widget _existingButtonWidget() {
+  //   final connection = _userDetails?['connection'] as Map<String, dynamic>?;
+
+  //   return ElevatedButton(
+  //     onPressed: () async {
+  //       if (widget.fromConnectionTab == 'pending' ||
+  //           _isIncomingPendingRequest(connection)) {
+  //         _acceptPendingRequest();
+  //       } else if (widget.fromConnectionTab == 'sent' ||
+  //           _isOutgoingPendingRequest(connection)) {
+  //         _removeSentRequest();
+  //       } else {
+  //         if (widget.userId == null) return;
+
+  //         final error = await _sendConnectionRequest(widget.userId!);
+
+  //         if (error == null) {
+  //           TopAlert.show(context, "Connection request sent", isSuccess: true);
+  //           _fetchUserDetails();
+  //         } else {
+  //           TopAlert.show(context, error, isError: true);
+  //         }
+  //       }
+  //     },
+  //     child: Text(
+  //       _getConnectionActionLabel(
+  //         _userDetails?['connection'] as Map<String, dynamic>?,
+  //       ),
+  //     ),
+  //   );
+  // }
+
   Widget _existingButtonWidget() {
     final connection = _userDetails?['connection'] as Map<String, dynamic>?;
 
     return ElevatedButton(
       onPressed: () async {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.refreshSubscription();
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+
         if (widget.fromConnectionTab == 'pending' ||
             _isIncomingPendingRequest(connection)) {
-          _acceptPendingRequest();
+          // Accept action
+          int? featureId =
+              FeatureMapper.getFeatureId('connection_request_accept');
+          bool canUse = FeatureAccessHelper.canUseFeature(
+            featureId: featureId!,
+            subscription: auth.subscriptionDetails,
+          );
+          debugPrint("Accept button click connection_request_accept: $canUse");
+          if (canUse) {
+            await _acceptPendingRequest();
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SubscriptionPlans(),
+              ),
+            );
+          }
         } else if (widget.fromConnectionTab == 'sent' ||
             _isOutgoingPendingRequest(connection)) {
-          _removeSentRequest();
+          // Remove action
+          int? featureId =
+              FeatureMapper.getFeatureId('connection_request_send');
+          bool canUse = FeatureAccessHelper.canUseFeature(
+            featureId: featureId!,
+            subscription: auth.subscriptionDetails,
+          );
+          debugPrint("Remove button click connection_request_send: $canUse");
+          if (canUse) {
+            await _removeSentRequest();
+          } else {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SubscriptionPlans(),
+              ),
+            );
+          }
         } else {
+          // Connect action
           if (widget.userId == null) return;
 
-          final error = await _sendConnectionRequest(widget.userId!);
-
-          if (error == null) {
-            TopAlert.show(context, "Connection request sent", isSuccess: true);
-            _fetchUserDetails();
+          int? featureId =
+              FeatureMapper.getFeatureId('connection_request_send');
+          bool canUse = FeatureAccessHelper.canUseFeature(
+            featureId: featureId!,
+            subscription: auth.subscriptionDetails,
+          );
+          debugPrint("Connect button click connection_request_send: $canUse");
+          if (canUse) {
+            final error = await _sendConnectionRequest(widget.userId!);
+            if (error == null) {
+              TopAlert.show(context, "Connection request sent",
+                  isSuccess: true);
+              _fetchUserDetails();
+            } else {
+              TopAlert.show(context, error, isError: true);
+            }
           } else {
-            TopAlert.show(context, error, isError: true);
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SubscriptionPlans(),
+              ),
+            );
           }
         }
       },
@@ -1563,6 +1764,22 @@ class _ProfilePageState extends State<ProfilePage> {
 
         // Refresh UI
         await _fetchUserDetails();
+
+        // 🔄 Refresh subscription details after accepting
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.refreshSubscription();
+
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+
+        int? featureId =
+            FeatureMapper.getFeatureId('connection_request_accept');
+
+        bool canUse = FeatureAccessHelper.canUseFeature(
+          featureId: featureId!,
+          subscription: auth.subscriptionDetails,
+        );
+
+        debugPrint("after api call  connection_request_accept: $canUse");
       } else {
         TopAlert.show(context, jsonData['message'] ?? 'Failed', isError: true);
       }
@@ -1627,6 +1844,21 @@ class _ProfilePageState extends State<ProfilePage> {
 
       final jsonData = jsonDecode(response.body);
       if (response.statusCode == 200 || response.statusCode == 201) {
+        // 🔄 Refresh subscription details after accepting
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.refreshSubscription();
+
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+
+        int? featureId = FeatureMapper.getFeatureId('connection_request_send');
+
+        bool canUse = FeatureAccessHelper.canUseFeature(
+          featureId: featureId!,
+          subscription: auth.subscriptionDetails,
+        );
+
+        debugPrint("after api call  connection_request_send: $canUse");
+
         if (jsonData['status'] == true) return null;
         return null; // Some endpoints might not return status true but still 200/201
       } else {
@@ -2385,4 +2617,3 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 }
-
