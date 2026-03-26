@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -20,18 +21,18 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 import '../../feature_map/feature_access_helper.dart';
 import '../../feature_map/feature_mapper.dart';
 import '../../home/SubscriptionPlans.dart';
-import 'package:gridcard/core/services/auth_provider.dart';
-import 'package:provider/provider.dart';
 
 class _OverlayItem {
   Offset position;
   double size;
   bool visible;
+  double rotation;
 
   _OverlayItem({
     required this.position,
     this.size = 80,
     this.visible = false,
+    this.rotation = 0.0,
   });
 }
 
@@ -109,7 +110,7 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
 
       final res = await http.post(
         Uri.parse("${AppConfig.apiBaseUrl}/download-flyer"),
-        headers: await _getHeaders(), // ✅ important
+        headers: await _getHeaders(),
       );
 
       final data = jsonDecode(res.body);
@@ -148,164 +149,118 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
     return 'BEGIN:VCARD\nVERSION:3.0\nFN:$fname\nTEL;TYPE=CELL:$mobile\nEMAIL:$email\nORG:$org\nTITLE:$title\nURL:$website\nEND:VCARD';
   }
 
-  // Future<void> _saveFlyer() async {
-  //   if (_isSaving) return;
-  //   setState(() => _isSaving = true);
-  //   try {
-  //     if (!kIsWeb) {
-  //       final status = await Permission.storage.request();
-  //       if (status.isDenied) {
-  //         if (mounted)
-  //           TopAlert.show(context, "Storage permission required",
-  //               isError: true);
-  //         setState(() => _isSaving = false);
-  //         return;
-  //       }
-  //     }
-  //     await Future.delayed(const Duration(milliseconds: 500));
-  //     final boundary = _captureKey.currentContext?.findRenderObject()
-  //         as RenderRepaintBoundary?;
-  //     if (boundary == null) throw Exception("Render boundary not found");
-  //     final image = await boundary.toImage(pixelRatio: 3.0);
-  //     final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-  //     final bytes = byteData!.buffer.asUint8List();
-  //     if (kIsWeb) {
-  //       final blob = html.Blob([bytes]);
-  //       final url = html.Url.createObjectUrlFromBlob(blob);
-  //       html.AnchorElement(href: url)
-  //         ..setAttribute(
-  //             "download", "flyer_${DateTime.now().millisecondsSinceEpoch}.png")
-  //         ..click();
-  //       html.Url.revokeObjectUrl(url);
-  //     } else {
-  //       final tempDir = await getTemporaryDirectory();
-  //       final file = File(
-  //           '${tempDir.path}/flyer_${DateTime.now().millisecondsSinceEpoch}.png');
-  //       await file.writeAsBytes(bytes);
-  //       await Gal.putImage(file.path);
-  //     }
-  //     if (mounted)
-  //       TopAlert.show(context, "✅ Flyer saved to gallery!", isSuccess: true);
-  //   } catch (e) {
-  //     if (mounted)
-  //       TopAlert.show(context, "Failed to save flyer: $e", isError: true);
-  //   } finally {
-  //     if (mounted) setState(() => _isSaving = false);
-  //   }
-  // }
-
   Future<void> _saveFlyer() async {
-  if (_isSaving) return;
+    if (_isSaving) return;
 
-  setState(() => _isSaving = true);
+    setState(() => _isSaving = true);
 
-  try {
-    /// 🔥 STEP 1: CALL DOWNLOAD FLYER API
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      /// 🔥 STEP 1: CALL DOWNLOAD FLYER API
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      final res = await http.post(
-        Uri.parse("${AppConfig.apiBaseUrl}/download-flyer"),
-        headers: await _getHeaders(), // ✅ token header
-      );
-
-      final data = jsonDecode(res.body);
-
-      /// ❌ LIMIT EXCEEDED
-      if (res.statusCode == 403) {
-        if (mounted) {
-          TopAlert.show(
-            context,
-            data['message'] ?? "Feature limit exceeded",
-            isError: true,
-          );
-
-          /// 👉 SUBSCRIPTION PAGE OPEN
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const SubscriptionPlans()),
-          );
-        }
-
-        setState(() => _isSaving = false);
-        return;
-      }
-
-      /// ❌ OTHER ERROR
-      if (res.statusCode != 200 || data['success'] != true) {
-        if (mounted) {
-          TopAlert.show(
-            context,
-            data['message'] ?? "Something went wrong",
-            isError: true,
-          );
-        }
-
-        setState(() => _isSaving = false);
-        return;
-      }
-
-      /// ✅ SUCCESS → continue saving flyer
-    } catch (apiError) {
-      if (mounted) {
-        TopAlert.show(
-          context,
-          "API Error: $apiError",
-          isError: true,
+        final res = await http.post(
+          Uri.parse("${AppConfig.apiBaseUrl}/download-flyer"),
+          headers: await _getHeaders(),
         );
-      }
-      setState(() => _isSaving = false);
-      return;
-    }
 
-    /// 🔥 EXISTING CODE (UNCHANGED)
-    if (!kIsWeb) {
-      final status = await Permission.storage.request();
-      if (status.isDenied) {
-        if (mounted)
-          TopAlert.show(context, "Storage permission required",
-              isError: true);
+        final data = jsonDecode(res.body);
+
+        /// ❌ LIMIT EXCEEDED
+        if (res.statusCode == 403) {
+          if (mounted) {
+            TopAlert.show(
+              context,
+              data['message'] ?? "Feature limit exceeded",
+              isError: true,
+            );
+
+            /// 👉 SUBSCRIPTION PAGE OPEN
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SubscriptionPlans()),
+            );
+          }
+
+          setState(() => _isSaving = false);
+          return;
+        }
+
+        /// ❌ OTHER ERROR
+        if (res.statusCode != 200 || data['success'] != true) {
+          if (mounted) {
+            TopAlert.show(
+              context,
+              data['message'] ?? "Something went wrong",
+              isError: true,
+            );
+          }
+
+          setState(() => _isSaving = false);
+          return;
+        }
+
+        /// ✅ SUCCESS → continue saving flyer
+      } catch (apiError) {
+        if (mounted) {
+          TopAlert.show(
+            context,
+            "API Error: $apiError",
+            isError: true,
+          );
+        }
         setState(() => _isSaving = false);
         return;
       }
+
+      /// 🔥 EXISTING CODE (UNCHANGED)
+      if (!kIsWeb) {
+        final status = await Permission.storage.request();
+        if (status.isDenied) {
+          if (mounted)
+            TopAlert.show(context, "Storage permission required",
+                isError: true);
+          setState(() => _isSaving = false);
+          return;
+        }
+      }
+
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      final boundary = _captureKey.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+
+      if (boundary == null) throw Exception("Render boundary not found");
+
+      final image = await boundary.toImage(pixelRatio: 3.0);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      final bytes = byteData!.buffer.asUint8List();
+
+      if (kIsWeb) {
+        final blob = html.Blob([bytes]);
+        final url = html.Url.createObjectUrlFromBlob(blob);
+        html.AnchorElement(href: url)
+          ..setAttribute(
+              "download", "flyer_${DateTime.now().millisecondsSinceEpoch}.png")
+          ..click();
+        html.Url.revokeObjectUrl(url);
+      } else {
+        final tempDir = await getTemporaryDirectory();
+        final file = File(
+            '${tempDir.path}/flyer_${DateTime.now().millisecondsSinceEpoch}.png');
+        await file.writeAsBytes(bytes);
+        await Gal.putImage(file.path);
+      }
+
+      if (mounted)
+        TopAlert.show(context, "✅ Flyer saved to gallery!", isSuccess: true);
+    } catch (e) {
+      if (mounted)
+        TopAlert.show(context, "Failed to save flyer: $e", isError: true);
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
-
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    final boundary = _captureKey.currentContext?.findRenderObject()
-        as RenderRepaintBoundary?;
-
-    if (boundary == null) throw Exception("Render boundary not found");
-
-    final image = await boundary.toImage(pixelRatio: 3.0);
-    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
-    final bytes = byteData!.buffer.asUint8List();
-
-    if (kIsWeb) {
-      final blob = html.Blob([bytes]);
-      final url = html.Url.createObjectUrlFromBlob(blob);
-      html.AnchorElement(href: url)
-        ..setAttribute(
-            "download", "flyer_${DateTime.now().millisecondsSinceEpoch}.png")
-        ..click();
-      html.Url.revokeObjectUrl(url);
-    } else {
-      final tempDir = await getTemporaryDirectory();
-      final file = File(
-          '${tempDir.path}/flyer_${DateTime.now().millisecondsSinceEpoch}.png');
-      await file.writeAsBytes(bytes);
-      await Gal.putImage(file.path);
-    }
-
-    if (mounted)
-      TopAlert.show(context, "✅ Flyer saved to gallery!", isSuccess: true);
-  } catch (e) {
-    if (mounted)
-      TopAlert.show(context, "Failed to save flyer: $e", isError: true);
-  } finally {
-    if (mounted) setState(() => _isSaving = false);
   }
-}
 
   void _showSettingsSheet() {
     showModalBottomSheet(
@@ -470,29 +425,128 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
     );
   }
 
-  Widget _buildDraggableOverlay(
-      {required _OverlayItem item,
-      required Widget child,
-      required BoxConstraints constraints}) {
+  
+
+  Widget _buildDraggableOverlay({
+    required _OverlayItem item,
+    required Widget child,
+    required BoxConstraints constraints,
+    required VoidCallback onDoubleTap,
+  }) {
+    double? initialSize;
+    double? initialScale;
+
     return Positioned(
       left: item.position.dx,
       top: item.position.dy,
       child: GestureDetector(
+        onScaleStart: (_) {
+          initialSize = item.size;
+          initialScale = 1.0;
+        },
         onScaleUpdate: (details) {
           setState(() {
-            if (details.pointerCount == 2) {
-              item.size = (item.size * details.scale).clamp(40.0, 450.0);
-            }
+            // Drag
             item.position = Offset(
               (item.position.dx + details.focalPointDelta.dx)
                   .clamp(-item.size / 2, constraints.maxWidth - item.size / 2),
               (item.position.dy + details.focalPointDelta.dy)
                   .clamp(-item.size / 2, constraints.maxHeight - item.size / 2),
             );
+
+            // Pinch scaling (only if two fingers)
+            if (details.pointerCount == 2 &&
+                initialSize != null &&
+                initialScale != null) {
+              final newSize = (initialSize! * (details.scale / initialScale!))
+                  .clamp(40.0, 450.0);
+              if (newSize != item.size) {
+                item.size = newSize;
+              }
+            }
           });
         },
-        child: child,
+        onScaleEnd: (_) {
+          initialSize = null;
+          initialScale = null;
+        },
+        onDoubleTap: onDoubleTap,
+        child: Transform.rotate(
+          angle: item.rotation,
+          child: child,
+        ),
       ),
+    );
+  }
+
+  void _showAdjustModal(_OverlayItem item) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.surface,
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    "Adjust Overlay",
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  Text("Size: ${item.size.toInt()} px"),
+                  Slider(
+                    value: item.size,
+                    min: 40,
+                    max: 450,
+                    onChanged: (val) {
+                      setSheetState(() => item.size = val);
+                      setState(() {}); // rebuild main UI
+                    },
+                  ),
+                  Text("Rotation: ${(item.rotation * 180 / pi).toInt()}°"),
+                  Slider(
+                    value: item.rotation,
+                    min: 0,
+                    max: 2 * pi,
+                    onChanged: (val) {
+                      setSheetState(() => item.rotation = val);
+                      setState(() {});
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        item.visible = false;
+                      });
+                      Navigator.pop(ctx);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: const Text("Remove"),
+                  ),
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text("Close"),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -611,11 +665,15 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                             _buildDraggableOverlay(
                                 item: _infoBarOverlay,
                                 constraints: constraints,
+                                onDoubleTap: () =>
+                                    _showAdjustModal(_infoBarOverlay),
                                 child: _buildInfoBar(auth, profile)),
                           if (_profileOverlay.visible && profileUrl != null)
                             _buildDraggableOverlay(
                                 item: _profileOverlay,
                                 constraints: constraints,
+                                onDoubleTap: () =>
+                                    _showAdjustModal(_profileOverlay),
                                 child: Container(
                                     width: _profileOverlay.size,
                                     height: _profileOverlay.size,
@@ -636,12 +694,16 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                             _buildDraggableOverlay(
                                 item: _onlineQrOverlay,
                                 constraints: constraints,
+                                onDoubleTap: () =>
+                                    _showAdjustModal(_onlineQrOverlay),
                                 child: _buildQrWidget(_generateOnlineQrData(),
                                     _onlineQrOverlay.size, "Connect")),
                           if (_offlineQrOverlay.visible)
                             _buildDraggableOverlay(
                                 item: _offlineQrOverlay,
                                 constraints: constraints,
+                                onDoubleTap: () =>
+                                    _showAdjustModal(_offlineQrOverlay),
                                 child: _buildQrWidget(_generateOfflineQrData(),
                                     _offlineQrOverlay.size, "Contact")),
                         ]);

@@ -1,29 +1,4 @@
-// import 'dart:typed_data';
-// import 'package:flutter/material.dart';
-// import 'package:pro_image_editor/pro_image_editor.dart';
 
-// class EditorPage extends StatelessWidget {
-//   final String imageUrl;
-
-//   const EditorPage({super.key, required this.imageUrl});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return ProImageEditor.network(
-//       imageUrl,
-
-//       callbacks: ProImageEditorCallbacks(
-//         onImageEditingComplete: (Uint8List bytes) async {
-//           debugPrint("DONE: ${bytes.length}");
-
-//           Navigator.pop(context);
-//         },
-//       ),
-//     );
-//   }
-// }
-
-//=======================================================================================================================
 
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -94,4 +69,4 @@ class EditorPage extends StatelessWidget {
 }
 
 
-//=========================================================================================
+
