@@ -191,7 +191,7 @@ class _HomePageState extends State<HomePage> {
               ),
               icon: Icon(
                 FontAwesomeIcons.qrcode,
-                color: isDark ? palette?.neonAccent : colorScheme.primary,
+                color: isDark ? colorScheme.primary : colorScheme.primary,
               ),
               onPressed: () {
                 Navigator.of(context).push(
@@ -204,7 +204,7 @@ class _HomePageState extends State<HomePage> {
             IconButton(
               icon: Icon(
                 FontAwesomeIcons.commentDots,
-                color: isDark ? colorScheme.onSurface : colorScheme.primary,
+                color: isDark ? colorScheme.primary : colorScheme.primary,
               ),
               onPressed: () {
                 Navigator.of(context).push(

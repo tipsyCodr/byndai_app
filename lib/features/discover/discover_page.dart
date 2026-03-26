@@ -203,29 +203,62 @@ class _DiscoverPageState extends State<DiscoverPage> {
     );
   }
 
+  
+
   Widget _buildSearchBar() {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return GlassBox(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      borderRadius: 16,
-      opacity: isDark ? 0.05 : 0.08,
-      child: TextField(
-        controller: _searchController,
-        style: TextStyle(color: colorScheme.onSurface),
-        decoration: InputDecoration(
-          icon: Icon(
-            CupertinoIcons.search,
-            color: colorScheme.onSurface.withValues(alpha: 0.3),
-            size: 20,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        // Light mode mein edges smooth karne ke liye halka border
+        border: isDark
+            ? null
+            : Border.all(color: colorScheme.onSurface.withValues(alpha: 0.1)),
+        // Light mode mein depth dene ke liye halki shadow taaki edges kante hue na lagein
+        boxShadow: isDark
+            ? null
+            : [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+      ),
+      // clipBehavior edges ko sharp hone se rokta hai
+      clipBehavior: Clip.antiAlias,
+      child: GlassBox(
+        padding: EdgeInsets.zero,
+        borderRadius: 12,
+        opacity: isDark ? 0.08 : 0.05,
+        child: TextField(
+          controller: _searchController,
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontSize: 15,
           ),
-          hintText: "Search people, products, or industries...",
-          hintStyle: TextStyle(
-            color: colorScheme.onSurface.withValues(alpha: 0.2),
-            fontSize: 14,
+          cursorColor: colorScheme.primary,
+          textAlignVertical: TextAlignVertical.center,
+          decoration: InputDecoration(
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(vertical: 12),
+            hintText: "Search people, products...",
+            hintStyle: TextStyle(
+              color: colorScheme.onSurface.withValues(alpha: 0.4),
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(
+              CupertinoIcons.search,
+              color: colorScheme.onSurface.withValues(alpha: 0.5),
+              size: 18,
+            ),
+            border: InputBorder.none,
+            enabledBorder: InputBorder.none,
+            focusedBorder: InputBorder.none,
           ),
-          border: InputBorder.none,
         ),
       ),
     );
@@ -265,7 +298,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
       ),
     );
   }
-
 
   Widget _buildEventCard(dynamic event) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -345,14 +377,14 @@ class _DiscoverPageState extends State<DiscoverPage> {
               ),
             ),
 
-          const SizedBox(width: 10),
+            const SizedBox(width: 10),
 
-          Icon(
-            CupertinoIcons.chevron_right,
-            color: isDark
-                ? colorScheme.onSurface.withValues(alpha: 0.4)
-                : Colors.white.withValues(alpha: 0.6),
-          ),
+            Icon(
+              CupertinoIcons.chevron_right,
+              color: isDark
+                  ? colorScheme.onSurface.withValues(alpha: 0.4)
+                  : Colors.white.withValues(alpha: 0.6),
+            ),
           ],
         ),
       ),
