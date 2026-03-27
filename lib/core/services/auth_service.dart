@@ -13,7 +13,7 @@ class AuthService {
   /// Stores the last error message from the backend for callers to read
   static String? lastError;
 
-  /// Check if email already exists or not
+  /// Check if email already exists or not...............
   static Future<bool?> checkEmailAvailability(String email) async {
     final response = await _post(
       'check-email',

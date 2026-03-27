@@ -92,6 +92,7 @@ void main() async {
           ChangeNotifierProvider(create: (context) => SocialProvider()),
           ChangeNotifierProvider(create: (context) => ChatProvider()),
           ChangeNotifierProvider(create: (context) => ThemeProvider()),
+          ChangeNotifierProvider(create: (context) => NfcService()),
         ],
         child: MyApp(initialRoute: initialRoute),
       ),
