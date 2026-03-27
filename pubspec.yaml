@@ -63,6 +63,7 @@ dependencies:
   pro_image_editor: ^12.0.7  
   gal: ^2.3.0
   nfc_manager_ndef: ^1.1.0
+  razorpay_flutter: ^1.4.3
 
 
   

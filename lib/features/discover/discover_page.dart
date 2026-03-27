@@ -26,6 +26,9 @@ class _DiscoverPageState extends State<DiscoverPage> {
   List<dynamic> allEvents = [];
   String eventErrorMessage = '';
 
+  final ScrollController _mainScrollController = ScrollController();
+  final GlobalKey<DiscoverConnectionSuggestState> connectionKey = GlobalKey();
+
   static const String _baseUrl = AppConfig.apiBaseUrl;
   static const String _imageBaseUrl = AppConfig.imageBaseUrl;
 
@@ -104,18 +107,35 @@ class _DiscoverPageState extends State<DiscoverPage> {
     }
   }
 
+  // @override
+  // void initState() {
+  //   super.initState();
+
+  //   // Existing code (posts)
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     context.read<SocialProvider>().fetchPosts('All');
+  //   });
+
+  //   // 🔥 NEW: Fetch events also
+  //   WidgetsBinding.instance.addPostFrameCallback((_) {
+  //     _fetchEvents();
+  //   });
+  // }
+
   @override
   void initState() {
     super.initState();
 
-    // Existing code (posts)
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<SocialProvider>().fetchPosts('All');
+      _fetchEvents();
     });
 
-    // 🔥 NEW: Fetch events also
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchEvents();
+    _mainScrollController.addListener(() {
+      if (_mainScrollController.position.pixels >=
+          _mainScrollController.position.maxScrollExtent - 200) {
+        connectionKey.currentState?.loadMore();
+      }
     });
   }
 
@@ -130,7 +150,45 @@ class _DiscoverPageState extends State<DiscoverPage> {
     final socialProvider = context.watch<SocialProvider>();
 
     return CustomScrollView(
+      controller: _mainScrollController,
       slivers: [
+        // SliverToBoxAdapter(
+        //   child: Padding(
+        //     padding: const EdgeInsets.all(16.0),
+        //     child: Column(
+        //       crossAxisAlignment: CrossAxisAlignment.start,
+        //       children: [
+        //         _buildSearchBar(),
+        //         const SizedBox(height: 24),
+        //         _buildSectionHeader("Upcoming Events", () {
+        //           Navigator.push(
+        //             context,
+        //             MaterialPageRoute(
+        //               builder: (context) => const BusinessEventPage(),
+        //             ),
+        //           );
+        //         }),
+        //         const SizedBox(height: 12),
+
+        //         // Existing Event Card (as it is)
+        //         // _buildEventCard(),
+        //         _buildEventsCarousel(),
+        //         const SizedBox(height: 32),
+
+        //         _buildSectionHeader("Suggested Connections", () {}),
+        //         const SizedBox(height: 12),
+        //         // const ConnectionSuggest(),
+        //         // const DiscoverConnectionSuggest(),
+
+        //    DiscoverConnectionSuggest(key: connectionKey),
+
+        //         const SizedBox(height: 32),
+        //         // _buildSectionHeader("Trending Updates", () {}),
+        //       ],
+        //     ),
+        //   ),
+        // ),
+
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -139,33 +197,17 @@ class _DiscoverPageState extends State<DiscoverPage> {
               children: [
                 _buildSearchBar(),
                 const SizedBox(height: 24),
-                _buildSectionHeader("Upcoming Events", () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BusinessEventPage(),
-                    ),
-                  );
-                }),
+                _buildSectionHeader("Upcoming Events", () {}),
                 const SizedBox(height: 12),
-
-                // Existing Event Card (as it is)
-                // _buildEventCard(),
                 _buildEventsCarousel(),
                 const SizedBox(height: 32),
-
                 _buildSectionHeader("Suggested Connections", () {}),
                 const SizedBox(height: 12),
-                // const ConnectionSuggest(),
-                const DiscoverConnectionSuggest(),
-
-                const SizedBox(height: 32),
-                // _buildSectionHeader("Trending Updates", () {}),
               ],
             ),
           ),
         ),
-
+         DiscoverConnectionSuggest(key: connectionKey),
         // Existing posts code (as it is)
         socialProvider.isLoading
             ? const SliverFillRemaining(
@@ -202,8 +244,6 @@ class _DiscoverPageState extends State<DiscoverPage> {
       ],
     );
   }
-
-  
 
   Widget _buildSearchBar() {
     final colorScheme = Theme.of(context).colorScheme;

@@ -19,12 +19,13 @@ import 'package:provider/provider.dart';
 class DiscoverConnectionSuggest extends StatefulWidget {
   const DiscoverConnectionSuggest({super.key});
 
-  @override
-  State<DiscoverConnectionSuggest> createState() =>
-      _DiscoverConnectionSuggestState();
+ @override
+State<DiscoverConnectionSuggest> createState() =>
+    DiscoverConnectionSuggestState();
 }
 
-class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
+// class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
+class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
   static const String _baseUrl = AppConfig.apiBaseUrl;
 
   // static const String _storageBaseUrl =
@@ -32,7 +33,7 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
 
   static const String _storageBaseUrl = AppConfig.apiProfileImg;
 
-  final ScrollController _scrollController = ScrollController();
+  // final ScrollController _scrollController = ScrollController();
 
   int? _userId;
   bool _isLoading = false;
@@ -46,6 +47,20 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
     if (text.isEmpty) return "";
     return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
+
+  // void loadMore() {
+  //   if (_currentPage >= _lastPage) return;
+  //   if (_isFetchingMore) return;
+
+  //   _fetchUsers(page: _currentPage + 1);
+  // }
+
+  void loadMore() {
+  if (_currentPage >= _lastPage) return;
+  if (_isFetchingMore) return;
+
+  _fetchUsers(page: _currentPage + 1);
+}
 
   final List<Map<String, dynamic>> _users = [];
 
@@ -118,14 +133,14 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
     //   }
     // });
 
-    _scrollController.addListener(() {
-      if (_scrollController.position.pixels >=
-              _scrollController.position.maxScrollExtent - 50 &&
-          !_isFetchingMore &&
-          _currentPage < _lastPage) {
-        _loadNextPage();
-      }
-    });
+    // _scrollController.addListener(() {
+    //   if (_scrollController.position.pixels >=
+    //           _scrollController.position.maxScrollExtent - 50 &&
+    //       !_isFetchingMore &&
+    //       _currentPage < _lastPage) {
+    //     _loadNextPage();
+    //   }
+    // });
   }
 
   Future<bool> _viewProfileApi(int profileId) async {
@@ -538,33 +553,63 @@ class _DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
   }
 
   // ================= BUILD =================
+  // @override
+  // Widget build(BuildContext context) {
+  //   if (_isFirstLoad) {
+  //     return const SizedBox(
+  //         height: 300, child: Center(child: CircularProgressIndicator()));
+  //   }
+
+  //   if (_users.isEmpty) {
+  //     return const SizedBox(
+  //         height: 300, child: Center(child: Text("No suggestions found")));
+  //   }
+
+  //   return ListView.builder(
+  //     controller: _scrollController,
+  //     shrinkWrap: true,
+  //     physics: const BouncingScrollPhysics(),
+  //     itemCount: _users.length + (_isLoading ? 1 : 0),
+  //     itemBuilder: (context, index) {
+  //       if (index < _users.length) {
+  //         return _userCard(_users[index]);
+  //       } else {
+  //         return const Padding(
+  //           padding: EdgeInsets.all(16),
+  //           child: Center(child: CircularProgressIndicator()),
+  //         );
+  //       }
+  //     },
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
     if (_isFirstLoad) {
-      return const SizedBox(
-          height: 300, child: Center(child: CircularProgressIndicator()));
+      return const SliverToBoxAdapter(
+        child: SizedBox(
+          height: 200,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
     }
 
     if (_users.isEmpty) {
-      return const SizedBox(
-          height: 300, child: Center(child: Text("No suggestions found")));
+      return const SliverToBoxAdapter(
+        child: SizedBox(
+          height: 200,
+          child: Center(child: Text("No suggestions found")),
+        ),
+      );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      shrinkWrap: true,
-      physics: const BouncingScrollPhysics(),
-      itemCount: _users.length + (_isLoading ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index < _users.length) {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
           return _userCard(_users[index]);
-        } else {
-          return const Padding(
-            padding: EdgeInsets.all(16),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
-      },
+        },
+        childCount: _users.length,
+      ),
     );
   }
 }

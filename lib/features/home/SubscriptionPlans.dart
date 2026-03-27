@@ -1,9 +1,128 @@
 import 'package:flutter/material.dart';
 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:provider/provider.dart';
+import 'package:gridcard/core/services/auth_provider.dart';
+
 /// A responsive widget that displays subscription pricing cards.
 /// Cards wrap to the next line on smaller screens to avoid overflow.
-class SubscriptionPlans extends StatelessWidget {
+
+class SubscriptionPlans extends StatefulWidget {
   const SubscriptionPlans({super.key});
+
+  @override
+  State<SubscriptionPlans> createState() => _SubscriptionPlansState();
+}
+
+class _SubscriptionPlansState extends State<SubscriptionPlans> {
+  Future<void> startPayment(BuildContext context, PlanData plan) async {
+    try {
+      final userId = await UserStorageService().getUserId();
+
+      final response = await http.post(
+        Uri.parse("${AppConfig.apiBaseUrl}/create-order"),
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: jsonEncode({
+          "plan_id": getPlanId(plan.name),
+        }),
+      );
+
+      final data = jsonDecode(response.body);
+
+      final orderId = data["order_id"];
+      final key = data["key"];
+      final transactionId = data["transaction_id"];
+
+      openRazorpay(context, key, orderId, transactionId);
+    } catch (e) {
+      print("Payment error: $e");
+    }
+  }
+
+  int getPlanId(String name) {
+    switch (name) {
+      case "Starter":
+        return 1;
+      case "Growth":
+        return 2;
+      case "Scale":
+        return 3;
+      default:
+        return 0;
+    }
+  }
+
+  late Razorpay _razorpay;
+
+  void openRazorpay(
+      BuildContext context, String key, String orderId, int transactionId) {
+    _razorpay = Razorpay();
+
+    var options = {
+      'key': key,
+      'order_id': orderId,
+      'name': 'GridCard',
+      'description': 'Subscription Payment',
+    };
+
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS,
+        (PaymentSuccessResponse response) {
+      verifyPayment(context, response, transactionId);
+    });
+
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR,
+        (PaymentFailureResponse response) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("❌ Payment Failed")),
+      );
+    });
+
+    _razorpay.open(options);
+  }
+
+  Future<void> verifyPayment(
+    BuildContext context,
+    PaymentSuccessResponse response,
+    int transactionId,
+  ) async {
+    try {
+      final res = await http.post(
+        Uri.parse("${AppConfig.apiBaseUrl}/verify-payment"),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "transaction_id": transactionId,
+          "razorpay_order_id": response.orderId,
+          "razorpay_payment_id": response.paymentId,
+          "razorpay_signature": response.signature,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+
+      if (data["status"] == true) {
+        // 🔥 IMPORTANT: subscription refresh
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+        await auth.refreshSubscription();
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("✅ Subscription Activated")),
+        );
+
+        Navigator.pop(context); // back to home
+      }
+    } catch (e) {
+      print("Verify error: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -19,14 +138,30 @@ class SubscriptionPlans extends StatelessWidget {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          children: const [
-            _PlanCard(plan: PlanData.free),
+          children: [
+            // _PlanCard(plan: PlanData.free),
+            _PlanCard(
+              plan: PlanData.free,
+              onSelect: (plan) {},
+            ),
             SizedBox(height: 16),
-            _PlanCard(plan: PlanData.starter),
+            // _PlanCard(plan: PlanData.starter),
+            _PlanCard(
+              plan: PlanData.starter,
+              onSelect: (plan) => startPayment(context, plan),
+            ),
             SizedBox(height: 16),
-            _PlanCard(plan: PlanData.growth),
+            // _PlanCard(plan: PlanData.growth),
+            _PlanCard(
+              plan: PlanData.growth,
+              onSelect: (plan) => startPayment(context, plan),
+            ),
             SizedBox(height: 16),
-            _PlanCard(plan: PlanData.scale),
+            // _PlanCard(plan: PlanData.scale),
+            _PlanCard(
+              plan: PlanData.scale,
+              onSelect: (plan) => startPayment(context, plan),
+            ),
           ],
         ),
       ),
@@ -196,8 +331,12 @@ class FeatureItem {
 /// Individual card widget
 class _PlanCard extends StatelessWidget {
   final PlanData plan;
+  final Function(PlanData) onSelect;
 
-  const _PlanCard({required this.plan});
+  const _PlanCard({
+    required this.plan,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -317,11 +456,35 @@ class _PlanCard extends StatelessWidget {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Selected ${plan.name}')),
-                  );
+                // onPressed: () async {
+                //   if (plan.name == "Free Forever") return;
+
+                //   Navigator.pushNamed(context, "/payment", arguments: plan);
+                // },
+
+                // onPressed: () async {
+                //   if (plan.name == "Free Forever") {
+                //     ScaffoldMessenger.of(context).showSnackBar(
+                //       const SnackBar(content: Text("Free plan already active")),
+                //     );
+                //     return;
+                //   }
+
+                //   // await startPayment(context, plan);
+                //   onSelect(plan);
+                // },
+
+                onPressed: () async {
+                  if (plan.name == "Free Forever") {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Free plan already active")),
+                    );
+                    return;
+                  }
+
+                  onSelect(plan);
                 },
+
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
                       plan.isPopular ? const Color(0xFFF5B041) : Colors.black,
