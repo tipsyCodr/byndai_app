@@ -1,306 +1,3 @@
-// import 'package:flutter/cupertino.dart';
-// import 'package:flutter/material.dart';
-// import 'package:intl/intl.dart';
-
-// class ChatScreen extends StatefulWidget {
-//   final int receiverId;
-//   final String receiverName;
-//   final String? receiverUserName;
-
-//   const ChatScreen({
-//     super.key,
-//     required this.receiverId,
-//     required this.receiverName,
-//     this.receiverUserName,
-//   });
-
-//   @override
-//   State<ChatScreen> createState() => _ChatScreenState();
-// }
-
-// class _ChatScreenState extends State<ChatScreen> {
-//   final TextEditingController _msgController = TextEditingController();
-//   final ScrollController _scrollController = ScrollController();
-
-//   // ✅ Messages list (local demo)
-//   final List<Map<String, dynamic>> _messages = [];
-
-//   @override
-//   void dispose() {
-//     _msgController.dispose();
-//     _scrollController.dispose();
-//     super.dispose();
-//   }
-
-//   // ✅ Send message function
-//   void _sendMessage() {
-//     final text = _msgController.text.trim();
-
-//     if (text.isEmpty) return;
-
-//     setState(() {
-//       _messages.add({
-//         "text": text,
-//         "time": DateTime.now(),
-//         "isMe": true,
-//       });
-//     });
-
-//     _msgController.clear();
-
-//     // ✅ scroll to bottom
-//     Future.delayed(const Duration(milliseconds: 100), () {
-//       if (_scrollController.hasClients) {
-//         _scrollController.animateTo(
-//           _scrollController.position.maxScrollExtent,
-//           duration: const Duration(milliseconds: 300),
-//           curve: Curves.easeOut,
-//         );
-//       }
-//     });
-//   }
-
-//   // ✅ Date Label like Today / Yesterday / dd MMM yyyy
-//   String _getDateLabel(DateTime date) {
-//     final now = DateTime.now();
-
-//     final today = DateTime(now.year, now.month, now.day);
-//     final msgDay = DateTime(date.year, date.month, date.day);
-
-//     final diff = today.difference(msgDay).inDays;
-
-//     if (diff == 0) return "Today";
-//     if (diff == 1) return "Yesterday";
-
-//     return DateFormat("dd MMM yyyy").format(date);
-//   }
-
-//   // ✅ Time format like 11:30 AM
-//   String _formatTime(DateTime time) {
-//     return DateFormat("hh:mm a").format(time);
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.black,
-
-//       appBar: AppBar(
-//         backgroundColor: Colors.black,
-//         leading: IconButton(
-//           icon: const Icon(CupertinoIcons.back, color: Colors.white),
-//           onPressed: () => Navigator.pop(context),
-//         ),
-//         titleSpacing: 0,
-//         title: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: [
-//             Text(
-//               widget.receiverName,
-//               style: const TextStyle(
-//                 color: Colors.white,
-//                 fontSize: 16,
-//                 fontWeight: FontWeight.w600,
-//               ),
-//             ),
-//             const SizedBox(height: 2),
-//             Text(
-//               widget.receiverUserName ?? "Offline",
-//               style: const TextStyle(
-//                 color: Colors.white54,
-//                 fontSize: 12,
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-
-//       body: Column(
-//         children: [
-//           // ✅ Messages Area
-//           Expanded(
-//             child: _messages.isEmpty
-//                 ? Center(
-//                     child: Text(
-//                       "Start chat with ${widget.receiverName}",
-//                       style: const TextStyle(color: Colors.white38),
-//                     ),
-//                   )
-//                 : ListView.builder(
-//                     controller: _scrollController,
-//                     padding: const EdgeInsets.symmetric(
-//                       horizontal: 12,
-//                       vertical: 12,
-//                     ),
-//                     itemCount: _messages.length,
-//                     itemBuilder: (context, index) {
-//                       final msg = _messages[index];
-//                       final msgTime = msg["time"] as DateTime;
-
-//                       // Date separator logic
-//                       bool showDateSeparator = false;
-
-//                       if (index == 0) {
-//                         showDateSeparator = true;
-//                       } else {
-//                         final prevMsg = _messages[index - 1];
-//                         final prevTime = prevMsg["time"] as DateTime;
-
-//                         final prevDay =
-//                             DateTime(prevTime.year, prevTime.month, prevTime.day);
-//                         final currentDay =
-//                             DateTime(msgTime.year, msgTime.month, msgTime.day);
-
-//                         if (prevDay != currentDay) {
-//                           showDateSeparator = true;
-//                         }
-//                       }
-
-//                       return Column(
-//                         children: [
-//                           if (showDateSeparator)
-//                             Padding(
-//                               padding: const EdgeInsets.symmetric(vertical: 10),
-//                               child: Container(
-//                                 padding: const EdgeInsets.symmetric(
-//                                   horizontal: 12,
-//                                   vertical: 6,
-//                                 ),
-//                                 decoration: BoxDecoration(
-//                                   color: const Color(0xFF1E1E1E),
-//                                   borderRadius: BorderRadius.circular(14),
-//                                   border: Border.all(color: Colors.white12),
-//                                 ),
-//                                 child: Text(
-//                                   _getDateLabel(msgTime),
-//                                   style: const TextStyle(
-//                                     color: Colors.white70,
-//                                     fontSize: 12,
-//                                     fontWeight: FontWeight.w500,
-//                                   ),
-//                                 ),
-//                               ),
-//                             ),
-
-//                           _MessageBubble(
-//                             text: msg["text"],
-//                             time: _formatTime(msgTime),
-//                             isMe: msg["isMe"] ?? true,
-//                           ),
-//                         ],
-//                       );
-//                     },
-//                   ),
-//           ),
-
-//           // ✅ Bottom Input Box
-//           Container(
-//             padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-//             decoration: const BoxDecoration(
-//               color: Colors.black,
-//               border: Border(
-//                 top: BorderSide(color: Colors.white12),
-//               ),
-//             ),
-//             child: Row(
-//               children: [
-//                 Expanded(
-//                   child: Container(
-//                     padding: const EdgeInsets.symmetric(horizontal: 14),
-//                     decoration: BoxDecoration(
-//                       color: const Color(0xFF1E1E1E),
-//                       borderRadius: BorderRadius.circular(30),
-//                       border: Border.all(color: Colors.white12),
-//                     ),
-//                     child: TextField(
-//                       controller: _msgController,
-//                       style: const TextStyle(color: Colors.white),
-//                       maxLines: 4,
-//                       minLines: 1,
-//                       decoration: const InputDecoration(
-//                         hintText: "Type message...",
-//                         hintStyle: TextStyle(color: Colors.white38),
-//                         border: InputBorder.none,
-//                       ),
-//                       onSubmitted: (_) => _sendMessage(),
-//                     ),
-//                   ),
-//                 ),
-//                 const SizedBox(width: 10),
-//                 Container(
-//                   height: 46,
-//                   width: 46,
-//                   decoration: BoxDecoration(
-//                     color: Colors.blueAccent,
-//                     borderRadius: BorderRadius.circular(30),
-//                   ),
-//                   child: IconButton(
-//                     icon: const Icon(Icons.send, color: Colors.white),
-//                     onPressed: _sendMessage,
-//                   ),
-//                 ),
-//               ],
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
-// class _MessageBubble extends StatelessWidget {
-//   final String text;
-//   final String time;
-//   final bool isMe;
-
-//   const _MessageBubble({
-//     required this.text,
-//     required this.time,
-//     required this.isMe,
-//   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Align(
-//       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-//       child: Container(
-//         margin: const EdgeInsets.symmetric(vertical: 6),
-//         padding: const EdgeInsets.fromLTRB(12, 10, 10, 6),
-//         constraints: BoxConstraints(
-//           maxWidth: MediaQuery.of(context).size.width * 0.78,
-//         ),
-//         decoration: BoxDecoration(
-//           color: isMe ? const Color(0xFF0B5CFF) : const Color(0xFF1E1E1E),
-//           borderRadius: BorderRadius.circular(16),
-//         ),
-//         child: Column(
-//           crossAxisAlignment:
-//               isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-//           children: [
-//             Text(
-//               text,
-//               style: const TextStyle(
-//                 color: Colors.white,
-//                 fontSize: 15,
-//               ),
-//             ),
-//             const SizedBox(height: 4),
-//             Text(
-//               time,
-//               style: const TextStyle(
-//                 color: Colors.white70,
-//                 fontSize: 11,
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
-
-//=====================================================================================
-
 import 'dart:convert';
 import 'dart:async';
 
@@ -308,9 +5,11 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:gridcard/core/theme/app_theme.dart'; // ✅ Added for AppThemeColors
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/widgets/glass_box.dart'; // ✅ GlassBox for consistent styling
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -370,16 +69,11 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _initChat() async {
     try {
-      // my user id (from session)
       final session = await UserStorageService().loadSession();
       _myUserId = session.user?.id;
 
       await _loadMessages();
-
-      // Mark read (optional but good)
       await _markAsRead();
-
-      // Scroll bottom after load
       _scrollToBottom();
     } catch (e) {
       debugPrint("❌ _initChat error: $e");
@@ -408,11 +102,9 @@ class _ChatScreenState extends State<ChatScreen> {
             _isLoading = false;
           });
 
-          // scroll bottom
           Future.delayed(const Duration(milliseconds: 200), () {
             _scrollToBottom();
           });
-
           return;
         }
       }
@@ -460,8 +152,6 @@ class _ChatScreenState extends State<ChatScreen> {
       request.fields["chat_id"] = widget.chatId.toString();
       request.fields["message"] = text;
 
-      // attachments future me add kar sakte hain
-
       final streamed = await request.send();
       final responseBody = await streamed.stream.bytesToString();
 
@@ -477,7 +167,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
           _msgController.clear();
 
-          // scroll bottom
           Future.delayed(const Duration(milliseconds: 100), () {
             _scrollToBottom();
           });
@@ -531,7 +220,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   DateTime _parseMessageTime(dynamic msg) {
     try {
-      // created_at example: "2026-02-05T10:30:00.000000Z"
       final createdAt = msg["created_at"];
       if (createdAt == null) return DateTime.now();
       return DateTime.parse(createdAt).toLocal();
@@ -553,17 +241,153 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   // ===========================
-  // UI
+  // UI – Light / Dark mode aware
   // ===========================
+
+  Widget _buildLightModePattern(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -150,
+            right: -120,
+            child: Container(
+              width: 360,
+              height: 360,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    colorScheme.primary.withValues(alpha: 0.16),
+                    colorScheme.primary.withValues(alpha: 0.02),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 40,
+            left: -180,
+            child: Container(
+              width: 520,
+              height: 320,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(240),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.secondary.withValues(alpha: 0.14),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -120,
+            right: -120,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    colorScheme.secondary.withValues(alpha: 0.12),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDarkModePattern(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -110,
+            right: -140,
+            child: Container(
+              width: 340,
+              height: 340,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    colorScheme.secondary.withValues(alpha: 0.05),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 140,
+            left: -150,
+            child: Container(
+              width: 420,
+              height: 280,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(220),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.primary.withValues(alpha: 0.08),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -180,
+            left: 20,
+            child: Container(
+              width: 360,
+              height: 360,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    colorScheme.primary.withValues(alpha: 0.09),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final palette = Theme.of(context).extension<AppThemeColors>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.surface, // Let gradient show through
       appBar: AppBar(
-        backgroundColor: Colors.black,
+     backgroundColor: colorScheme.surface,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(CupertinoIcons.back, color: Colors.white),
+          icon: Icon(
+            CupertinoIcons.back,
+            color: colorScheme.onSurface,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         titleSpacing: 0,
@@ -572,20 +396,14 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             Text(
               widget.receiverName,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: colorScheme.onSurface,
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 2),
-            Text(
-              "Chat ID: ${widget.chatId}",
-              style: const TextStyle(
-                color: Colors.white54,
-                fontSize: 12,
-              ),
-            ),
+            // Optional: show chat ID if needed (currently hidden)
           ],
         ),
         actions: [
@@ -593,163 +411,216 @@ class _ChatScreenState extends State<ChatScreen> {
             onPressed: () async {
               await _loadMessages();
             },
-            icon: const Icon(Icons.refresh, color: Colors.white),
+            icon: Icon(Icons.refresh, color: colorScheme.onSurface),
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // ✅ Messages Area
-          Expanded(
-            child: _isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(),
-                  )
-                : _messages.isEmpty
-                    ? Center(
-                        child: Text(
-                          "Start chat with ${widget.receiverName}",
-                          style: const TextStyle(color: Colors.white38),
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 12,
-                        ),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
-                          final msg = _messages[index];
-                          final msgTime = _parseMessageTime(msg);
+      body: _buildBackground(
+        context: context,
+        child: Column(
+          children: [
+            // ✅ Messages Area
+            Expanded(
+              child: _isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(),
+                    )
+                  : _messages.isEmpty
+                      ? Center(
+                          child: Text(
+                            "Start chat with ${widget.receiverName}",
+                            style: TextStyle(
+                              color: colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          controller: _scrollController,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 12,
+                          ),
+                          itemCount: _messages.length,
+                          itemBuilder: (context, index) {
+                            final msg = _messages[index];
+                            final msgTime = _parseMessageTime(msg);
 
-                          // Date separator logic
-                          bool showDateSeparator = false;
+                            // Date separator logic
+                            bool showDateSeparator = false;
 
-                          if (index == 0) {
-                            showDateSeparator = true;
-                          } else {
-                            final prevMsg = _messages[index - 1];
-                            final prevTime = _parseMessageTime(prevMsg);
-
-                            final prevDay = DateTime(
-                              prevTime.year,
-                              prevTime.month,
-                              prevTime.day,
-                            );
-
-                            final currentDay = DateTime(
-                              msgTime.year,
-                              msgTime.month,
-                              msgTime.day,
-                            );
-
-                            if (prevDay != currentDay) {
+                            if (index == 0) {
                               showDateSeparator = true;
-                            }
-                          }
+                            } else {
+                              final prevMsg = _messages[index - 1];
+                              final prevTime = _parseMessageTime(prevMsg);
 
-                          return Column(
-                            children: [
-                              if (showDateSeparator)
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 10),
-                                  child: Container(
+                              final prevDay = DateTime(
+                                prevTime.year,
+                                prevTime.month,
+                                prevTime.day,
+                              );
+
+                              final currentDay = DateTime(
+                                msgTime.year,
+                                msgTime.month,
+                                msgTime.day,
+                              );
+
+                              if (prevDay != currentDay) {
+                                showDateSeparator = true;
+                              }
+                            }
+
+                            return Column(
+                              children: [
+                                if (showDateSeparator)
+                                  Padding(
                                     padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFF1E1E1E),
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: Colors.white12),
-                                    ),
-                                    child: Text(
-                                      _getDateLabel(msgTime),
-                                      style: const TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
+                                        vertical: 10),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 6,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: palette?.glassTop
+                                                ?.withValues(alpha: 0.5) ??
+                                            colorScheme.surfaceContainerHighest
+                                                .withValues(alpha: 0.5),
+                                        borderRadius: BorderRadius.circular(14),
+                                        border: Border.all(
+                                          color: colorScheme.outlineVariant
+                                              .withValues(alpha: 0.3),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        _getDateLabel(msgTime),
+                                        style: TextStyle(
+                                          color: colorScheme.onSurfaceVariant,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ),
+                                _MessageBubble(
+                                  text: _getMessageText(msg),
+                                  time: _formatTime(msgTime),
+                                  isMe: _isMe(msg),
                                 ),
-                              _MessageBubble(
-                                text: _getMessageText(msg),
-                                time: _formatTime(msgTime),
-                                isMe: _isMe(msg),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-          ),
+                              ],
+                            );
+                          },
+                        ),
+            ),
 
-          // ✅ Bottom Input Box
-          Container(
-            padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              border: Border(
-                top: BorderSide(color: Colors.white12),
+            // ✅ Bottom Input Box – Glass style
+            Container(
+              margin: const EdgeInsets.only(bottom: 8, left: 12, right: 12),
+              child: GlassBox(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                borderRadius: 32,
+                blur: 15,
+                opacity: isDark ? 0.2 : 0.12,
+                gradientColors: [
+                  (palette?.glassTop ?? colorScheme.surface)
+                      .withValues(alpha: isDark ? 0.7 : 0.8),
+                  (palette?.glassBottom ?? colorScheme.surface)
+                      .withValues(alpha: isDark ? 0.58 : 0.7),
+                ],
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _msgController,
+                        style: TextStyle(color: colorScheme.onSurface),
+                        maxLines: 4,
+                        minLines: 1,
+                        decoration: InputDecoration(
+                          hintText: "Type message...",
+                          hintStyle: TextStyle(
+                            color: colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.6),
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 12,
+                          ),
+                        ),
+                        onSubmitted: (_) => _sendMessage(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      height: 46,
+                      width: 46,
+                      decoration: BoxDecoration(
+                        color: _isSending
+                            ? colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.3)
+                            : colorScheme.primary,
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: IconButton(
+                        icon: _isSending
+                            ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: colorScheme.onPrimary,
+                                ),
+                              )
+                            : Icon(Icons.send, color: colorScheme.onPrimary),
+                        onPressed: _isSending ? null : _sendMessage,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E1E1E),
-                      borderRadius: BorderRadius.circular(30),
-                      border: Border.all(color: Colors.white12),
-                    ),
-                    child: TextField(
-                      controller: _msgController,
-                      style: const TextStyle(color: Colors.white),
-                      maxLines: 4,
-                      minLines: 1,
-                      decoration: const InputDecoration(
-                        hintText: "Type message...",
-                        hintStyle: TextStyle(color: Colors.white38),
-                        border: InputBorder.none,
-                      ),
-                      onSubmitted: (_) => _sendMessage(),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Container(
-                  height: 46,
-                  width: 46,
-                  decoration: BoxDecoration(
-                    color: _isSending ? Colors.grey : Colors.blueAccent,
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: IconButton(
-                    icon: _isSending
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : const Icon(Icons.send, color: Colors.white),
-                    onPressed: _isSending ? null : _sendMessage,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper to embed the background under the content
+  Widget _buildBackground(
+      {required BuildContext context, required Widget child}) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Theme.of(context).extension<AppThemeColors>()?.backgroundStart ??
+                Theme.of(context).colorScheme.surface,
+            Theme.of(context).extension<AppThemeColors>()?.backgroundMid ??
+                Theme.of(context).colorScheme.surface,
+            Theme.of(context).extension<AppThemeColors>()?.backgroundEnd ??
+                Theme.of(context).colorScheme.surface,
+          ],
+        ),
+      ),
+      child: Stack(
+        children: [
+          if (Theme.of(context).brightness == Brightness.dark)
+            _buildDarkModePattern(context),
+          if (Theme.of(context).brightness != Brightness.dark)
+            _buildLightModePattern(context),
+          child,
         ],
       ),
     );
   }
 }
 
+// ===========================
+// Message Bubble
+// ===========================
 class _MessageBubble extends StatelessWidget {
   final String text;
   final String time;
@@ -763,6 +634,9 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -772,7 +646,11 @@ class _MessageBubble extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.78,
         ),
         decoration: BoxDecoration(
-          color: isMe ? const Color(0xFF0B5CFF) : const Color(0xFF1E1E1E),
+          color: isMe
+              ? colorScheme.primary
+              : isDark
+                  ? const Color(0xFF1E1E1E)
+                  : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Column(
@@ -781,16 +659,18 @@ class _MessageBubble extends StatelessWidget {
           children: [
             Text(
               text,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: isMe ? colorScheme.onPrimary : colorScheme.onSurface,
                 fontSize: 15,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               time,
-              style: const TextStyle(
-                color: Colors.white70,
+              style: TextStyle(
+                color: isMe
+                    ? colorScheme.onPrimary.withValues(alpha: 0.8)
+                    : colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
                 fontSize: 11,
               ),
             ),

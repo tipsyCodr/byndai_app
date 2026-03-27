@@ -59,51 +59,6 @@ class LeadServices {
     }
   }
 
-  // static Future<LeadModel?> updateLead(
-  //     int id, Map<String, dynamic> data) async {
-  //     final url = Uri.parse('$_baseUrl/leads/$id');
-
-  //   try {
-  //     // ✅ Add image fields to update data
-  //     final Map<String, dynamic> updateData = {
-  //       'name': data['name'] ?? '',
-  //       'company_name': data['company_name'] ?? '',
-  //       'address': data['address'] ?? '',
-  //       'website': data['website'] ?? '',
-  //       'mobile_no_1': data['mobile_no_1'] ?? '',
-  //       'mobile_no_2': data['mobile_no_2'],
-  //       'mobile_no_3': data['mobile_no_3'],
-  //       'email': data['email'],
-  //       'email2': data['email2'],
-  //       // ✅ Include image if provided
-  //       if (data.containsKey('lead_image') && data['lead_image'] != null)
-  //         'lead_image': data['lead_image'],
-  //       if (data.containsKey('image_filename') &&
-  //           data['image_filename'] != null)
-  //         'image_filename': data['image_filename'],
-  //     };
-
-  //     debugPrint("📤 UPDATE REQUEST => $updateData");
-
-  //     final response = await http.put(
-  //       url,
-  //       headers: await _getHeaders(),
-  //       body: jsonEncode(updateData),
-  //     );
-
-  //     debugPrint("📥 UPDATE RESPONSE => ${response.body}");
-
-  //     if (response.statusCode == 200) {
-  //       final res = jsonDecode(response.body);
-  //       return LeadModel.fromJson(res['data']);
-  //     }
-  //     return null;
-  //   } catch (e) {
-  //     debugPrint('🚨 Error updating lead: $e');
-  //     return null;
-  //   }
-  // }
-
   static Future<LeadModel?> updateLead(
       int id, Map<String, dynamic> data) async {
     final url = Uri.parse('$_baseUrl/leads/$id');
@@ -236,10 +191,18 @@ class LeadServices {
         body: jsonEncode(apiData),
       );
 
-      debugPrint("📥 API Response Status => ${response.statusCode}");
-      debugPrint("📥 API Response Body => ${response.body}");
+      // debugPrint("📥 API Response Status => ${response.statusCode}");
+      // debugPrint("📥 API Response Body => ${response.body}");
 
-      return response.statusCode == 200 || response.statusCode == 201;
+      // return response.statusCode == 200 || response.statusCode == 201;
+
+      final json = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json['success'] == true;
+      } else {
+        throw Exception(json['message'] ?? 'Something went wrong');
+      }
     } catch (e) {
       debugPrint("🚨 Create lead error: $e");
       return false;
@@ -311,47 +274,6 @@ class LeadServices {
       return false;
     }
   }
-
-  // static Future<Map<String, dynamic>?> fetchLeadsByUserId({
-  //   required int userId,
-  //   int perPage = 10,
-  //   int? page,
-  // }) async {
-  //   final queryParams = {
-  //     'user_id': userId.toString(),
-  //     'per_page': perPage.toString(),
-  //     if (page != null) 'page': page.toString(),
-  //   };
-
-  //   final uri = Uri.parse('$_baseUrl/leads-list-by-user-id')
-  //       .replace(queryParameters: queryParams);
-
-  //   try {
-  //     final response = await http.get(uri, headers: await _getHeaders());
-
-  //     debugPrint('📡 Fetch leads by user_id URL: $uri');
-  //     debugPrint('📥 Response status: ${response.statusCode}');
-
-  //     if (response.statusCode == 200) {
-  //       final json = jsonDecode(response.body);
-
-  //       if (json['success'] == true) {
-  //         final List<LeadModel> leads = (json['data'] as List)
-  //             .map((item) => LeadModel.fromJson(item))
-  //             .toList();
-
-  //         return {
-  //           'leads': leads,
-  //           'meta': json['meta'],
-  //         };
-  //       }
-  //     }
-  //     return null;
-  //   } catch (e) {
-  //     debugPrint('🚨 Error fetching scanned leads: $e');
-  //     return null;
-  //   }
-  // }
 
   static Future<Map<String, dynamic>?> fetchLeadsByUserId({
     required int userId,

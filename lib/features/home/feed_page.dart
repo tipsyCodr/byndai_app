@@ -22,6 +22,10 @@ import 'package:gridcard/core/theme/app_theme.dart';
 import '../../features/analitics/user_analitics_page.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:gridcard/widgets/glass_box.dart';
+import '../profile/edit_profile_page.dart';
+import '../feature_map/feature_mapper.dart';
+import '../feature_map/feature_access_helper.dart';
+import './SubscriptionPlans.dart';
 
 // class FeedPage extends StatefulWidget {
 //   const FeedPage({super.key});
@@ -40,6 +44,8 @@ class FeedPage extends StatefulWidget {
 // class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
 class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   final GlobalKey<ConnectionSuggestState> _connectionSuggestKey = GlobalKey();
+
+  Map<String, bool> _milestones = {}; // Store milestone status
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
@@ -125,18 +131,13 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     setState(() => _isCompletionLoading = true);
 
     try {
-      // final userId = await UserStorageService().getUserId();
-      // if (userId == null) return;
-
       final uri = Uri.parse("${AppConfig.apiBaseUrl}/profile-completion");
       final headers = await _getHeaders();
 
       final response = await http.post(
         uri,
         headers: headers,
-        body: jsonEncode({
-          "user_id": userId,
-        }),
+        body: jsonEncode({"user_id": userId}),
       );
 
       if (response.statusCode == 200) {
@@ -146,6 +147,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
           setState(() {
             _profileCompletionPercent =
                 (jsonData["percentage"] ?? 0).toDouble();
+            _milestones = Map<String, bool>.from(jsonData["milestones"] ?? {});
           });
         }
       } else {
@@ -155,6 +157,130 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
       debugPrint("Profile completion error: $e");
     } finally {
       if (mounted) setState(() => _isCompletionLoading = false);
+    }
+  }
+
+  void _showMilestoneModal() {
+    final incomplete = _milestones.entries
+        .where((entry) => !entry.value)
+        .map((entry) => entry.key)
+        .toList();
+
+    if (incomplete.isEmpty) {
+      TopAlert.show(context, 'All milestones completed! 🎉', isSuccess: true);
+      return;
+    }
+
+    final Map<String, String> milestoneNames = {
+      'user_details': 'Profile Details',
+      'links': 'Social Links',
+      'keywords': 'Keywords',
+      'business_info': 'Business Info',
+      'product': 'Products',
+    };
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // full height allow karta hai
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext context) {
+        return SingleChildScrollView(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header with title and close icon
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Complete Your Profile',
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Add missing information to improve your profile',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 20),
+                // Milestone list – ab iske andar scroll nahi hoga
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: incomplete.length,
+                  itemBuilder: (_, index) {
+                    final key = incomplete[index];
+                    final name = milestoneNames[key] ?? key;
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        title: Text(name),
+                        trailing: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context); // bottom sheet band karo
+                            _navigateToMilestoneScreen(key);
+                          },
+                          child: const Text('Add'),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _navigateToMilestoneScreen(String milestoneKey) async {
+    int tabIndex;
+    switch (milestoneKey) {
+      case 'user_details':
+        tabIndex = 0; // ProfileTab
+        break;
+      case 'links':
+        tabIndex = 1; // LinksTab
+        break;
+      case 'keywords':
+        tabIndex = 2; // KeywordsTab
+        break;
+      case 'business_info':
+        tabIndex = 3; // BusinessInfoTab
+        break;
+      case 'product':
+        tabIndex = 4; // ProductsTab
+        break;
+      default:
+        TopAlert.show(context, 'Screen not defined for $milestoneKey',
+            isError: true);
+        return;
+    }
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EditProfilePage(
+          userDetails: null, // data will be fetched inside EditProfilePage
+          initialTabIndex: tabIndex,
+        ),
+      ),
+    );
+
+    // After returning from edit, refresh milestones and other data
+    if (mounted) {
+      _handleRefresh();
     }
   }
 
@@ -193,6 +319,14 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
+
+    // final auth = Provider.of<AuthProvider>(context, listen: false);
+    // auth.refreshSubscription();
+    // debugPrint("lead scanner page Subscription: ${auth.subscriptionDetails}");
+
+    // int? featureId = FeatureMapper.getFeatureId('leads_create');
+
+    // debugPrint("Feature ID (leads_create): $featureId");
 
     _fadeController = AnimationController(
       vsync: this,
@@ -309,14 +443,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     final palette = Theme.of(context).extension<AppThemeColors>();
 
     return GestureDetector(
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => const UserAnaliticsPage(),
-          ),
-        );
-      },
+      onTap: _showMilestoneModal, // 👈 whole dashboard opens milestone modal
       child: GlassBox(
         padding: EdgeInsets.zero,
         borderRadius: 24,
@@ -337,6 +464,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
         ],
         child: Stack(
           children: [
+            // ... (same background effects) ...
             Positioned.fill(
               child: IgnorePointer(
                 child: DecoratedBox(
@@ -373,168 +501,231 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                 ),
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// 🔹 HEADER
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'NETWORK IMPACT',
-                  style: TextStyle(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.94)
-                        : colorScheme.onPrimary.withValues(alpha: 0.92),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.18)
-                        : Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    "LIVE",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            /// 🔹 LOADING
-            if (_isAnalyticsLoading)
-              Center(
-                child: CircularProgressIndicator(color: colorScheme.onPrimary),
-              )
-            else ...[
-              /// 🔢 TOTAL PROFILE VIEWS
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _totalViewCount.toString(),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 48,
-                      fontWeight: FontWeight.w900,
-                      height: 1.0,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    "views",
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              /// 📈 PROFILE COMPLETION
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Profile Progress",
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  Text(
-                    "${_profileCompletionPercent.toInt()}%",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              /// Progress Bar
-              Stack(
-                children: [
-                  Container(
-                    height: 10,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  AnimatedContainer(
-                    duration: const Duration(seconds: 1),
-                    curve: Curves.easeOutCubic,
-                    height: 10,
-                    width: (MediaQuery.of(context).size.width - 72) *
-                        (_profileCompletionPercent / 100).clamp(0.0, 1.0),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          palette?.neonAccent ?? colorScheme.secondary,
-                          (palette?.neonAccent ?? colorScheme.secondary)
-                              .withValues(alpha: 0.9),
+                  /// 🔹 HEADER with analytics icon
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'NETWORK IMPACT',
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.94)
+                              : colorScheme.onPrimary.withValues(alpha: 0.92),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                          letterSpacing: 2.0,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          // Analytics icon (tappable separately)
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                    builder: (_) => const UserAnaliticsPage()),
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.18)
+                                    : Colors.white.withValues(alpha: 0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.bar_chart,
+                                size: 14,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? Colors.white.withValues(alpha: 0.18)
+                                  : Colors.white.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Text(
+                              "LIVE",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.secondary.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        )
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  /// 🔹 LOADING
+                  if (_isAnalyticsLoading)
+                    Center(
+                      child: CircularProgressIndicator(
+                          color: colorScheme.onPrimary),
+                    )
+                  else ...[
+                    /// 🔢 TOTAL PROFILE VIEWS
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          _totalViewCount.toString(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 48,
+                            fontWeight: FontWeight.w900,
+                            height: 1.0,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "views",
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 20),
+
+                    /// 📈 PROFILE PROGRESS (only if < 100%)
+                    if (_profileCompletionPercent < 100) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            "Profile Progress",
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                          Text(
+                            "${_profileCompletionPercent.toInt()}%",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+
+                      /// Progress Bar
+                      Stack(
+                        children: [
+                          Container(
+                            height: 10,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                          AnimatedContainer(
+                            duration: const Duration(seconds: 1),
+                            curve: Curves.easeOutCubic,
+                            height: 10,
+                            width: (MediaQuery.of(context).size.width - 72) *
+                                (_profileCompletionPercent / 100)
+                                    .clamp(0.0, 1.0),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  palette?.neonAccent ?? colorScheme.secondary,
+                                  (palette?.neonAccent ?? colorScheme.secondary)
+                                      .withValues(alpha: 0.9),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: colorScheme.secondary
+                                      .withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                )
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ] else
+
+                      /// Optional: show completed badge when 100%
+                      // Container(
+                      //   padding: const EdgeInsets.symmetric(
+                      //       vertical: 8, horizontal: 16),
+                      //   decoration: BoxDecoration(
+                      //     color: Colors.green.withValues(alpha: 0.2),
+                      //     borderRadius: BorderRadius.circular(20),
+                      //     border: Border.all(color: Colors.green),
+                      //   ),
+                      //   child: const Row(
+                      //     mainAxisSize: MainAxisSize.min,
+                      //     children: [
+                      //       Icon(Icons.check_circle,
+                      //           color: Colors.green, size: 16),
+                      //       SizedBox(width: 6),
+                      //       Text(
+                      //         "Profile Completed",
+                      //         style:
+                      //             TextStyle(color: Colors.green, fontSize: 12),
+                      //       ),
+                      //     ],
+                      //   ),
+                      // ),
+
+                    // const SizedBox(height: 24),
+
+                    /// 🔹 MINI STATS
+                    Row(
+                      children: [
+                        _miniStatCard(
+                          icon: FontAwesomeIcons.clock,
+                          value:
+                              "${(_totalTimeSeconds / 60).toStringAsFixed(1)}m",
+                          label: "Time Spent",
+                        ),
+                        _miniStatCard(
+                          icon: FontAwesomeIcons.star,
+                          value: _averageRating.toStringAsFixed(1),
+                          label: "$_totalReviews reviews",
+                        ),
+                      ],
+                    ),
+                  ]
                 ],
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  _miniStatCard(
-                    icon: FontAwesomeIcons.clock,
-                    value: "${(_totalTimeSeconds / 60).toStringAsFixed(1)}m",
-                    label: "Time Spent",
-                  ),
-                  _miniStatCard(
-                    icon: FontAwesomeIcons.star,
-                    value: _averageRating.toStringAsFixed(1),
-                    label: "$_totalReviews reviews",
-                  ),
-                ],
-              ),
-            ]
-          ],
               ),
             ),
           ],
@@ -619,6 +810,17 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    int? featureId = FeatureMapper.getFeatureId('leads_create');
+
+    bool canUse = FeatureAccessHelper.canUseFeature(
+      featureId: featureId!,
+      subscription: auth.subscriptionDetails,
+    );
+
+    debugPrint("Can use leads_create: $canUse");
+
     return Row(
       children: [
         Expanded(
@@ -686,8 +888,28 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                 elevation: 0,
               ),
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => const LeadScanner2()));
+                // Navigator.of(context).push(MaterialPageRoute(
+                //     builder: (context) => const LeadScanner2()));
+
+                if (canUse) {
+                  // ✅ allowed → Lead Scanner
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const LeadScanner2(),
+                    ),
+                  );
+                } else {
+                  // ❌ limit reached → Subscription Plan page
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const SubscriptionPlans(),
+                    ),
+                  );
+
+                  // (optional alert)
+                  TopAlert.show(context, 'Limit reached, upgrade plan 🚀',
+                      isError: true);
+                }
               },
               child: const Icon(FontAwesomeIcons.camera, size: 24),
             ),
@@ -937,17 +1159,6 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     );
   }
 
-  // Future<void> _handleRefresh() async {
-  //   if (!mounted) return;
-  //   context.read<SocialProvider>().fetchPosts('All');
-  //   await Future.wait([
-  //     _fetchLatest5Posts(),
-  //     _fetchUserAnalytics(),
-  //     _fetchAverageRating(),
-  //     _fetchProfileCompletion(),
-  //   ]);
-  // }
-
   Future<void> _handleRefresh() async {
     if (!mounted) return;
     context.read<SocialProvider>().fetchPosts('All');
@@ -1068,5 +1279,3 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
         ));
   }
 }
-
-

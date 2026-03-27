@@ -1,5 +1,3 @@
-
-
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/cupertino.dart';
@@ -10,6 +8,12 @@ import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/widgets/top_alert.dart';
 import './chat_screen.dart';
+
+import '../feature_map/feature_access_helper.dart';
+import '../feature_map/feature_mapper.dart';
+import '../home/SubscriptionPlans.dart';
+import 'package:gridcard/core/services/auth_provider.dart';
+import 'package:provider/provider.dart';
 
 class ConnectionsPage extends StatefulWidget {
   /// 0 = Connections
@@ -123,6 +127,48 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     _acceptedScrollController.addListener(_acceptedScrollListener);
     _pendingScrollController.addListener(_pendingScrollListener);
     _sentScrollController.addListener(_sentScrollListener); // ✅
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        authProvider.refreshSubscription();
+      }
+    });
+  }
+
+  Future<bool> _viewProfileApi(int profileId) async {
+    try {
+      final headers = await _getHeaders();
+      final url = Uri.parse("$_baseUrl/view-profile");
+
+      final res = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode({
+          "profile_id": profileId,
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+
+      debugPrint("🟢 VIEW PROFILE API: ${res.statusCode} => $data");
+
+      if (res.statusCode == 200 && data["message"] == "same") {
+        return true;
+      }
+
+      if (res.statusCode == 200 && data["message"] == "not match") {
+        return true;
+      }
+
+      if (res.statusCode == 403) {
+        return false;
+      }
+
+      return false;
+    } catch (e) {
+      debugPrint("🔴 ERROR viewProfile API: $e");
+      return false;
+    }
   }
 
   Future<int?> _createChatAndGetChatId(int otherUserId) async {
@@ -492,6 +538,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
   }
 
   // ================= ACCEPT / REJECT =================
+
   Future<void> updateStatus({
     required int senderId,
     required int receiverId,
@@ -522,6 +569,22 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
         fetchAcceptedFriends(reset: true);
         fetchConnections(reset: true);
+
+        // 🔄 Refresh subscription details after accepting
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await authProvider.refreshSubscription();
+
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+
+        int? featureId =
+            FeatureMapper.getFeatureId('connection_request_accept');
+
+        bool canUse = FeatureAccessHelper.canUseFeature(
+          featureId: featureId!,
+          subscription: auth.subscriptionDetails,
+        );
+
+        debugPrint("after api call  connection_request_accept: $canUse");
       } else {
         TopAlert.show(context, json['message'] ?? "Failed", isError: true);
       }
@@ -715,9 +778,11 @@ class _ConnectionsPageState extends State<ConnectionsPage>
   }
 
   // ================= ACCEPTED UI =================
+
   Widget _buildAcceptedList() {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (acceptedLoading) {
       return Center(
           child: CircularProgressIndicator(color: colorScheme.primary));
@@ -725,6 +790,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
     return Column(
       children: [
+        /// 🔍 Search + Export
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
           child: Row(
@@ -772,6 +838,8 @@ class _ConnectionsPageState extends State<ConnectionsPage>
             ],
           ),
         ),
+
+        /// 📋 List
         Expanded(
           child: acceptedFriends.isEmpty
               ? Center(
@@ -808,63 +876,112 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                           int.tryParse(item['friend_id'].toString());
                       if (friendId == null) return const SizedBox.shrink();
 
-                      return GestureDetector(
-                        onTap: () async {
-                          final session =
-                              await UserStorageService().loadSession();
-                          final viewerId = session.user?.id;
-                          if (viewerId == null) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProfilePage(
-                                userId: friendId,
-                                viewerUserId: viewerId,
-                                isConnected: true,
-                              ),
-                            ),
-                          );
-                        },
-                        child: Card(
-                          color: colorScheme.surface,
-                          elevation: 1,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color:
-                                  isDark ? Colors.white : colorScheme.primary,
-                              width: 0.2,
-                            ),
+                      /// 🔥 Updated Card
+                      return Card(
+                        color: colorScheme.surface,
+                        elevation: 2,
+                        shadowColor: isDark
+                            ? Colors.black
+                            : Colors.grey.withOpacity(0.2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                          side: BorderSide(
+                            color: colorScheme.outline.withOpacity(0.2),
+                            width: 0.5,
                           ),
-                          margin: const EdgeInsets.only(bottom: 12),
+                        ),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(14),
+
+                          /// 👉 Card click = Chat
+                          onTap: () async {
+                            final receiverId = friendId;
+
+                            showDialog(
+                              context: context,
+                              barrierDismissible: false,
+                              builder: (_) => const Center(
+                                  child: CircularProgressIndicator()),
+                            );
+
+                            final chatId =
+                                await _createChatAndGetChatId(receiverId);
+
+                            if (!mounted) return;
+                            Navigator.pop(context);
+
+                            if (chatId == null) {
+                              TopAlert.show(
+                                context,
+                                "Chat create nahi ho paya",
+                                isError: true,
+                              );
+                              return;
+                            }
+
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ChatScreen(
+                                  chatId: chatId,
+                                  receiverId: receiverId,
+                                  receiverName: item['fname'] ?? "User",
+                                ),
+                              ),
+                            );
+                          },
+
                           child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Column(
+                            padding: const EdgeInsets.all(14),
+                            child: Row(
                               children: [
-                                /// Top User Info
-                                Row(
-                                  children: [
-                                    CircleAvatar(
-                                      radius: 24,
-                                      backgroundColor:
-                                          colorScheme.surfaceVariant,
-                                      backgroundImage:
-                                          item['profile_pic'] != null
-                                              ? NetworkImage(
-                                                  "${AppConfig.apiProfileImg}/${item['profile_pic']}",
-                                                )
-                                              : null,
-                                      child: item['profile_pic'] == null
-                                          ? Icon(
-                                              Icons.person,
-                                              color: colorScheme.onSurface
-                                                  .withOpacity(0.6),
-                                            )
-                                          : null,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
+                                /// 👤 Profile Pic (click → Profile)
+                                GestureDetector(
+                                  onTap: () async {
+                                    final session = await UserStorageService()
+                                        .loadSession();
+                                    final viewerId = session.user?.id;
+                                    if (viewerId == null) return;
+
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ProfilePage(
+                                          userId: friendId,
+                                          viewerUserId: viewerId,
+                                          isConnected: true,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: CircleAvatar(
+                                    radius: 26,
+                                    backgroundColor: colorScheme.surfaceVariant,
+                                    backgroundImage: item['profile_pic'] != null
+                                        ? NetworkImage(
+                                            "${AppConfig.apiProfileImg}/${item['profile_pic']}",
+                                          )
+                                        : null,
+                                    child: item['profile_pic'] == null
+                                        ? Icon(
+                                            Icons.person,
+                                            color: colorScheme.onSurface
+                                                .withOpacity(0.6),
+                                          )
+                                        : null,
+                                  ),
+                                ),
+
+                                const SizedBox(width: 12),
+
+                                /// 🧑 Name
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
                                         item['fname'] ?? 'User',
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -874,145 +991,79 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                           color: colorScheme.onSurface,
                                         ),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        "Tap to chat",
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          color: colorScheme.onSurface
+                                              .withOpacity(0.6),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
 
-                                const SizedBox(height: 12),
+                                /// ⋮ Menu
+                                PopupMenuButton<String>(
+                                  icon: Icon(
+                                    Icons.more_vert,
+                                    color:
+                                        colorScheme.onSurface.withOpacity(0.6),
+                                  ),
+                                  onSelected: (value) async {
+                                    if (value == 'view') {
+                                      final session = await UserStorageService()
+                                          .loadSession();
+                                      final viewerId = session.user?.id;
+                                      if (!mounted) return;
 
-                                /// Bottom Buttons
-                                Row(
-                                  children: [
-                                    /// Chat Button
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        icon: const Icon(Icons.chat_bubble_outline,
-                                            size: 18),
-                                        label: const Text("Chat"),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: colorScheme.primary,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ProfilePage(
+                                            userId: friendId,
+                                            viewerUserId: viewerId,
+                                            isConnected: true,
                                           ),
                                         ),
-                                        onPressed: () async {
-                                          debugPrint(
-                                              "✅ Accepted Friend Item: ${jsonEncode(item)}");
+                                      );
+                                    } else if (value == 'delete') {
+                                      final session = await UserStorageService()
+                                          .loadSession();
+                                      final viewerId = session.user?.id;
+                                      if (viewerId == null) return;
 
-                                          final receiverId = int.tryParse(
-                                              item['friend_id'].toString());
-
-                                          if (receiverId == null) {
-                                            debugPrint("❌ friend_id missing");
-                                            return;
-                                          }
-
-                                          showDialog(
-                                            context: context,
-                                            barrierDismissible: false,
-                                            builder: (_) => const Center(
-                                                child:
-                                                    CircularProgressIndicator()),
-                                          );
-
-                                          final chatId =
-                                              await _createChatAndGetChatId(
-                                                  receiverId);
-
-                                          if (!mounted) return;
-                                          Navigator.pop(context);
-
-                                          if (chatId == null) {
-                                            TopAlert.show(
-                                              context,
-                                              "Chat create nahi ho paya",
-                                              isError: true,
-                                            );
-                                            return;
-                                          }
-
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => ChatScreen(
-                                                chatId: chatId,
-                                                receiverId: receiverId,
-                                                receiverName: item['fname'] ?? "User",
-                                              ),
-                                            ),
-                                          );
-                                        },
+                                      await deleteConnectionRequest(
+                                        senderId: viewerId,
+                                        receiverId: friendId,
+                                        status: 2,
+                                        fromTab: "accepted",
+                                        index: index,
+                                      );
+                                    }
+                                  },
+                                  itemBuilder: (context) => const [
+                                    PopupMenuItem(
+                                      value: 'view',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.visibility),
+                                          SizedBox(width: 8),
+                                          Text('View'),
+                                        ],
                                       ),
                                     ),
-                                    PopupMenuButton<String>(
-                                      icon: Icon(Icons.more_vert,
-                                          color: colorScheme.onSurface
-                                              .withOpacity(0.6)),
-                                      onSelected: (value) async {
-                                        if (value == 'view') {
-                                          final session =
-                                              await UserStorageService()
-                                                  .loadSession();
-                                          final viewerId = session.user?.id;
-                                          if (!mounted) return;
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => ProfilePage(
-                                                userId: int.tryParse(
-                                                    item['friend_id']
-                                                        .toString()),
-                                                viewerUserId: viewerId,
-                                                isConnected: true,
-                                              ),
-                                            ),
-                                          );
-                                        } else if (value == 'delete') {
-                                          final session =
-                                              await UserStorageService()
-                                                  .loadSession();
-                                          final viewerId = session.user?.id;
-                                          if (viewerId == null) return;
-
-                                          final friendId = int.tryParse(
-                                              item['friend_id'].toString());
-                                          if (friendId == null) return;
-
-                                          // status 2 means they are already connected
-                                          await deleteConnectionRequest(
-                                            senderId: viewerId,
-                                            receiverId: friendId,
-                                            status: 2,
-                                            fromTab: "accepted",
-                                            index: index,
-                                          );
-                                        }
-                                      },
-                                      itemBuilder: (context) => const [
-                                        PopupMenuItem(
-                                          value: 'view',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.visibility),
-                                              SizedBox(width: 8),
-                                              Text('View'),
-                                            ],
-                                          ),
-                                        ),
-                                        PopupMenuItem(
-                                          value: 'delete',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.delete,
-                                                  color: Colors.redAccent),
-                                              SizedBox(width: 8),
-                                              Text('Delete'),
-                                            ],
-                                          ),
-                                        ),
-                                      ],
+                                    PopupMenuItem(
+                                      value: 'delete',
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.delete,
+                                              color: Colors.redAccent),
+                                          SizedBox(width: 8),
+                                          Text('Delete'),
+                                        ],
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -1037,6 +1088,17 @@ class _ConnectionsPageState extends State<ConnectionsPage>
       return Center(
           child: CircularProgressIndicator(color: colorScheme.primary));
     }
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    int? featureId = FeatureMapper.getFeatureId('connection_request_accept');
+
+    bool canUse = FeatureAccessHelper.canUseFeature(
+      featureId: featureId!,
+      subscription: auth.subscriptionDetails,
+    );
+
+    debugPrint("Can use connection_request_accept: $canUse");
 
     return Column(
       children: [
@@ -1128,16 +1190,28 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                               await UserStorageService().loadSession();
                           final viewerId = session.user?.id;
                           if (viewerId == null || senderId == null) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProfilePage(
-                                userId: senderId,
-                                viewerUserId: viewerId,
-                                fromConnectionTab: 'pending',
+
+                          bool canView = await _viewProfileApi(senderId);
+
+                          if (canView) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ProfilePage(
+                                  userId: senderId,
+                                  viewerUserId: viewerId,
+                                  fromConnectionTab: 'pending',
+                                ),
                               ),
-                            ),
-                          );
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SubscriptionPlans(),
+                              ),
+                            );
+                          }
                         },
                         child: Card(
                           color: colorScheme.surface,
@@ -1205,14 +1279,6 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
                                 const SizedBox(height: 12),
 
-                                // Divider(
-                                //   height: 1,
-                                //   color: colorScheme.outline.withOpacity(0.2),
-                                // ),
-
-                                // const SizedBox(height: 12),
-
-                                /// Bottom Buttons
                                 Row(
                                   children: [
                                     /// Accept
@@ -1236,18 +1302,30 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
                                           if (senderId == null ||
                                               receiverId == null) return;
-                                          // updateStatus(
-                                          //   senderId: item['sender_id'],
-                                          //   receiverId: session.user!.id!,
-                                          //   status: 2,
-                                          //   index: index,
-                                          // );
-                                          updateStatus(
-                                            senderId: senderId,
-                                            receiverId: receiverId,
-                                            status: 2,
-                                            index: index,
-                                          );
+
+                                          if (canUse == true) {
+                                            // ✅ Allowed → API call
+                                            updateStatus(
+                                              senderId: senderId,
+                                              receiverId: receiverId,
+                                              status: 2,
+                                              index: index,
+                                            );
+                                          } else {
+                                            // ❌ Limit reached → Subscription page
+                                            Navigator.of(context).push(
+                                              MaterialPageRoute(
+                                                builder: (context) =>
+                                                    const SubscriptionPlans(),
+                                              ),
+                                            );
+
+                                            TopAlert.show(
+                                              context,
+                                              'Limit reached, upgrade plan 🚀',
+                                              isError: true,
+                                            );
+                                          }
                                         },
                                         child: const Text("Accept"),
                                       ),
@@ -1415,34 +1493,50 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                           final profileUserId =
                               int.tryParse(item['receiver_id'].toString());
                           if (viewerId == null || profileUserId == null) return;
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProfilePage(
-                                userId: profileUserId,
-                                viewerUserId: viewerId,
-                                fromConnectionTab: 'sent',
+
+                          bool canView = await _viewProfileApi(profileUserId);
+
+                          if (canView) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => ProfilePage(
+                                  userId: profileUserId,
+                                  viewerUserId: viewerId,
+                                  fromConnectionTab: 'sent',
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          } else {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SubscriptionPlans(),
+                              ),
+                            );
+                          }
+                        },                        
+
                         child: Card(
                           color: colorScheme.surface,
-                          elevation: 1,
+                          elevation: 2,
+                          shadowColor: isDark
+                              ? Colors.black
+                              : Colors.grey.withOpacity(0.2),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(14),
                             side: BorderSide(
-                              color:
-                                  isDark ? Colors.white : colorScheme.primary,
-                              width: 0.2,
+                              color: colorScheme.outline.withOpacity(0.2),
+                              width: 0.6,
                             ),
                           ),
-                          margin: const EdgeInsets.only(bottom: 12),
+                          margin: const EdgeInsets.only(bottom: 14),
                           child: Padding(
-                            padding: const EdgeInsets.all(12),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 14, vertical: 12),
                             child: Column(
                               children: [
-                                /// Top User Info
+                                /// 👤 USER INFO
                                 Row(
                                   children: [
                                     CircleAvatar(
@@ -1458,12 +1552,16 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                       child: item['profile_pic'] == null
                                           ? Icon(
                                               Icons.person,
+                                              size: 26,
                                               color: colorScheme.onSurface
                                                   .withOpacity(0.6),
                                             )
                                           : null,
                                     ),
-                                    const SizedBox(width: 12),
+
+                                    const SizedBox(width: 14),
+
+                                    /// Name + Username
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
@@ -1471,21 +1569,26 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                         children: [
                                           Text(
                                             fname,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                             style: TextStyle(
                                               fontSize: 16,
                                               fontWeight: FontWeight.w600,
                                               color: colorScheme.onSurface,
                                             ),
                                           ),
-                                          // const SizedBox(height: 2),
-                                          // Text(
-                                          //   userName,
-                                          //   style: TextStyle(
-                                          //     fontSize: 13,
-                                          //     color: colorScheme.onSurface
-                                          //         .withOpacity(0.6),
-                                          //   ),
-                                          // ),
+                                          const SizedBox(height: 4),
+                                          if (userName.isNotEmpty)
+                                            Text(
+                                              userName,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: colorScheme.onSurface
+                                                    .withOpacity(0.6),
+                                              ),
+                                            ),
                                         ],
                                       ),
                                     ),
@@ -1494,63 +1597,32 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
                                 const SizedBox(height: 12),
 
-                                // Divider(
-                                //   color: colorScheme.outline.withOpacity(0.2),
-                                // ),
+                                /// Divider (subtle)
+                                Divider(
+                                  height: 1,
+                                  color: colorScheme.outline.withOpacity(0.15),
+                                ),
 
-                                                  /// Bottom Buttons
+                                const SizedBox(height: 10),
+
+                                /// 🔘 ACTION BUTTON
                                 Row(
                                   children: [
-                                    /// View Button
                                     Expanded(
-                                      child: ElevatedButton(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: colorScheme.primary,
-                                          foregroundColor: Colors.white,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(8),
-                                          ),
-                                        ),
-                                        onPressed: () async {
-                                          final session =
-                                              await UserStorageService()
-                                                  .loadSession();
-                                          final senderId = session.user?.id;
-                                          if (senderId == null) return;
-
-                                          final receiverId =
-                                              int.tryParse(item['receiver_id'].toString());
-                                          if (receiverId == null) return;
-
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => ProfilePage(
-                                                userId: receiverId,
-                                                viewerUserId: senderId,
-                                                fromConnectionTab: 'sent',
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        child: const Text("View"),
-                                      ),
-                                    ),
-
-                                    const SizedBox(width: 10),
-
-                                    /// Remove Button
-                                    Expanded(
-                                      child: OutlinedButton(
+                                      child: OutlinedButton.icon(
+                                        icon: const Icon(
+                                            Icons.person_remove_alt_1,
+                                            size: 18),
                                         style: OutlinedButton.styleFrom(
                                           side: BorderSide(
                                             color: colorScheme.outline,
-                                            width: 0.2,
+                                            width: 0.5,
                                           ),
+                                          padding: const EdgeInsets.symmetric(
+                                              vertical: 12),
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
-                                                BorderRadius.circular(8),
+                                                BorderRadius.circular(10),
                                           ),
                                         ),
                                         onPressed: () async {
@@ -1576,7 +1648,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                             index: index,
                                           );
                                         },
-                                        child: const Text("Remove"),
+                                        label: const Text("Remove"),
                                       ),
                                     ),
                                   ],

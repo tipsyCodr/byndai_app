@@ -18,6 +18,7 @@ import '../qr_scan/profile_qr_code.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/nfc_service.dart';
 
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -35,6 +36,9 @@ class _HomePageState extends State<HomePage> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeNfc();
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+
+      debugPrint("📦 Subscription in HomePage: ${auth.subscriptionDetails}");
     });
   }
 
@@ -187,7 +191,7 @@ class _HomePageState extends State<HomePage> {
               ),
               icon: Icon(
                 FontAwesomeIcons.qrcode,
-                color: isDark ? palette?.neonAccent : colorScheme.primary,
+                color: isDark ? colorScheme.primary : colorScheme.primary,
               ),
               onPressed: () {
                 Navigator.of(context).push(
@@ -200,7 +204,7 @@ class _HomePageState extends State<HomePage> {
             IconButton(
               icon: Icon(
                 FontAwesomeIcons.commentDots,
-                color: isDark ? colorScheme.onSurface : colorScheme.primary,
+                color: isDark ? colorScheme.primary : colorScheme.primary,
               ),
               onPressed: () {
                 Navigator.of(context).push(

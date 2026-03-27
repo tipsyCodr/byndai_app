@@ -183,6 +183,33 @@ class AuthService {
     return false; // ❌ already exists
   }
 
+  static Future<Map<String, dynamic>?> getSubscriptionDetails() async {
+    final token = await UserStorageService().getToken();
+    if (token == null) return null;
+
+    final url = Uri.parse('$_baseUrl/user/subscription');
+
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      final json = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && json['status'] == true) {
+        return json['data'];
+      }
+    } catch (e) {
+      debugPrint("Subscription API error: $e");
+    }
+
+    return null;
+  }
+
   static Future<LoginResponse?> registerWithToken(
       Map<String, dynamic> data) async {
     final token = data['token'];

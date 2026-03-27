@@ -13,10 +13,12 @@ import '../../models/user_model.dart';
 import 'auth_service.dart';
 import 'package:get/get.dart';
 
-
 enum GoogleSignInResult { loggedIn, needsRegistration, failed }
 
 class AuthProvider extends ChangeNotifier {
+  Map<String, dynamic>? _subscriptionDetails;
+  Map<String, dynamic>? get subscriptionDetails => _subscriptionDetails;
+
   UserModel? _user;
   bool _isLoading = false;
   bool _isAuthenticated = false;
@@ -49,6 +51,10 @@ class AuthProvider extends ChangeNotifier {
       final nfcService = NfcService();
       await nfcService.initialize(context: context);
     }
+  }
+
+  Future<void> refreshSubscription() async {
+    await _fetchSubscriptionDetails();
   }
 
   void updateUserFromDetails(Map<String, dynamic> userDetails) {
@@ -321,6 +327,7 @@ class AuthProvider extends ChangeNotifier {
         _isAuthenticated = true;
         debugPrint("Auth: ✅ Session restored via isValid");
         _syncFCMToken();
+        await _fetchSubscriptionDetails();
       }
       // ✅ EXTRA HARDENING fallback (THIS is the part you asked about)
       else if (session.token != null && session.user != null) {
@@ -328,6 +335,7 @@ class AuthProvider extends ChangeNotifier {
         _isAuthenticated = true;
         debugPrint("Auth: ⚠️ Session restored via fallback");
         _syncFCMToken();
+        await _fetchSubscriptionDetails(); // 👈 HERE
       }
       // ❌ No session
       else {
@@ -342,6 +350,34 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool canUseFeature(String feature) {
+    final features = _subscriptionDetails?['features'] as List?;
+
+    if (features == null) return false;
+
+    final f = features.firstWhere(
+      (e) => e['feature'] == feature,
+      orElse: () => null,
+    );
+
+    if (f == null) return false;
+
+    return (f['used'] ?? 0) < (f['limit'] ?? 0);
+  }
+
+  Future<void> _fetchSubscriptionDetails() async {
+    try {
+      final data = await AuthService.getSubscriptionDetails();
+
+      if (data != null) {
+        _subscriptionDetails = data;
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint("Subscription fetch error: $e");
+    }
+  }
+
   // --- Private Helper Methods ---
 
   Future<void> _processSuccessfulLogin(
@@ -350,6 +386,9 @@ class AuthProvider extends ChangeNotifier {
     _isAuthenticated = true;
     await _storageService.saveSession(response);
     await _clearPendingState();
+
+    await _fetchSubscriptionDetails();
+
     _syncFCMToken(); // Sync token after successful login
     // Fluttertoast.showToast(msg: message);
 

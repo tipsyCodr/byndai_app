@@ -1,4 +1,4 @@
-//===================================================================================
+
 
 import 'dart:convert';
 import 'package:flutter/material.dart';
@@ -70,33 +70,7 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  // ================= USERNAME CHECK =================
-
-  // Future<void> _checkUsername() async {
-  //   final username = _usernameController.text.trim();
-
-  //   if (username.length < 4) {
-  //     setState(() {
-  //       _isUsernameAvailable = null;
-  //       _usernameMessage = null;
-  //     });
-  //     return;
-  //   }
-
-  //   setState(() => _isCheckingUsername = true);
-
-  //   final auth = context.read<AuthProvider>();
-  //   final available = await auth.checkUsernameAvailability(username);
-
-  //   if (!mounted) return;
-
-  //   setState(() {
-  //     _isCheckingUsername = false;
-  //     _isUsernameAvailable = available;
-  //     _usernameMessage =
-  //         available ? "Username available" : "Username already exists";
-  //   });
-  // }
+  
 
   Future<void> _checkUsername() async {
     final username = _usernameController.text.trim();
@@ -236,22 +210,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
               const SizedBox(height: 20),
 
-              // Username
-              // TextFormField(
-              //   controller: _usernameController,
-              //   focusNode: _usernameFocusNode,
-              //   decoration: _inputDecoration(
-              //     "Username",
-              //     Icons.alternate_email,
-              //     borderColor:
-              //         _isUsernameAvailable == false ? Colors.red : null,
-              //   ),
-              //   validator: (v) {
-              //     if (v == null || v.isEmpty) return "Enter username";
-              //     if (v.length < 4) return "Minimum 4 characters";
-              //     return null;
-              //   },
-              // ),
+              
 
               TextFormField(
                 controller: _usernameController,
@@ -265,12 +224,7 @@ class _RegisterPageState extends State<RegisterPage> {
                   borderColor:
                       _isUsernameAvailable == false ? Colors.red : null,
                 ),
-                // validator: (v) {
-                //   if (v == null || v.isEmpty) return "Enter username";
-                //   if (v.contains(' ')) return "Space not allowed in username";
-                //   if (v.length < 4) return "Minimum 4 characters";
-                //   return null;
-                // },
+               
                 validator: (v) {
                   if (v == null || v.isEmpty) return "Enter username";
                   if (v.contains(' ')) return "Space not allowed in username";

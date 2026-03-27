@@ -815,12 +815,12 @@ class _HomePostCardState extends State<HomePostCard> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(10),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Row(
           children: [
             Icon(
               icon,
-              size: 21,
+              size: 18,
               color: active
                   ? colorScheme.primary
                   : colorScheme.onSurface.withValues(alpha: 0.6),

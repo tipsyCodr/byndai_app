@@ -148,7 +148,7 @@ class _SettingsPageState extends State<SettingsPage> {
                       MaterialPageRoute(
                         builder: (context) => ProfilePage(
                           userId: userId,
-                          viewerUserId: userId, // self view
+                          viewerUserId: userId, // self view.......
                         ),
                       ));
                 },
@@ -309,6 +309,8 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
               ),
+
+              
               const SizedBox(height: 80),
             ],
           ),
