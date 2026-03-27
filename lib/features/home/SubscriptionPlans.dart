@@ -19,16 +19,22 @@ class SubscriptionPlans extends StatefulWidget {
 }
 
 class _SubscriptionPlansState extends State<SubscriptionPlans> {
+  Future<Map<String, String>> _getHeaders() async {
+    final token = await UserStorageService().getToken();
+    return {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      if (token != null) 'Authorization': 'Bearer $token',
+    };
+  }
+
   Future<void> startPayment(BuildContext context, PlanData plan) async {
     try {
       final userId = await UserStorageService().getUserId();
 
       final response = await http.post(
         Uri.parse("${AppConfig.apiBaseUrl}/create-order"),
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
+        headers:  await _getHeaders(),
         body: jsonEncode({
           "plan_id": getPlanId(plan.name),
         }),
@@ -95,9 +101,7 @@ class _SubscriptionPlansState extends State<SubscriptionPlans> {
     try {
       final res = await http.post(
         Uri.parse("${AppConfig.apiBaseUrl}/verify-payment"),
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: await _getHeaders(),
         body: jsonEncode({
           "transaction_id": transactionId,
           "razorpay_order_id": response.orderId,
