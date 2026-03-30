@@ -47,6 +47,18 @@ class _QRScannerPageState extends State<QRScannerPage> {
     }
   }
 
+  void _showMessageAndGoBack(String message, {bool isSuccess = false}) {
+    // Snackbar show
+    TopAlert.show(context, message, isSuccess: isSuccess);
+
+    // 1 sec baad auto back
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        Navigator.pop(context); // 🔥 QR Scanner close
+      }
+    });
+  }
+
   Future<void> _pickAndScanImage() async {
     setState(() => _isLoading = true);
 
@@ -461,21 +473,36 @@ class _QRScannerPageState extends State<QRScannerPage> {
         final scannedUserId = profileData['user_id']?.toString();
 
         // ✅ 1. SAME USER CHECK
+        // if (currentUserId == scannedUserId) {
+        //   _showErrorDialog("❌ You can't connect with yourself");
+        //   return;
+        // }
+
         if (currentUserId == scannedUserId) {
-          _showErrorDialog("❌ You can't connect with yourself");
+          _showMessageAndGoBack("❌ You can't connect with yourself");
           return;
         }
 
         // ✅ 2. CONNECTION STATUS CHECK (Backend se aana chahiye)
         final connectionStatus = profileData['connection_status'];
 
+        // if (connectionStatus == 'connected') {
+        //   _showErrorDialog("✅ Already connected");
+        //   return;
+        // }
+
         if (connectionStatus == 'connected') {
-          _showErrorDialog("✅ Already connected");
+          _showMessageAndGoBack("✅ Already connected", isSuccess: true);
           return;
         }
 
+        // if (connectionStatus == 'pending') {
+        //   _showErrorDialog("⏳ Request already sent");
+        //   return;
+        // }
+
         if (connectionStatus == 'pending') {
-          _showErrorDialog("⏳ Request already sent");
+          _showMessageAndGoBack("⏳ Request already sent");
           return;
         }
 
