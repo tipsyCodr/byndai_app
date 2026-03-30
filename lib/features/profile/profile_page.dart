@@ -2025,7 +2025,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         /// BACK BUTTON
 
                         Positioned(
-                          // top: MediaQuery.of(context).padding.top + 12,
+                          top: MediaQuery.of(context).padding.top + 20,
                           // left: 12,
                           child: GestureDetector(
                             onTap: () => Navigator.pop(context),
@@ -2045,6 +2045,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
                         if (!isViewerMode)
                           Positioned(
+                            top: MediaQuery.of(context).padding.top + 20,
                             right: 12,
                             child: GestureDetector(
                               onTap: () async {

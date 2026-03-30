@@ -359,6 +359,88 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
     // 🔹 ONLINE QR → API CALL
 
+    // if (type == 'gridcard_connect' && data['user_name'] != null) {
+    //   final userName = data['user_name'].toString();
+
+    //   final profileProvider =
+    //       Provider.of<ProfileProvider>(context, listen: false);
+
+    //   final success =
+    //       await profileProvider.fetchUserProfileByUsername(userName);
+
+    //   if (!mounted) return;
+
+    //   // if (success && profileProvider.profileData != null) {
+    //   //   _showProfileCardDialog(profileProvider.profileData!);
+    //   // } else {
+    //   //   _showErrorDialog('Profile not found');
+    //   // }
+
+    //   if (type == 'gridcard_connect' && data['user_name'] != null) {
+    //     final userName = data['user_name'].toString();
+
+    //     final profileProvider =
+    //         Provider.of<ProfileProvider>(context, listen: false);
+
+    //     final success =
+    //         await profileProvider.fetchUserProfileByUsername(userName);
+
+    //     if (!mounted) return;
+
+    //     if (success && profileProvider.profileData != null) {
+    //       final profileData = profileProvider.profileData!;
+
+    //       final profilePic = profileData['profile_pic'] ?? '';
+    //       final profileLogo = profileData['profile_logo'] ?? '';
+
+    //       final legalName =
+    //           profileData['user']?['business_info']?['legal_name'] ?? '';
+
+    //       final industryTitle = profileData['user']?['business_info']
+    //               ?['industry']?['title'] ??
+    //           '';
+    //       final authUser =
+    //           Provider.of<AuthProvider>(context, listen: false).user;
+
+    //       final result = await Navigator.push(
+    //         context,
+    //         MaterialPageRoute(
+    //           builder: (_) => QRScanViewProfile(
+    //             receiverId: profileData['user_id']?.toString() ?? '',
+    //             name: profileData['fname'] ?? 'N/A',
+    //             mobile: profileData['mobile_one'] ??
+    //                 profileData['user']?['user_mobile'] ??
+    //                 'N/A',
+    //             email: profileData['email_one'] ??
+    //                 profileData['user']?['email'] ??
+    //                 'N/A',
+    //             senderId: authUser?.id?.toString() ?? '',
+    //             senderName: authUser?.masterUser?.fname ?? '',
+    //             profilePic: profilePic,
+    //             profileLogo: profileLogo,
+    //             legalName: legalName,
+    //             industryTitle: industryTitle,
+    //           ),
+    //         ),
+    //       );
+
+    //       if (result == true && mounted) {
+    //         TopAlert.show(context, '✅ Connection request sent successfully',
+    //             isSuccess: true);
+
+    //              // 🔥 Scanner page automatically close
+    //         Navigator.pop(context);
+    //       }
+    //     } else {
+    //       _showErrorDialog('Profile not found');
+    //     }
+
+    //     return;
+    //   }
+
+    //   return;
+    // }
+
     if (type == 'gridcard_connect' && data['user_name'] != null) {
       final userName = data['user_name'].toString();
 
@@ -370,73 +452,67 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
       if (!mounted) return;
 
-      // if (success && profileProvider.profileData != null) {
-      //   _showProfileCardDialog(profileProvider.profileData!);
-      // } else {
-      //   _showErrorDialog('Profile not found');
-      // }
+      if (success && profileProvider.profileData != null) {
+        final profileData = profileProvider.profileData!;
 
-      if (type == 'gridcard_connect' && data['user_name'] != null) {
-        final userName = data['user_name'].toString();
+        final authUser = Provider.of<AuthProvider>(context, listen: false).user;
 
-        final profileProvider =
-            Provider.of<ProfileProvider>(context, listen: false);
+        final currentUserId = authUser?.id?.toString();
+        final scannedUserId = profileData['user_id']?.toString();
 
-        final success =
-            await profileProvider.fetchUserProfileByUsername(userName);
-
-        if (!mounted) return;
-
-        if (success && profileProvider.profileData != null) {
-          final profileData = profileProvider.profileData!;
-
-          final profilePic = profileData['profile_pic'] ?? '';
-          final profileLogo = profileData['profile_logo'] ?? '';
-
-          final legalName =
-              profileData['user']?['business_info']?['legal_name'] ?? '';
-
-          final industryTitle = profileData['user']?['business_info']
-                  ?['industry']?['title'] ??
-              '';
-          final authUser =
-              Provider.of<AuthProvider>(context, listen: false).user;
-
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => QRScanViewProfile(
-                receiverId: profileData['user_id']?.toString() ?? '',
-                name: profileData['fname'] ?? 'N/A',
-                mobile: profileData['mobile_one'] ??
-                    profileData['user']?['user_mobile'] ??
-                    'N/A',
-                email: profileData['email_one'] ??
-                    profileData['user']?['email'] ??
-                    'N/A',
-                senderId: authUser?.id?.toString() ?? '',
-                senderName: authUser?.masterUser?.fname ?? '',
-                profilePic: profilePic,
-                profileLogo: profileLogo,
-                legalName: legalName,
-                industryTitle: industryTitle,
-              ),
-            ),
-          );
-
-         
-          if (result == true && mounted) {
-            TopAlert.show(context, '✅ Connection request sent successfully',
-                isSuccess: true);
-
-                 // 🔥 Scanner page automatically close
-            Navigator.pop(context);
-          }
-        } else {
-          _showErrorDialog('Profile not found');
+        // ✅ 1. SAME USER CHECK
+        if (currentUserId == scannedUserId) {
+          _showErrorDialog("❌ You can't connect with yourself");
+          return;
         }
 
-        return;
+        // ✅ 2. CONNECTION STATUS CHECK (Backend se aana chahiye)
+        final connectionStatus = profileData['connection_status'];
+
+        if (connectionStatus == 'connected') {
+          _showErrorDialog("✅ Already connected");
+          return;
+        }
+
+        if (connectionStatus == 'pending') {
+          _showErrorDialog("⏳ Request already sent");
+          return;
+        }
+
+        // ✅ 3. OPEN PROFILE SCREEN (sab sahi hai)
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => QRScanViewProfile(
+              receiverId: profileData['user_id']?.toString() ?? '',
+              name: profileData['fname'] ?? 'N/A',
+              mobile: profileData['mobile_one'] ??
+                  profileData['user']?['user_mobile'] ??
+                  'N/A',
+              email: profileData['email_one'] ??
+                  profileData['user']?['email'] ??
+                  'N/A',
+              senderId: authUser?.id?.toString() ?? '',
+              senderName: authUser?.masterUser?.fname ?? '',
+              profilePic: profileData['profile_pic'] ?? '',
+              profileLogo: profileData['profile_logo'] ?? '',
+              legalName:
+                  profileData['user']?['business_info']?['legal_name'] ?? '',
+              industryTitle: profileData['user']?['business_info']?['industry']
+                      ?['title'] ??
+                  '',
+            ),
+          ),
+        );
+
+        if (result == true && mounted) {
+          TopAlert.show(context, '✅ Connection request sent successfully',
+              isSuccess: true);
+
+          Navigator.pop(context);
+        }
+      } else {
+        _showErrorDialog('Profile not found');
       }
 
       return;
