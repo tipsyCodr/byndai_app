@@ -791,48 +791,133 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     return Column(
       children: [
         /// 🔍 Search + Export
+        // Padding(
+        //   padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+        //   child: Row(
+        //     children: [
+        //       Expanded(
+        //         child: Container(
+        //           height: 44,
+        //           decoration: BoxDecoration(
+        //             color: colorScheme.surfaceVariant,
+        //             borderRadius: BorderRadius.circular(12),
+        //             border:
+        //                 Border.all(color: colorScheme.primary.withOpacity(0.2)),
+        //           ),
+        //           child: TextField(
+        //             controller: _searchController,
+        //             onChanged: _onSearchChanged,
+        //             style: TextStyle(color: colorScheme.onSurface),
+        //             decoration: InputDecoration(
+        //               hintText: "Search connections...",
+        //               hintStyle: TextStyle(
+        //                   color: colorScheme.onSurface.withOpacity(0.6)),
+        //               prefixIcon: Icon(Icons.search,
+        //                   color: colorScheme.onSurface.withOpacity(0.6)),
+        //               border: InputBorder.none,
+        //               contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        //             ),
+        //           ),
+        //         ),
+        //       ),
+        //       const SizedBox(width: 10),
+        //       Container(
+        //         height: 44,
+        //         width: 44,
+        //         decoration: BoxDecoration(
+        //           color: colorScheme.surfaceVariant,
+        //           borderRadius: BorderRadius.circular(12),
+        //           border:
+        //               Border.all(color: colorScheme.primary.withOpacity(0.2)),
+        //         ),
+        //         child: IconButton(
+        //           onPressed: _onExportClick,
+        //           icon: Icon(Icons.download, color: colorScheme.onSurface),
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
           child: Row(
             children: [
               Expanded(
-                child: Container(
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                    border:
-                        Border.all(color: colorScheme.primary.withOpacity(0.2)),
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: _onSearchChanged,
-                    style: TextStyle(color: colorScheme.onSurface),
-                    decoration: InputDecoration(
-                      hintText: "Search connections...",
-                      hintStyle: TextStyle(
-                          color: colorScheme.onSurface.withOpacity(0.6)),
-                      prefixIcon: Icon(Icons.search,
-                          color: colorScheme.onSurface.withOpacity(0.6)),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    hintText: "Search connections...",
+                    hintStyle: TextStyle(
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                    ),
+                    filled: true,
+                    fillColor: colorScheme.surface, // ✅ same as business feed
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                    ),
+
+                    // ✅ clear button add (business feed jaisa)
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(
+                              Icons.close,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            onPressed: () {
+                              _searchController.clear();
+                              _onSearchChanged(""); // function same rahega
+                            },
+                          )
+                        : null,
+
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+
+                    // ✅ border same business feed
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: colorScheme.primary,
+                        width: 0.2,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: colorScheme.primary,
+                        width: 0.8,
+                      ),
                     ),
                   ),
                 ),
               ),
+
               const SizedBox(width: 10),
+
+              // ✅ Export Button (thoda modern look)
               Container(
-                height: 44,
-                width: 44,
+                height: 48,
+                width: 48,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: colorScheme.primary.withOpacity(0.2)),
+                  border: Border.all(
+                    color: colorScheme.primary,
+                    width: 0.2,
+                  ),
                 ),
                 child: IconButton(
                   onPressed: _onExportClick,
-                  icon: Icon(Icons.download, color: colorScheme.onSurface),
+                  icon: Icon(
+                    Icons.download,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ),
             ],
@@ -1102,53 +1187,142 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
     return Column(
       children: [
+        // Padding(
+        //   padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+        //   child: Row(
+        //     children: [
+        //       Expanded(
+        //         child: Container(
+        //           height: 44,
+        //           decoration: BoxDecoration(
+        //             color: colorScheme.surfaceVariant,
+        //             borderRadius: BorderRadius.circular(12),
+        //             border:
+        //                 Border.all(color: colorScheme.primary.withOpacity(0.2)),
+        //           ),
+        //           child: TextField(
+        //             controller: _pendingSearchController,
+        //             onChanged: _onPendingSearchChanged,
+        //             style: TextStyle(color: colorScheme.onSurface),
+        //             decoration: InputDecoration(
+        //               hintText: "Search pending...",
+        //               hintStyle: TextStyle(
+        //                   color: colorScheme.onSurface.withOpacity(0.6)),
+        //               prefixIcon: Icon(Icons.search,
+        //                   color: colorScheme.onSurface.withOpacity(0.6)),
+        //               border: InputBorder.none,
+        //               contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        //             ),
+        //           ),
+        //         ),
+        //       ),
+        //       const SizedBox(width: 10),
+        //       Container(
+        //         height: 44,
+        //         width: 44,
+        //         decoration: BoxDecoration(
+        //           color: colorScheme.surfaceVariant,
+        //           borderRadius: BorderRadius.circular(12),
+        //           border:
+        //               Border.all(color: colorScheme.primary.withOpacity(0.2)),
+        //         ),
+        //         child: IconButton(
+        //           onPressed: _onPendingExportClick,
+        //           icon: Icon(Icons.download, color: colorScheme.onSurface),
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
           child: Row(
             children: [
               Expanded(
-                child: Container(
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                    border:
-                        Border.all(color: colorScheme.primary.withOpacity(0.2)),
-                  ),
-                  child: TextField(
-                    controller: _pendingSearchController,
-                    onChanged: _onPendingSearchChanged,
-                    style: TextStyle(color: colorScheme.onSurface),
-                    decoration: InputDecoration(
-                      hintText: "Search pending...",
-                      hintStyle: TextStyle(
-                          color: colorScheme.onSurface.withOpacity(0.6)),
-                      prefixIcon: Icon(Icons.search,
-                          color: colorScheme.onSurface.withOpacity(0.6)),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                child: TextField(
+                  controller: _pendingSearchController,
+                  onChanged: _onPendingSearchChanged,
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    hintText: "Search pending...",
+                    hintStyle: TextStyle(
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                    ),
+
+                    // ✅ same business feed style
+                    filled: true,
+                    fillColor: colorScheme.surface,
+
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                    ),
+
+                    // ✅ clear button
+                    suffixIcon: _pendingSearchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(
+                              Icons.close,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            onPressed: () {
+                              _pendingSearchController.clear();
+                              _onPendingSearchChanged(""); // function same
+                            },
+                          )
+                        : null,
+
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+
+                    // ✅ borders same as business feed
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: colorScheme.primary,
+                        width: 0.2,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: colorScheme.primary,
+                        width: 0.8,
+                      ),
                     ),
                   ),
                 ),
               ),
+
               const SizedBox(width: 10),
+
+              // ✅ Export button styled same
               Container(
-                height: 44,
-                width: 44,
+                height: 48,
+                width: 48,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: colorScheme.primary.withOpacity(0.2)),
+                  border: Border.all(
+                    color: colorScheme.primary,
+                    width: 0.2,
+                  ),
                 ),
                 child: IconButton(
                   onPressed: _onPendingExportClick,
-                  icon: Icon(Icons.download, color: colorScheme.onSurface),
+                  icon: Icon(
+                    Icons.download,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ),
             ],
           ),
         ),
+
         Expanded(
           child: pendingConnections.isEmpty
               ? Center(
@@ -1401,48 +1575,136 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     return Column(
       children: [
         // 🔥 Search + Export
+        // Padding(
+        //   padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+        //   child: Row(
+        //     children: [
+        //       Expanded(
+        //         child: Container(
+        //           height: 44,
+        //           decoration: BoxDecoration(
+        //             color: colorScheme.surfaceVariant,
+        //             borderRadius: BorderRadius.circular(12),
+        //             border:
+        //                 Border.all(color: colorScheme.primary.withOpacity(0.2)),
+        //           ),
+        //           child: TextField(
+        //             controller: _sentSearchController,
+        //             onChanged: _onSentSearchChanged,
+        //             style: TextStyle(color: colorScheme.onSurface),
+        //             decoration: InputDecoration(
+        //               hintText: "Search sent...",
+        //               hintStyle: TextStyle(
+        //                   color: colorScheme.onSurface.withOpacity(0.6)),
+        //               prefixIcon: Icon(Icons.search,
+        //                   color: colorScheme.onSurface.withOpacity(0.6)),
+        //               border: InputBorder.none,
+        //               contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        //             ),
+        //           ),
+        //         ),
+        //       ),
+        //       const SizedBox(width: 10),
+        //       Container(
+        //         height: 44,
+        //         width: 44,
+        //         decoration: BoxDecoration(
+        //           color: colorScheme.surfaceVariant,
+        //           borderRadius: BorderRadius.circular(12),
+        //           border:
+        //               Border.all(color: colorScheme.primary.withOpacity(0.2)),
+        //         ),
+        //         child: IconButton(
+        //           onPressed: _onSentExportClick,
+        //           icon: Icon(Icons.download, color: colorScheme.onSurface),
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
+
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
           child: Row(
             children: [
               Expanded(
-                child: Container(
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceVariant,
-                    borderRadius: BorderRadius.circular(12),
-                    border:
-                        Border.all(color: colorScheme.primary.withOpacity(0.2)),
-                  ),
-                  child: TextField(
-                    controller: _sentSearchController,
-                    onChanged: _onSentSearchChanged,
-                    style: TextStyle(color: colorScheme.onSurface),
-                    decoration: InputDecoration(
-                      hintText: "Search sent...",
-                      hintStyle: TextStyle(
-                          color: colorScheme.onSurface.withOpacity(0.6)),
-                      prefixIcon: Icon(Icons.search,
-                          color: colorScheme.onSurface.withOpacity(0.6)),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                child: TextField(
+                  controller: _sentSearchController,
+                  onChanged: _onSentSearchChanged,
+                  style: TextStyle(color: colorScheme.onSurface),
+                  decoration: InputDecoration(
+                    hintText: "Search sent...",
+                    hintStyle: TextStyle(
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                    ),
+
+                    // ✅ business feed style
+                    filled: true,
+                    fillColor: colorScheme.surface,
+
+                    prefixIcon: Icon(
+                      Icons.search,
+                      color: colorScheme.onSurface.withOpacity(0.6),
+                    ),
+
+                    // ✅ clear button
+                    suffixIcon: _sentSearchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(
+                              Icons.close,
+                              color: colorScheme.onSurface.withOpacity(0.6),
+                            ),
+                            onPressed: () {
+                              _sentSearchController.clear();
+                              _onSentSearchChanged(""); // function same
+                            },
+                          )
+                        : null,
+
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
+
+                    // ✅ borders same as business feed
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: colorScheme.primary,
+                        width: 0.2,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: colorScheme.primary,
+                        width: 0.8,
+                      ),
                     ),
                   ),
                 ),
               ),
+
               const SizedBox(width: 10),
+
+              // ✅ Export button same style
               Container(
-                height: 44,
-                width: 44,
+                height: 48,
+                width: 48,
                 decoration: BoxDecoration(
-                  color: colorScheme.surfaceVariant,
+                  color: colorScheme.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border:
-                      Border.all(color: colorScheme.primary.withOpacity(0.2)),
+                  border: Border.all(
+                    color: colorScheme.primary,
+                    width: 0.2,
+                  ),
                 ),
                 child: IconButton(
                   onPressed: _onSentExportClick,
-                  icon: Icon(Icons.download, color: colorScheme.onSurface),
+                  icon: Icon(
+                    Icons.download,
+                    color: colorScheme.onSurface,
+                  ),
                 ),
               ),
             ],
@@ -1515,8 +1777,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                               ),
                             );
                           }
-                        },                        
-
+                        },
                         child: Card(
                           color: colorScheme.surface,
                           elevation: 2,

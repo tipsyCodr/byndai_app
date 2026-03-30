@@ -461,11 +461,13 @@ class _QRScannerPageState extends State<QRScannerPage> {
 
       final success =
           await profileProvider.fetchUserProfileByUsername(userName);
-
+      print("API Success Status: $success");
       if (!mounted) return;
 
       if (success && profileProvider.profileData != null) {
         final profileData = profileProvider.profileData!;
+        print("PROFILE DATA JSON:");
+        print(jsonEncode(profileData));
 
         final authUser = Provider.of<AuthProvider>(context, listen: false).user;
 
@@ -512,7 +514,9 @@ class _QRScannerPageState extends State<QRScannerPage> {
           MaterialPageRoute(
             builder: (_) => QRScanViewProfile(
               receiverId: profileData['user_id']?.toString() ?? '',
-              name: profileData['fname'] ?? 'N/A',
+              name: profileData['fname'] ??
+                  profileData['user']?['fname'] ??
+                  'N/A',
               mobile: profileData['mobile_one'] ??
                   profileData['user']?['user_mobile'] ??
                   'N/A',

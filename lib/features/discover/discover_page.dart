@@ -197,7 +197,7 @@ class _DiscoverPageState extends State<DiscoverPage> {
               children: [
                 _buildSearchBar(),
                 const SizedBox(height: 24),
-                _buildSectionHeader("Upcoming Events", () {}),
+                _buildSectionHeader("Events", () {}),
                 const SizedBox(height: 12),
                 _buildEventsCarousel(),
                 const SizedBox(height: 32),
