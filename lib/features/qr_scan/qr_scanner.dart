@@ -438,10 +438,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
                   profileData['master_user']?['fname'] ??
                   'N/A',
               mobile: profileData['mobile_one'] ??
-                  profileData['master_user']?['user_mobile'] ??
+                  profileData['master_user']?['mobile_one'] ??
                   'N/A',
               email: profileData['email_one'] ??
-                  profileData['master_user']?['email'] ??
+                  profileData['master_user']?['email_one'] ??
                   'N/A',
               senderId: authUser?.id?.toString() ?? '',
               senderName: authUser?.masterUser?.fname ?? '',
