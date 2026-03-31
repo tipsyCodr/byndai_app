@@ -698,8 +698,123 @@ class _ProfilePageState extends State<ProfilePage> {
 
   /// ================= DYNAMIC BRAND CARDS =================
 
-  Widget _buildBrandCards() {
-    final user = _userDetails;
+  // Widget _buildBrandCards() {
+  //   final user = _userDetails;
+
+  //   final business = user?['business_info'];
+  //   final master = user?['master_user'];
+  //   final subscriptions = user?['subscriptions'] ?? [];
+
+  //   /// ✅ GST
+  //   final hasGST = business?['gst_no'] != null &&
+  //       business['gst_no'].toString().trim().isNotEmpty;
+
+  //   /// ✅ JCI / BNI
+  //   final hasJCI = master?['jci_member'] == 1;
+  //   final hasBNI = master?['bni_member'] == 1;
+
+  //   /// ✅ PRO PLAN
+  //   bool hasPro = false;
+  //   for (var sub in subscriptions) {
+  //     if (sub['is_active'] == true) {
+  //       final price =
+  //           double.tryParse(sub['plan']?['price'].toString() ?? "0") ?? 0;
+  //       if (price > 0) {
+  //         hasPro = true;
+  //         break;
+  //       }
+  //     }
+  //   }
+
+  //   /// ================= BUILD CARDS =================
+  //   List<Widget> cards = [];
+
+  //   if (hasJCI) {
+  //     cards.add(
+  //       // _brandCard(
+  //       //   child: Center(
+  //       //     child: Image.asset('assets/jci.jpeg', width: 50),
+  //       //   ),
+  //       // ),
+  //       _brandCard(
+  //         label: "JCI",
+  //         child: Image.asset('assets/jci.jpeg', width: 40, height: 40),
+  //       ),
+  //     );
+  //   }
+
+  //   if (hasBNI) {
+  //     cards.add(
+  //       // _brandCard(
+  //       //   child: Align(
+  //       //     alignment: Alignment.centerLeft,
+  //       //     child: Image.asset('assets/bni.png', width: 50),
+  //       //   ),
+  //       // ),
+  //       _brandCard(
+  //         label: "BNI",
+  //         child: Image.asset('assets/bni.png', width: 40, height: 40),
+  //       ),
+  //     );
+  //   }
+
+  //   if (hasPro) {
+  //     cards.add(
+  //       // _brandCard(
+  //       //   child: Center(
+  //       //     child: Image.asset('assets/pro.png', width: 50),
+  //       //   ),
+  //       // ),
+  //       _brandCard(
+  //         label: "PRO",
+  //         color: Colors.orange,
+  //         child: Icon(Icons.workspace_premium, color: Colors.orange, size: 36),
+  //       ),
+  //     );
+  //   }
+
+  //   if (hasGST) {
+  //     cards.add(
+  //       // _brandCard(
+  //       //   child: Row(
+  //       //     mainAxisAlignment: MainAxisAlignment.center,
+  //       //     children: const [
+  //       //       Text(
+  //       //         "GST",
+  //       //         style: TextStyle(fontWeight: FontWeight.w800),
+  //       //       ),
+  //       //       SizedBox(width: 6),
+  //       //       Icon(Icons.verified, color: Colors.green, size: 18),
+  //       //     ],
+  //       //   ),
+  //       // ),
+
+  //       _brandCard(
+  //         label: "GST Verified",
+  //         color: Colors.green,
+  //         child: const Icon(Icons.verified, color: Colors.green, size: 36),
+  //       ),
+  //     );
+  //   }
+
+  //   /// ✅ Agar koi card nahi hai → hide
+  //   if (cards.isEmpty) return const SizedBox();
+
+  //   /// ================= UI =================
+  //   return SizedBox(
+  //     height: 110,
+  //     child: ListView(
+  //       scrollDirection: Axis.horizontal,
+  //       children: cards,
+  //     ),
+  //   );
+  // }
+
+
+Widget _buildBrandCards() {
+  // ... (Aapka existing data logic yahan rahega)
+
+     final user = _userDetails;
 
     final business = user?['business_info'];
     final master = user?['master_user'];
