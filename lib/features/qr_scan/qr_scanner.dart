@@ -448,10 +448,8 @@ class _QRScannerPageState extends State<QRScannerPage> {
               profilePic: profileData['profile_pic'] ?? '',
               profileLogo: profileData['profile_logo'] ?? '',
               legalName:
-                  profileData['user']?['business_info']?['legal_name'] ?? '',
-              industryTitle: profileData['user']?['business_info']?['industry']
-                      ?['title'] ??
-                  '',
+                  profileData['business_info']?['legal_name'] ?? '',
+              industryTitle: profileData['business_info']?['industry']?['title'] ?? '',
             ),
           ),
         );
