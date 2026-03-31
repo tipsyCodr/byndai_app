@@ -635,26 +635,49 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Widget _brandCard({required Widget child}) {
+  // Widget _brandCard({
+  //   required Widget child,
+  //   String? label,
+  //   Color? color,
+  // }) {
   //   final cs = Theme.of(context).colorScheme;
 
   //   return Container(
-  //     width: 110,
-  //     margin: const EdgeInsets.only(right: 12),
-  //     padding: const EdgeInsets.all(12),
+  //     width: 90, // 🔥 thoda compact
+  //     margin: const EdgeInsets.only(right: 10),
+  //     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
   //     decoration: BoxDecoration(
-  //       color: cs.surfaceContainerHighest.withOpacity(0.3),
-  //       borderRadius: BorderRadius.circular(16),
-  //       border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+  //       color: (color ?? cs.primary).withOpacity(0.08), // 🔥 badge bg
+  //       borderRadius: BorderRadius.circular(20), // 🔥 more rounded
+  //       border: Border.all(
+  //         color: (color ?? cs.primary).withOpacity(0.25),
+  //       ),
   //       boxShadow: [
   //         BoxShadow(
-  //           blurRadius: 10,
-  //           offset: const Offset(0, 6),
-  //           color: Colors.black.withOpacity(0.04),
+  //           blurRadius: 8,
+  //           offset: const Offset(0, 4),
+  //           color: Colors.black.withOpacity(0.05),
   //         ),
   //       ],
   //     ),
-  //     child: child,
+  //     child: Column(
+  //       mainAxisAlignment: MainAxisAlignment.center,
+  //       children: [
+  //         child,
+  //         if (label != null) ...[
+  //           const SizedBox(height: 6),
+  //           Text(
+  //             label,
+  //             textAlign: TextAlign.center,
+  //             style: TextStyle(
+  //               fontSize: 11,
+  //               fontWeight: FontWeight.w600,
+  //               color: color ?? cs.primary,
+  //             ),
+  //           ),
+  //         ]
+  //       ],
+  //     ),
   //   );
   // }
 
@@ -666,19 +689,19 @@ class _ProfilePageState extends State<ProfilePage> {
     final cs = Theme.of(context).colorScheme;
 
     return Container(
-      width: 90, // 🔥 thoda compact
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      width: 100, // 🔥 thoda width increase
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
       decoration: BoxDecoration(
-        color: (color ?? cs.primary).withOpacity(0.08), // 🔥 badge bg
-        borderRadius: BorderRadius.circular(20), // 🔥 more rounded
+        color: (color ?? cs.primary).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(22),
         border: Border.all(
           color: (color ?? cs.primary).withOpacity(0.25),
         ),
         boxShadow: [
           BoxShadow(
-            blurRadius: 8,
-            offset: const Offset(0, 4),
+            blurRadius: 10,
+            offset: const Offset(0, 6),
             color: Colors.black.withOpacity(0.05),
           ),
         ],
@@ -686,14 +709,20 @@ class _ProfilePageState extends State<ProfilePage> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          child,
+          /// 🔥 IMAGE / ICON (BIGGER + CENTER)
+          SizedBox(
+            height: 40,
+            width: 40,
+            child: Center(child: child),
+          ),
+
           if (label != null) ...[
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               label,
               textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: color ?? cs.primary,
               ),
@@ -746,7 +775,7 @@ class _ProfilePageState extends State<ProfilePage> {
         // ),
         _brandCard(
           label: "JCI",
-          child: Image.asset('assets/jci.jpeg', width: 36),
+          child: Image.asset('assets/jci.jpeg', width: 40, height: 40),
         ),
       );
     }
@@ -761,7 +790,7 @@ class _ProfilePageState extends State<ProfilePage> {
         // ),
         _brandCard(
           label: "BNI",
-          child: Image.asset('assets/bni.png', width: 36),
+          child: Image.asset('assets/bni.png', width: 40, height: 40),
         ),
       );
     }
@@ -776,7 +805,7 @@ class _ProfilePageState extends State<ProfilePage> {
         _brandCard(
           label: "PRO",
           color: Colors.orange,
-          child: Icon(Icons.workspace_premium, color: Colors.orange, size: 32),
+          child: Icon(Icons.workspace_premium, color: Colors.orange, size: 36),
         ),
       );
     }
@@ -798,9 +827,9 @@ class _ProfilePageState extends State<ProfilePage> {
         // ),
 
         _brandCard(
-          label: "GST",
+          label: "GST Verified",
           color: Colors.green,
-          child: const Icon(Icons.verified, color: Colors.green, size: 30),
+          child: const Icon(Icons.verified, color: Colors.green, size: 36),
         ),
       );
     }
@@ -2385,45 +2414,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
-
-                  // SizedBox(
-                  //   height: 110, // 👈 card height control
-                  //   child: ListView(
-                  //     scrollDirection: Axis.horizontal,
-                  //     children: [
-                  //       _brandCard(
-                  //         child: Center(
-                  //           child: Image.asset('assets/jci.jpeg', width: 50),
-                  //         ),
-                  //       ),
-                  //       _brandCard(
-                  //         child: Align(
-                  //           alignment: Alignment.centerLeft,
-                  //           child: Image.asset('assets/bni.png', width: 50),
-                  //         ),
-                  //       ),
-                  //       _brandCard(
-                  //         child: Center(
-                  //           child: Image.asset('assets/pro.png', width: 50),
-                  //         ),
-                  //       ),
-                  //       _brandCard(
-                  //         child: Row(
-                  //           mainAxisAlignment: MainAxisAlignment.center,
-                  //           children: const [
-                  //             Text(
-                  //               "GST",
-                  //               style: TextStyle(fontWeight: FontWeight.w800),
-                  //             ),
-                  //             SizedBox(width: 6),
-                  //             Icon(Icons.verified,
-                  //                 color: Colors.green, size: 18),
-                  //           ],
-                  //         ),
-                  //       ),
-                  //     ],
-                  //   ),
-                  // ),
 
                   const SizedBox(height: 12),
 
