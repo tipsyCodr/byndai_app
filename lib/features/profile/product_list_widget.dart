@@ -140,9 +140,10 @@ class _ProductListWidgetState extends State<ProductListWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+         Text(
           'Products & Services',
           style: TextStyle(
+            color: colorScheme.onSurface,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -227,7 +228,8 @@ class _ProductListWidgetState extends State<ProductListWidget> {
                             Expanded(
                               child: Text(
                                 productName,
-                                style: const TextStyle(
+                                style:  TextStyle(
+                                  color: colorScheme.onSurface,
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
                                 ),
