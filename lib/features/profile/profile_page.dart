@@ -635,99 +635,62 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Widget _brandCard({
-  //   required Widget child,
-  //   String? label,
-  //   Color? color,
-  // }) {
-  //   final cs = Theme.of(context).colorScheme;
-
-  //   return Container(
-  //     width: 90, // 🔥 thoda compact
-  //     margin: const EdgeInsets.only(right: 10),
-  //     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-  //     decoration: BoxDecoration(
-  //       color: (color ?? cs.primary).withOpacity(0.08), // 🔥 badge bg
-  //       borderRadius: BorderRadius.circular(20), // 🔥 more rounded
-  //       border: Border.all(
-  //         color: (color ?? cs.primary).withOpacity(0.25),
-  //       ),
-  //       boxShadow: [
-  //         BoxShadow(
-  //           blurRadius: 8,
-  //           offset: const Offset(0, 4),
-  //           color: Colors.black.withOpacity(0.05),
-  //         ),
-  //       ],
-  //     ),
-  //     child: Column(
-  //       mainAxisAlignment: MainAxisAlignment.center,
-  //       children: [
-  //         child,
-  //         if (label != null) ...[
-  //           const SizedBox(height: 6),
-  //           Text(
-  //             label,
-  //             textAlign: TextAlign.center,
-  //             style: TextStyle(
-  //               fontSize: 11,
-  //               fontWeight: FontWeight.w600,
-  //               color: color ?? cs.primary,
-  //             ),
-  //           ),
-  //         ]
-  //       ],
-  //     ),
-  //   );
-  // }
-
   Widget _brandCard({
     required Widget child,
     String? label,
+    String? subtitle,
     Color? color,
   }) {
-    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
 
     return Container(
-      width: 100, // 🔥 thoda width increase
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.only(right: 10),
       decoration: BoxDecoration(
-        color: (color ?? cs.primary).withOpacity(0.08),
-        borderRadius: BorderRadius.circular(22),
+        // Using surface default but ensuring it feels dark if possible
+        // If the theme is light, this might need adjustment, but the user asked for "dark" styling
+        // while avoiding hardcoded colors. Using surfaceContainer or similar is best.
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: (color ?? cs.primary).withOpacity(0.25),
+          color: color?.withOpacity(0.5) ?? colorScheme.outline.withOpacity(0.2),
+          width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-            color: Colors.black.withOpacity(0.05),
-          ),
-        ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          /// 🔥 IMAGE / ICON (BIGGER + CENTER)
-          SizedBox(
-            height: 40,
-            width: 40,
-            child: Center(child: child),
-          ),
+          /// ICON / IMAGE
+          child,
 
-          if (label != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: color ?? cs.primary,
-              ),
+          if (label != null && label.isNotEmpty) ...[
+            const SizedBox(width: 8),
+
+            /// TEXT
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
             ),
-          ]
+          ],
         ],
       ),
     );
@@ -766,70 +729,54 @@ class _ProfilePageState extends State<ProfilePage> {
     /// ================= BUILD CARDS =================
     List<Widget> cards = [];
 
+    /// ⭐ RATING CARD (From second image reference)
+    if (_avgRating >= 0) {
+      // Show rating card even if 0 if we want to match design consistently
+      cards.add(
+        _brandCard(
+          label: _avgRating > 0 ? _avgRating.toStringAsFixed(1) : "0.0",
+          subtitle: "$_totalReviews Reviews",
+          child: const Icon(Icons.star, color: Colors.amber, size: 24),
+        ),
+      );
+    }
+
     if (hasJCI) {
       cards.add(
-        // _brandCard(
-        //   child: Center(
-        //     child: Image.asset('assets/jci.jpeg', width: 50),
-        //   ),
-        // ),
         _brandCard(
-          label: "JCI",
-          child: Image.asset('assets/jci.jpeg', width: 40, height: 40),
+          label: "",
+          child: Image.asset('assets/jci.jpeg', height: 32),
         ),
       );
     }
 
     if (hasBNI) {
       cards.add(
-        // _brandCard(
-        //   child: Align(
-        //     alignment: Alignment.centerLeft,
-        //     child: Image.asset('assets/bni.png', width: 50),
-        //   ),
-        // ),
         _brandCard(
-          label: "BNI",
-          child: Image.asset('assets/bni.png', width: 40, height: 40),
+          label: "",
+          child: Image.asset('assets/bni.png', height: 32),
         ),
       );
     }
 
     if (hasPro) {
       cards.add(
-        // _brandCard(
-        //   child: Center(
-        //     child: Image.asset('assets/pro.png', width: 50),
-        //   ),
-        // ),
         _brandCard(
           label: "PRO",
+          subtitle: "Networker",
           color: Colors.orange,
-          child: Icon(Icons.workspace_premium, color: Colors.orange, size: 36),
+          child: const Icon(Icons.workspace_premium, color: Colors.orange, size: 26),
         ),
       );
     }
 
     if (hasGST) {
       cards.add(
-        // _brandCard(
-        //   child: Row(
-        //     mainAxisAlignment: MainAxisAlignment.center,
-        //     children: const [
-        //       Text(
-        //         "GST",
-        //         style: TextStyle(fontWeight: FontWeight.w800),
-        //       ),
-        //       SizedBox(width: 6),
-        //       Icon(Icons.verified, color: Colors.green, size: 18),
-        //     ],
-        //   ),
-        // ),
-
         _brandCard(
-          label: "GST Verified",
-          color: Colors.green,
-          child: const Icon(Icons.verified, color: Colors.green, size: 36),
+          label: "GST",
+          subtitle: "Verified business",
+          color: Colors.blueAccent,
+          child: const Icon(Icons.verified, color: Colors.blueAccent, size: 26),
         ),
       );
     }
@@ -839,9 +786,10 @@ class _ProfilePageState extends State<ProfilePage> {
 
     /// ================= UI =================
     return SizedBox(
-      height: 110,
+      height: 65, // Compact height matching reference
       child: ListView(
         scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         children: cards,
       ),
     );
