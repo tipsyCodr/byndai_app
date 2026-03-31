@@ -435,13 +435,13 @@ class _QRScannerPageState extends State<QRScannerPage> {
             builder: (_) => QRScanViewProfile(
               receiverId: profileData['user_id']?.toString() ?? '',
               name: profileData['fname'] ??
-                  profileData['user']?['fname'] ??
+                  profileData['master_user']?['fname'] ??
                   'N/A',
               mobile: profileData['mobile_one'] ??
-                  profileData['user']?['user_mobile'] ??
+                  profileData['master_user']?['user_mobile'] ??
                   'N/A',
               email: profileData['email_one'] ??
-                  profileData['user']?['email'] ??
+                  profileData['master_user']?['email'] ??
                   'N/A',
               senderId: authUser?.id?.toString() ?? '',
               senderName: authUser?.masterUser?.fname ?? '',
