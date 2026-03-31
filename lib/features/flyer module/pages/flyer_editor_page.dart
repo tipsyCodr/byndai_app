@@ -425,8 +425,6 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
     );
   }
 
-  
-
   Widget _buildDraggableOverlay({
     required _OverlayItem item,
     required Widget child,
@@ -775,15 +773,19 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
             borderRadius: BorderRadius.circular(_qrBorderRadius),
             boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10)]),
         child: Padding(
-            padding: EdgeInsets.all(size * 0.08),
+            padding: const EdgeInsets.all(3),
             child: Column(children: [
               Expanded(
-                  child: QrImageView(data: data, version: QrVersions.auto)),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: size * 0.08,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black))
+                  child: QrImageView(
+                data: data,
+                version: QrVersions.auto,
+                padding: EdgeInsets.zero,
+              )),
+              // Text(label,
+              //     style: TextStyle(
+              //         fontSize: size * 0.08,
+              //         fontWeight: FontWeight.bold,
+              //         color: Colors.black))
             ])));
   }
 
