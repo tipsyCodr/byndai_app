@@ -635,6 +635,124 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+ Widget _brandCard({required Widget child}) {
+  final cs = Theme.of(context).colorScheme;
+
+  return Container(
+    width: 110,
+    margin: const EdgeInsets.only(right: 12),
+    padding: const EdgeInsets.all(12),
+    decoration: BoxDecoration(
+      color: cs.surfaceContainerHighest.withOpacity(0.3),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
+      boxShadow: [
+        BoxShadow(
+          blurRadius: 10,
+          offset: const Offset(0, 6),
+          color: Colors.black.withOpacity(0.04),
+        ),
+      ],
+    ),
+    child: child,
+  );
+}
+
+  /// ================= DYNAMIC BRAND CARDS =================
+
+  Widget _buildBrandCards() {
+    final user = _userDetails;
+
+    final business = user?['business_info'];
+    final master = user?['master_user'];
+    final subscriptions = user?['subscriptions'] ?? [];
+
+    /// ✅ GST
+    final hasGST = business?['gst_no'] != null &&
+        business['gst_no'].toString().trim().isNotEmpty;
+
+    /// ✅ JCI / BNI
+    final hasJCI = master?['jci_member'] == 1;
+    final hasBNI = master?['bni_member'] == 1;
+
+    /// ✅ PRO PLAN
+    bool hasPro = false;
+    for (var sub in subscriptions) {
+      if (sub['is_active'] == true) {
+        final price =
+            double.tryParse(sub['plan']?['price'].toString() ?? "0") ?? 0;
+        if (price > 0) {
+          hasPro = true;
+          break;
+        }
+      }
+    }
+
+    /// ================= BUILD CARDS =================
+    List<Widget> cards = [];
+
+    if (hasJCI) {
+      cards.add(
+        _brandCard(
+          child: Center(
+            child: Image.asset('assets/jci.jpeg', width: 50),
+          ),
+        ),
+      );
+    }
+
+    if (hasBNI) {
+      cards.add(
+        _brandCard(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Image.asset('assets/bni.png', width: 50),
+          ),
+        ),
+      );
+    }
+
+    if (hasPro) {
+      cards.add(
+        _brandCard(
+          child: Center(
+            child: Image.asset('assets/pro.png', width: 50),
+          ),
+        ),
+      );
+    }
+
+    if (hasGST) {
+      cards.add(
+        _brandCard(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Text(
+                "GST",
+                style: TextStyle(fontWeight: FontWeight.w800),
+              ),
+              SizedBox(width: 6),
+              Icon(Icons.verified, color: Colors.green, size: 18),
+            ],
+          ),
+        ),
+      );
+    }
+
+    /// ✅ Agar koi card nahi hai → hide
+    if (cards.isEmpty) return const SizedBox();
+
+    /// ================= UI =================
+    return SizedBox(
+      height: 110,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        children: cards,
+      ),
+    );
+  }
+
   Widget _removeButton() {
     return ElevatedButton(
       onPressed: () async {
@@ -1976,20 +2094,55 @@ class _ProfilePageState extends State<ProfilePage> {
                                     ),
 
                                     /// Profile Video............
+                                    // if (_isVideoInitialized)
+                                    //   AnimatedOpacity(
+                                    //     opacity: _showVideo ? 1.0 : 0.0,
+                                    //     duration:
+                                    //         const Duration(milliseconds: 600),
+                                    //     child: FittedBox(
+                                    //       fit: BoxFit.cover,
+                                    //       child: SizedBox(
+                                    //         width: _videoController!
+                                    //             .value.size.width,
+                                    //         height: _videoController!
+                                    //             .value.size.height,
+                                    //         child:
+                                    //             VideoPlayer(_videoController!),
+                                    //       ),
+                                    //     ),
+                                    //   ),
+
+                                    // if (_isVideoInitialized)
+                                    //   AnimatedOpacity(
+                                    //     opacity: _showVideo ? 1.0 : 0.0,
+                                    //     duration:
+                                    //         const Duration(milliseconds: 600),
+                                    //     child: SizedBox.expand(
+                                    //       child: AspectRatio(
+                                    //         aspectRatio: _videoController!
+                                    //             .value.aspectRatio,
+                                    //         child:
+                                    //             VideoPlayer(_videoController!),
+                                    //       ),
+                                    //     ),
+                                    //   ),
+
                                     if (_isVideoInitialized)
                                       AnimatedOpacity(
                                         opacity: _showVideo ? 1.0 : 0.0,
                                         duration:
                                             const Duration(milliseconds: 600),
-                                        child: FittedBox(
-                                          fit: BoxFit.cover,
-                                          child: SizedBox(
-                                            width: _videoController!
-                                                .value.size.width,
-                                            height: _videoController!
-                                                .value.size.height,
-                                            child:
-                                                VideoPlayer(_videoController!),
+                                        child: SizedBox.expand(
+                                          child: FittedBox(
+                                            fit: BoxFit.cover,
+                                            child: SizedBox(
+                                              width: _videoController!
+                                                  .value.size.width,
+                                              height: _videoController!.value
+                                                  .size.height, // 👈 IMPORTANT
+                                              child: VideoPlayer(
+                                                  _videoController!),
+                                            ),
                                           ),
                                         ),
                                       ),
@@ -2006,21 +2159,21 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
 
                         /// DARK GRADIENT OVERLAY
-                        Positioned.fill(
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.black.withOpacity(0.6),
-                                  Colors.transparent,
-                                  Colors.black.withOpacity(0.7),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
+                        // Positioned.fill(
+                        //   child: Container(
+                        //     decoration: BoxDecoration(
+                        //       gradient: LinearGradient(
+                        //         begin: Alignment.topCenter,
+                        //         end: Alignment.bottomCenter,
+                        //         colors: [
+                        //           Colors.black.withOpacity(0.6),
+                        //           Colors.transparent,
+                        //           Colors.black.withOpacity(0.7),
+                        //         ],
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
 
                         /// BACK BUTTON
 
@@ -2100,31 +2253,11 @@ class _ProfilePageState extends State<ProfilePage> {
                       width: double.infinity,
                       // transform: Matrix4.translationValues(
                       //     0, -50, 0), // card half over image
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                          // color: isDark
-                          //     ? colorScheme.surfaceContainerHighest
-                          //     : colorScheme.surface,
-                          // borderRadius: BorderRadius.circular(0),
-                          // borderRadius: const BorderRadius.only(
-                          //   bottomLeft: Radius.circular(20),
-                          //   bottomRight: Radius.circular(20),
-                          // ),
-                          // boxShadow: isDark
-                          //     ? []
-                          //     : [
-                          //         BoxShadow(
-                          //           color: Colors.black.withOpacity(0.12),
-                          //           blurRadius: 10,
-                          //           spreadRadius: 1,
-                          //           offset: const Offset(0, 4),
-                          //         ),
-                          //       ],
-                          // border: Border.all(
-                          //   color: colorScheme.outlineVariant,
-                          //   width: 0.2,
-                          // ),
-                          ),
+                      padding: EdgeInsets.only(
+                        top: _showVideo ? 120 : 12,
+                        bottom: 12, // 👈 yahan control karo
+                      ),
+                      decoration: BoxDecoration(),
                       child: Column(
                         children: [
                           /// PROFILE LOGO
@@ -2187,6 +2320,47 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                     ),
                   ),
+
+                  // SizedBox(
+                  //   height: 110, // 👈 card height control
+                  //   child: ListView(
+                  //     scrollDirection: Axis.horizontal,
+                  //     children: [
+                  //       _brandCard(
+                  //         child: Center(
+                  //           child: Image.asset('assets/jci.jpeg', width: 50),
+                  //         ),
+                  //       ),
+                  //       _brandCard(
+                  //         child: Align(
+                  //           alignment: Alignment.centerLeft,
+                  //           child: Image.asset('assets/bni.png', width: 50),
+                  //         ),
+                  //       ),
+                  //       _brandCard(
+                  //         child: Center(
+                  //           child: Image.asset('assets/pro.png', width: 50),
+                  //         ),
+                  //       ),
+                  //       _brandCard(
+                  //         child: Row(
+                  //           mainAxisAlignment: MainAxisAlignment.center,
+                  //           children: const [
+                  //             Text(
+                  //               "GST",
+                  //               style: TextStyle(fontWeight: FontWeight.w800),
+                  //             ),
+                  //             SizedBox(width: 6),
+                  //             Icon(Icons.verified,
+                  //                 color: Colors.green, size: 18),
+                  //           ],
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
+
+                  _buildBrandCards(),
 
                   /// ================= ACTION BUTTON (VIEWER ONLY, NOT CONNECTED) ==================
                   if (isViewerMode && !isAlreadyConnected)
