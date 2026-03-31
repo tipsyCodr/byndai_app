@@ -22,6 +22,9 @@ class ProfileTab extends StatefulWidget {
 }
 
 class _ProfileTabState extends State<ProfileTab> {
+  bool _isJciSelected = false;
+  bool _isBniSelected = false;
+
   // Controllers for text fields
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
@@ -369,6 +372,9 @@ class _ProfileTabState extends State<ProfileTab> {
         request.fields['district_id'] = _selectedDistrictId.toString();
       }
 
+      request.fields['jci_member'] = _isJciSelected ? '1' : '0';
+      request.fields['bni_member'] = _isBniSelected ? '1' : '0';
+
       // ========== MEDIA FILES ==========
       // Profile Image
       if (_croppedImageBytes != null) {
@@ -603,6 +609,11 @@ class _ProfileTabState extends State<ProfileTab> {
         } else {
           _selectedGender = null;
         }
+
+        // ✅ JCI & BNI load
+        _isJciSelected = (apiMasterUser?['jci_member']?.toString() == '1');
+
+        _isBniSelected = (apiMasterUser?['bni_member']?.toString() == '1');
 
         // Address
         _addressController.text = apiMasterUser?['address'] ?? "";
@@ -1184,6 +1195,37 @@ class _ProfileTabState extends State<ProfileTab> {
               prefixIcon: Icon(Icons.home, color: colorScheme.primary),
               alignLabelWithHint: true,
             ),
+          ),
+
+          const SizedBox(height: 16),
+
+          Row(
+            children: [
+              Expanded(
+                child: CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text("JCI"),
+                  value: _isJciSelected,
+                  onChanged: (value) {
+                    setState(() {
+                      _isJciSelected = value ?? false;
+                    });
+                  },
+                ),
+              ),
+              Expanded(
+                child: CheckboxListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text("BNI"),
+                  value: _isBniSelected,
+                  onChanged: (value) {
+                    setState(() {
+                      _isBniSelected = value ?? false;
+                    });
+                  },
+                ),
+              ),
+            ],
           ),
 
           const SizedBox(height: 32),

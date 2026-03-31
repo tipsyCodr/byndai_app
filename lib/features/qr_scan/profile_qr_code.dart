@@ -234,6 +234,8 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final palette = Theme.of(context).extension<AppThemeColors>();
+    final qrColor = Theme.of(context).colorScheme.onSurface;
+    final themeColor = Theme.of(context).colorScheme.primary;
     // Check if user is available
     if (user == null) {
       return Scaffold(
@@ -349,7 +351,6 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                     
                       // Tab Selection
                       Container(
                         margin: const EdgeInsets.only(bottom: 24),
@@ -376,12 +377,22 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
                                   decoration: BoxDecoration(
+                                    // color: _selectedTab == 0
+                                    //     ? (isDark
+                                    //         ? (palette?.neonAccent ??
+                                    //             colorScheme.primary)
+                                    //         : colorScheme.primary)
+                                    //     : Colors.transparent,
                                     color: _selectedTab == 0
-                                        ? (isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary)
+                                        ? colorScheme.primary
                                         : Colors.transparent,
                                     borderRadius: BorderRadius.circular(25),
                                     border: Border.all(
-                                      color: isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary,
+                                      // color: isDark
+                                      //     ? (palette?.neonAccent ??
+                                      //         colorScheme.primary)
+                                      //     : colorScheme.primary,
+                                      color: colorScheme.primary,
                                       width: 0.2,
                                     ),
                                   ),
@@ -415,12 +426,23 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                   padding: const EdgeInsets.symmetric(
                                       vertical: 12, horizontal: 16),
                                   decoration: BoxDecoration(
+                                    // color: _selectedTab == 1
+                                    //     ? (isDark
+                                    //         ? (palette?.neonAccent ??
+                                    //             colorScheme.primary)
+                                    //         : colorScheme.primary)
+                                    //     : Colors.transparent,
+
                                     color: _selectedTab == 1
-                                        ? (isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary)
+                                        ? colorScheme.primary
                                         : Colors.transparent,
                                     borderRadius: BorderRadius.circular(25),
                                     border: Border.all(
-                                      color: isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary,
+                                      // color: isDark
+                                      //     ? (palette?.neonAccent ??
+                                      //         colorScheme.primary)
+                                      //     : colorScheme.primary,
+                                      color: colorScheme.primary,
                                       width: 0.2,
                                     ),
                                   ),
@@ -486,10 +508,10 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                   ? size.width * 0.6
                                   : size.height * 0.4,
                               decoration: BoxDecoration(
-                                color: Colors.white,
+                                // color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: Colors.grey[300]!, width: 1),
+                                // border: Border.all(
+                                //     color: Colors.grey[300]!, width: 1),
                               ),
                               child: Center(
                                 child: RepaintBoundary(
@@ -500,15 +522,24 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                                     size: isPortrait
                                         ? size.width * 0.5
                                         : size.height * 0.35,
+                                    // eyeStyle: QrEyeStyle(
+                                    //   eyeShape: QrEyeShape.square,
+                                    //   color:
+                                    //       palette?.neonAccent ?? Colors.black,
+                                    // ),
+                                    // dataModuleStyle: QrDataModuleStyle(
+                                    //   dataModuleShape: QrDataModuleShape.square,
+                                    //   color:
+                                    //       palette?.neonAccent ?? Colors.black,
+                                    // ),
+
                                     eyeStyle: QrEyeStyle(
                                       eyeShape: QrEyeShape.square,
-                                      color:
-                                          palette?.neonAccent ?? Colors.black,
+                                      color: qrColor,
                                     ),
                                     dataModuleStyle: QrDataModuleStyle(
                                       dataModuleShape: QrDataModuleShape.square,
-                                      color:
-                                          palette?.neonAccent ?? Colors.black,
+                                      color: qrColor,
                                     ),
                                     embeddedImage: user.masterUser
                                                 ?.toJson()['profile_pic'] !=
@@ -596,8 +627,10 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                         _showScanDialog(context, _selectedTab);
                       },
                       style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary,
+                        // backgroundColor: isDark
+                        //     ? (palette?.neonAccent ?? colorScheme.primary)
+                        //     : colorScheme.primary,
+                        backgroundColor: colorScheme.primary,
                         foregroundColor: isDark ? Colors.black : Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -647,11 +680,15 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
                           side: BorderSide(
-                            color: isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary,
+                            color: isDark
+                                ? (palette?.neonAccent ?? colorScheme.primary)
+                                : colorScheme.primary,
                           ),
                         ),
                         side: BorderSide(
-                          color: isDark ? (palette?.neonAccent ?? colorScheme.primary) : colorScheme.primary.withValues(alpha: 0.2),
+                          color: isDark
+                              ? (palette?.neonAccent ?? colorScheme.primary)
+                              : colorScheme.primary.withValues(alpha: 0.2),
                           width: 0.2,
                         ),
                       ),
@@ -794,3 +831,5 @@ class _ProfileQRCodePageState extends State<ProfileQRCodePage> {
     }
   }
 }
+
+
