@@ -635,6 +635,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+ 
   // Widget _brandCard({
   //   required Widget child,
   //   String? label,
@@ -643,19 +644,19 @@ class _ProfilePageState extends State<ProfilePage> {
   //   final cs = Theme.of(context).colorScheme;
 
   //   return Container(
-  //     width: 90, // 🔥 thoda compact
-  //     margin: const EdgeInsets.only(right: 10),
-  //     padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+  //     width: 100, // 🔥 thoda width increase
+  //     margin: const EdgeInsets.only(right: 12),
+  //     padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
   //     decoration: BoxDecoration(
-  //       color: (color ?? cs.primary).withOpacity(0.08), // 🔥 badge bg
-  //       borderRadius: BorderRadius.circular(20), // 🔥 more rounded
+  //       color: (color ?? cs.primary).withOpacity(0.08),
+  //       borderRadius: BorderRadius.circular(22),
   //       border: Border.all(
   //         color: (color ?? cs.primary).withOpacity(0.25),
   //       ),
   //       boxShadow: [
   //         BoxShadow(
-  //           blurRadius: 8,
-  //           offset: const Offset(0, 4),
+  //           blurRadius: 10,
+  //           offset: const Offset(0, 6),
   //           color: Colors.black.withOpacity(0.05),
   //         ),
   //       ],
@@ -663,14 +664,20 @@ class _ProfilePageState extends State<ProfilePage> {
   //     child: Column(
   //       mainAxisAlignment: MainAxisAlignment.center,
   //       children: [
-  //         child,
+  //         /// 🔥 IMAGE / ICON (BIGGER + CENTER)
+  //         SizedBox(
+  //           height: 40,
+  //           width: 40,
+  //           child: Center(child: child),
+  //         ),
+
   //         if (label != null) ...[
-  //           const SizedBox(height: 6),
+  //           const SizedBox(height: 8),
   //           Text(
   //             label,
   //             textAlign: TextAlign.center,
   //             style: TextStyle(
-  //               fontSize: 11,
+  //               fontSize: 12,
   //               fontWeight: FontWeight.w600,
   //               color: color ?? cs.primary,
   //             ),
@@ -682,61 +689,187 @@ class _ProfilePageState extends State<ProfilePage> {
   // }
 
   Widget _brandCard({
-    required Widget child,
-    String? label,
-    Color? color,
-  }) {
-    final cs = Theme.of(context).colorScheme;
-
-    return Container(
-      width: 100, // 🔥 thoda width increase
-      margin: const EdgeInsets.only(right: 12),
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-      decoration: BoxDecoration(
-        color: (color ?? cs.primary).withOpacity(0.08),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: (color ?? cs.primary).withOpacity(0.25),
-        ),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 10,
-            offset: const Offset(0, 6),
-            color: Colors.black.withOpacity(0.05),
-          ),
-        ],
+  required Widget topWidget, // Icon ya Badge ke liye
+  required String title,     // "PRO" ya "GST" ya "4.8"
+  required String subTitle,  // "Networker" ya "46 Reviews"
+  Color? accentColor,
+}) {
+  return Container(
+    width: 105, // Fixed width for uniformity
+    padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+    decoration: BoxDecoration(
+      color: const Color(0xFF121212), // Dark background like image
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: Colors.white.withOpacity(0.1), // Subtle border
+        width: 1,
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          /// 🔥 IMAGE / ICON (BIGGER + CENTER)
-          SizedBox(
-            height: 40,
-            width: 40,
-            child: Center(child: child),
-          ),
-
-          if (label != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: color ?? cs.primary,
+    ),
+    child: Column(
+      mainAxisSize: MainAxisSize.min, // Height content ke hisaab se rahegi
+      children: [
+        // Top Icon/Badge Section
+        SizedBox(
+          height: 32, 
+          child: topWidget,
+        ),
+        const SizedBox(height: 6),
+        
+        // Title (PRO/GST/4.8)
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Flexible(
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ]
-        ],
-      ),
-    );
-  }
+          ],
+        ),
+        
+        // Subtitle (Networker/Verified)
+        Text(
+          subTitle,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white.withOpacity(0.6),
+            fontSize: 11,
+            fontWeight: FontWeight.w400,
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ),
+  );
+}
 
   /// ================= DYNAMIC BRAND CARDS =================
 
-  Widget _buildBrandCards() {
-    final user = _userDetails;
+  // Widget _buildBrandCards() {
+  //   final user = _userDetails;
+
+  //   final business = user?['business_info'];
+  //   final master = user?['master_user'];
+  //   final subscriptions = user?['subscriptions'] ?? [];
+
+  //   /// ✅ GST
+  //   final hasGST = business?['gst_no'] != null &&
+  //       business['gst_no'].toString().trim().isNotEmpty;
+
+  //   /// ✅ JCI / BNI
+  //   final hasJCI = master?['jci_member'] == 1;
+  //   final hasBNI = master?['bni_member'] == 1;
+
+  //   /// ✅ PRO PLAN
+  //   bool hasPro = false;
+  //   for (var sub in subscriptions) {
+  //     if (sub['is_active'] == true) {
+  //       final price =
+  //           double.tryParse(sub['plan']?['price'].toString() ?? "0") ?? 0;
+  //       if (price > 0) {
+  //         hasPro = true;
+  //         break;
+  //       }
+  //     }
+  //   }
+
+  //   /// ================= BUILD CARDS =================
+  //   List<Widget> cards = [];
+
+  //   if (hasJCI) {
+  //     cards.add(
+  //       // _brandCard(
+  //       //   child: Center(
+  //       //     child: Image.asset('assets/jci.jpeg', width: 50),
+  //       //   ),
+  //       // ),
+  //       _brandCard(
+  //         label: "JCI",
+  //         child: Image.asset('assets/jci.jpeg', width: 40, height: 40),
+  //       ),
+  //     );
+  //   }
+
+  //   if (hasBNI) {
+  //     cards.add(
+  //       // _brandCard(
+  //       //   child: Align(
+  //       //     alignment: Alignment.centerLeft,
+  //       //     child: Image.asset('assets/bni.png', width: 50),
+  //       //   ),
+  //       // ),
+  //       _brandCard(
+  //         label: "BNI",
+  //         child: Image.asset('assets/bni.png', width: 40, height: 40),
+  //       ),
+  //     );
+  //   }
+
+  //   if (hasPro) {
+  //     cards.add(
+  //       // _brandCard(
+  //       //   child: Center(
+  //       //     child: Image.asset('assets/pro.png', width: 50),
+  //       //   ),
+  //       // ),
+  //       _brandCard(
+  //         label: "PRO",
+  //         color: Colors.orange,
+  //         child: Icon(Icons.workspace_premium, color: Colors.orange, size: 36),
+  //       ),
+  //     );
+  //   }
+
+  //   if (hasGST) {
+  //     cards.add(
+  //       // _brandCard(
+  //       //   child: Row(
+  //       //     mainAxisAlignment: MainAxisAlignment.center,
+  //       //     children: const [
+  //       //       Text(
+  //       //         "GST",
+  //       //         style: TextStyle(fontWeight: FontWeight.w800),
+  //       //       ),
+  //       //       SizedBox(width: 6),
+  //       //       Icon(Icons.verified, color: Colors.green, size: 18),
+  //       //     ],
+  //       //   ),
+  //       // ),
+
+  //       _brandCard(
+  //         label: "GST Verified",
+  //         color: Colors.green,
+  //         child: const Icon(Icons.verified, color: Colors.green, size: 36),
+  //       ),
+  //     );
+  //   }
+
+  //   /// ✅ Agar koi card nahi hai → hide
+  //   if (cards.isEmpty) return const SizedBox();
+
+  //   /// ================= UI =================
+  //   return SizedBox(
+  //     height: 110,
+  //     child: ListView(
+  //       scrollDirection: Axis.horizontal,
+  //       children: cards,
+  //     ),
+  //   );
+  // }
+
+
+Widget _buildBrandCards() {
+  // ... (Aapka existing data logic yahan rahega)
+
+     final user = _userDetails;
 
     final business = user?['business_info'];
     final master = user?['master_user'];
@@ -766,87 +899,39 @@ class _ProfilePageState extends State<ProfilePage> {
     /// ================= BUILD CARDS =================
     List<Widget> cards = [];
 
-    if (hasJCI) {
-      cards.add(
-        // _brandCard(
-        //   child: Center(
-        //     child: Image.asset('assets/jci.jpeg', width: 50),
-        //   ),
-        // ),
+  return SingleChildScrollView(
+    scrollDirection: Axis.horizontal,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+    child: Row(
+      children: [
+        // 1. Reviews Card
         _brandCard(
-          label: "JCI",
-          child: Image.asset('assets/jci.jpeg', width: 40, height: 40),
+          topWidget: const Icon(Icons.star, color: Colors.amber, size: 24),
+          title: "4.8",
+          subTitle: "46 Reviews",
         ),
-      );
-    }
+        const SizedBox(width: 12),
 
-    if (hasBNI) {
-      cards.add(
-        // _brandCard(
-        //   child: Align(
-        //     alignment: Alignment.centerLeft,
-        //     child: Image.asset('assets/bni.png', width: 50),
-        //   ),
-        // ),
-        _brandCard(
-          label: "BNI",
-          child: Image.asset('assets/bni.png', width: 40, height: 40),
-        ),
-      );
-    }
+        // 2. PRO Card (Condition based)
+        if (hasPro)
+          _brandCard(
+            topWidget: Image.asset('assets/medal.png', height: 30), // Medal image yahan
+            title: "PRO",
+            subTitle: "Networker",
+          ),
+        const SizedBox(width: 12),
 
-    if (hasPro) {
-      cards.add(
-        // _brandCard(
-        //   child: Center(
-        //     child: Image.asset('assets/pro.png', width: 50),
-        //   ),
-        // ),
-        _brandCard(
-          label: "PRO",
-          color: Colors.orange,
-          child: Icon(Icons.workspace_premium, color: Colors.orange, size: 36),
-        ),
-      );
-    }
-
-    if (hasGST) {
-      cards.add(
-        // _brandCard(
-        //   child: Row(
-        //     mainAxisAlignment: MainAxisAlignment.center,
-        //     children: const [
-        //       Text(
-        //         "GST",
-        //         style: TextStyle(fontWeight: FontWeight.w800),
-        //       ),
-        //       SizedBox(width: 6),
-        //       Icon(Icons.verified, color: Colors.green, size: 18),
-        //     ],
-        //   ),
-        // ),
-
-        _brandCard(
-          label: "GST Verified",
-          color: Colors.green,
-          child: const Icon(Icons.verified, color: Colors.green, size: 36),
-        ),
-      );
-    }
-
-    /// ✅ Agar koi card nahi hai → hide
-    if (cards.isEmpty) return const SizedBox();
-
-    /// ================= UI =================
-    return SizedBox(
-      height: 110,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        children: cards,
-      ),
-    );
-  }
-
+        // 3. GST Card
+        if (hasGST)
+          _brandCard(
+            topWidget: const Icon(Icons.check_circle, color: Colors.blueAccent, size: 24),
+            title: "GST",
+            subTitle: "Verified business",
+          ),
+      ],
+    ),
+  );
+}
   Widget _removeButton() {
     return ElevatedButton(
       onPressed: () async {
