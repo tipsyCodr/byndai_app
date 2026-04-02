@@ -256,6 +256,8 @@ static Future<Map<String, dynamic>?> fetchUserProfileByUsername(
     }
   }
 
+  
+
   /// POST /business-info
   /// Form-data: company_name, gst_no, address, bank_acc_no, ifsc_code, branch_name, payment_qr (image)
   static Future<Map<String, dynamic>?> updateBusinessInfo({

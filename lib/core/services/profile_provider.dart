@@ -29,24 +29,55 @@ class ProfileProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Future<void> fetchAllProfileData() async {
+  //   _isLoading = true;
+  //   notifyListeners();
+
+  //   final profile = await ProfileService.fetchProfile();
+  //   if (profile != null) _profileData = profile['data'] ?? profile;
+
+  //   final business = await ProfileService.fetchBusinessInfo();
+  //   if (business != null) _businessInfo = business['data'] ?? business;
+
+  //   final linksData = await ProfileService.fetchLinks();
+  //   if (linksData != null) {
+  //     _links = linksData['data'] is List ? linksData['data'] : [];
+  //   }
+
+  //   _isLoading = false;
+  //   notifyListeners();
+  // }
+
   Future<void> fetchAllProfileData() async {
-    _isLoading = true;
-    notifyListeners();
+  _isLoading = true;
+  notifyListeners();
 
-    final profile = await ProfileService.fetchProfile();
-    if (profile != null) _profileData = profile['data'] ?? profile;
-
-    final business = await ProfileService.fetchBusinessInfo();
-    if (business != null) _businessInfo = business['data'] ?? business;
-
-    final linksData = await ProfileService.fetchLinks();
-    if (linksData != null) {
-      _links = linksData['data'] is List ? linksData['data'] : [];
-    }
-
-    _isLoading = false;
-    notifyListeners();
+  // Fetch profile data
+  final profile = await ProfileService.fetchProfile();
+  if (profile != null) {
+    _profileData = profile['data'] ?? profile;
   }
+
+  // Fetch business info (backend returns data as array)
+  final business = await ProfileService.fetchBusinessInfo();
+  if (business != null) {
+    var businessData = business['data'] ?? business;
+    // 🔥 FIX: If it's a list with at least one item, take the first item as map
+    if (businessData is List && businessData.isNotEmpty) {
+      businessData = businessData[0] as Map<String, dynamic>;
+    }
+    _businessInfo = businessData;
+  }
+
+  // Fetch links
+  final linksData = await ProfileService.fetchLinks();
+  if (linksData != null) {
+    _links = linksData['data'] is List ? linksData['data'] : [];
+  }
+
+  _isLoading = false;
+  notifyListeners();
+}
 
   Future<void> fetchProfileData(String userId) async {
   _isLoading = true;
@@ -98,26 +129,52 @@ class ProfileProvider extends ChangeNotifier {
     return false;
   }
 
+  // Future<bool> updateBusinessInfo({
+  //   required Map<String, String> fields,
+  //   File? paymentQr,
+  // }) async {
+  //   _isLoading = true;
+  //   notifyListeners();
+  //   final result = await ProfileService.updateBusinessInfo(
+  //     fields: fields,
+  //     paymentQr: paymentQr,
+  //   );
+  //   if (result != null) {
+  //     _businessInfo = result['data'] ?? result;
+  //     _isLoading = false;
+  //     notifyListeners();
+  //     return true;
+  //   }
+  //   _isLoading = false;
+  //   notifyListeners();
+  //   return false;
+  // }
+
   Future<bool> updateBusinessInfo({
-    required Map<String, String> fields,
-    File? paymentQr,
-  }) async {
-    _isLoading = true;
-    notifyListeners();
-    final result = await ProfileService.updateBusinessInfo(
-      fields: fields,
-      paymentQr: paymentQr,
-    );
-    if (result != null) {
-      _businessInfo = result['data'] ?? result;
-      _isLoading = false;
-      notifyListeners();
-      return true;
+  required Map<String, String> fields,
+  File? paymentQr,
+}) async {
+  _isLoading = true;
+  notifyListeners();
+  final result = await ProfileService.updateBusinessInfo(
+    fields: fields,
+    paymentQr: paymentQr,
+  );
+  if (result != null) {
+    var businessData = result['data'] ?? result;
+    // 🔥 Same fix: handle possible list response
+    if (businessData is List && businessData.isNotEmpty) {
+      businessData = businessData[0] as Map<String, dynamic>;
     }
+    _businessInfo = businessData;
     _isLoading = false;
     notifyListeners();
-    return false;
+    return true;
   }
+  _isLoading = false;
+  notifyListeners();
+  return false;
+}
 
   Future<bool> createLink(Map<String, dynamic> data) async {
     _isLoading = true;
