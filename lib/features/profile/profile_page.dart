@@ -682,6 +682,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+<<<<<<< HEAD
   // Widget _brandCard({
   //   required Widget child,
   //   String? label,
@@ -735,6 +736,70 @@ class _ProfilePageState extends State<ProfilePage> {
   // }
 
   // /// ================= DYNAMIC BRAND CARDS =================
+=======
+  Widget _brandCard({
+    required Widget child,
+    String? label,
+    String? subtitle,
+    Color? color,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      margin: const EdgeInsets.only(right: 10),
+      decoration: BoxDecoration(
+        // Using surface default but ensuring it feels dark if possible
+        // If the theme is light, this might need adjustment, but the user asked for "dark" styling
+        // while avoiding hardcoded colors. Using surfaceContainer or similar is best.
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.8),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: color?.withOpacity(0.5) ?? colorScheme.outline.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          /// ICON / IMAGE
+          child,
+
+          if (label != null && label.isNotEmpty) ...[
+            const SizedBox(width: 8),
+
+            /// TEXT
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+                if (subtitle != null)
+                  Text(
+                    subtitle,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant.withOpacity(0.7),
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  /// ================= DYNAMIC BRAND CARDS =================
+>>>>>>> 98cb644aa8ed32da88682de676c284527123820f
 
   // Widget _buildBrandCards() {
   //   final user = _userDetails;
@@ -885,14 +950,26 @@ class _ProfilePageState extends State<ProfilePage> {
     /// ================= BUILD CARDS =================
     List<Widget> cards = [];
 
+<<<<<<< HEAD
     if (hasJCI) {
       cards.add(
         _brandCard(
           child: Image.asset('assets/jci.jpeg', width: 56, height: 56),
+=======
+    /// ⭐ RATING CARD (From second image reference)
+    if (_avgRating >= 0) {
+      // Show rating card even if 0 if we want to match design consistently
+      cards.add(
+        _brandCard(
+          label: _avgRating > 0 ? _avgRating.toStringAsFixed(1) : "0.0",
+          subtitle: "$_totalReviews Reviews",
+          child: const Icon(Icons.star, color: Colors.amber, size: 24),
+>>>>>>> 98cb644aa8ed32da88682de676c284527123820f
         ),
       );
     }
 
+<<<<<<< HEAD
     if (hasBNI) {
       cards.add(
         _brandCard(
@@ -1004,6 +1081,62 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+=======
+    if (hasJCI) {
+      cards.add(
+        _brandCard(
+          label: "",
+          child: Image.asset('assets/jci.jpeg', height: 32),
+        ),
+      );
+    }
+
+    if (hasBNI) {
+      cards.add(
+        _brandCard(
+          label: "",
+          child: Image.asset('assets/bni.png', height: 32),
+        ),
+      );
+    }
+
+    if (hasPro) {
+      cards.add(
+        _brandCard(
+          label: "PRO",
+          subtitle: "Networker",
+          color: Colors.orange,
+          child: const Icon(Icons.workspace_premium, color: Colors.orange, size: 26),
+        ),
+      );
+    }
+
+    if (hasGST) {
+      cards.add(
+        _brandCard(
+          label: "GST",
+          subtitle: "Verified business",
+          color: Colors.blueAccent,
+          child: const Icon(Icons.verified, color: Colors.blueAccent, size: 26),
+        ),
+      );
+    }
+
+    /// ✅ Agar koi card nahi hai → hide
+    if (cards.isEmpty) return const SizedBox();
+
+    /// ================= UI =================
+    return SizedBox(
+      height: 65, // Compact height matching reference
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        children: cards,
+      ),
+    );
+  }
+
+>>>>>>> 98cb644aa8ed32da88682de676c284527123820f
   Widget _removeButton() {
     return ElevatedButton(
       onPressed: () async {
