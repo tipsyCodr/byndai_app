@@ -36,6 +36,27 @@ class _OverlayItem {
   });
 }
 
+class _TextOverlayItem extends _OverlayItem {
+  String text;
+  Color color;
+  double fontSize;
+
+  _TextOverlayItem({
+    required Offset position,
+    this.text = "Your Text",
+    this.color = Colors.white,
+    this.fontSize = 24,
+    double size = 150,
+    bool visible = true,
+    double rotation = 0,
+  }) : super(
+          position: position,
+          size: size,
+          visible: visible,
+          rotation: rotation,
+        );
+}
+
 class FlyerEditorPage extends StatefulWidget {
   final String imageUrl;
 
@@ -47,6 +68,7 @@ class FlyerEditorPage extends StatefulWidget {
 
 class _FlyerEditorPageState extends State<FlyerEditorPage> {
   final GlobalKey _captureKey = GlobalKey();
+  List<_TextOverlayItem> _texts = [];
 
   late _OverlayItem _profileOverlay;
   late _OverlayItem _onlineQrOverlay;
@@ -260,6 +282,45 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
+  }
+
+  void _addTextDialog() {
+    String value = "";
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text("Enter Text"),
+          content: TextField(
+            onChanged: (val) => value = val,
+            decoration: const InputDecoration(hintText: "Type here..."),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (value.trim().isNotEmpty) {
+                  setState(() {
+                    _texts.add(
+                      _TextOverlayItem(
+                        position: const Offset(50, 50),
+                        text: value,
+                      ),
+                    );
+                  });
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text("Add"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showSettingsSheet() {
@@ -548,6 +609,63 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
     );
   }
 
+  void _showTextEditModal(_TextOverlayItem item) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text("Edit Text",
+                      style: TextStyle(fontWeight: FontWeight.bold)),
+
+                  /// FONT SIZE
+                  Slider(
+                    value: item.fontSize,
+                    min: 10,
+                    max: 60,
+                    onChanged: (val) {
+                      setSheetState(() => item.fontSize = val);
+                      setState(() {});
+                    },
+                  ),
+
+                  /// ROTATION
+                  Slider(
+                    value: item.rotation,
+                    min: 0,
+                    max: 2 * pi,
+                    onChanged: (val) {
+                      setSheetState(() => item.rotation = val);
+                      setState(() {});
+                    },
+                  ),
+
+                  /// DELETE
+                  ElevatedButton(
+                    onPressed: () {
+                      setState(() {
+                        _texts.remove(item);
+                      });
+                      Navigator.pop(ctx);
+                    },
+                    style:
+                        ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                    child: const Text("Delete"),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   Widget _buildInfoBar(AuthProvider auth, ProfileProvider profile) {
     final user = auth.user;
     final business = profile.businessInfo;
@@ -704,6 +822,21 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                                     _showAdjustModal(_offlineQrOverlay),
                                 child: _buildQrWidget(_generateOfflineQrData(),
                                     _offlineQrOverlay.size, "Contact")),
+                          ..._texts.map((item) {
+                            return _buildDraggableOverlay(
+                              item: item,
+                              constraints: constraints,
+                              onDoubleTap: () => _showTextEditModal(item),
+                              child: Text(
+                                item.text,
+                                style: TextStyle(
+                                  color: item.color,
+                                  fontSize: item.fontSize,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          }).toList(),
                         ]);
                       }),
                     ),
@@ -739,6 +872,13 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                       _offlineQrOverlay.visible,
                       () => setState(() => _offlineQrOverlay.visible =
                           !_offlineQrOverlay.visible)),
+                          
+                  _buildToolbarButton(
+                    Icons.text_fields,
+                    "Text",
+                    false,
+                    _addTextDialog,
+                  ),
                 ]),
           ),
           Padding(
