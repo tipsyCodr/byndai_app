@@ -17,6 +17,9 @@ import 'package:gridcard/widgets/top_alert.dart';
 import 'dart:async';
 import 'dart:ui';
 import './product_list_widget.dart';
+import 'package:gridcard/widgets/glass_box.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:gridcard/core/theme/app_theme.dart';
 
 import '../feature_map/feature_access_helper.dart';
 import '../feature_map/feature_mapper.dart';
@@ -226,40 +229,84 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // ================= MASTER LINKS API =================
+  // Future<void> _fetchMasterLinks() async {
+  //   if (_isLoadingMasterLinks) return;
+
+  //   setState(() => _isLoadingMasterLinks = true);
+
+  //   try {
+  //     final url = Uri.parse("$_baseUrl/user/${widget.userId}/master-links");
+
+  //     final res = await http.get(url);
+
+  //     debugPrint("🟦 MASTER LINKS API: ${res.statusCode} => ${res.body}");
+
+  //     final decoded = jsonDecode(res.body);
+
+  //     if (res.statusCode == 200 && decoded["status"] == true) {
+  //       final List data = decoded["data"] ?? [];
+
+  //       final links = data
+  //           .map((e) => Map<String, dynamic>.from(e))
+  //           .where((e) => (e["name"] != null &&
+  //               e["link"] != null &&
+  //               e["name"].toString().trim().isNotEmpty &&
+  //               e["link"].toString().trim().isNotEmpty))
+  //           .toList();
+
+  //       if (mounted) {
+  //         setState(() {
+  //           _masterLinks = links;
+  //         });
+  //       }
+  //     } else {
+  //       if (mounted) {
+  //         setState(() => _masterLinks = []);
+  //       }
+  //     }
+  //   } catch (e) {
+  //     debugPrint("🔴 ERROR _fetchMasterLinks(): $e");
+  //     if (mounted) setState(() => _masterLinks = []);
+  //   } finally {
+  //     if (mounted) setState(() => _isLoadingMasterLinks = false);
+  //   }
+  // }
+
   Future<void> _fetchMasterLinks() async {
     if (_isLoadingMasterLinks) return;
 
     setState(() => _isLoadingMasterLinks = true);
 
     try {
-      final url = Uri.parse("$_baseUrl/user/${widget.userId}/master-links");
+      final int? targetUserId =
+          widget.userId ?? await UserStorageService().getUserId();
+      if (targetUserId == null) {
+        debugPrint("⚠️ No userId available for master links");
+        if (mounted) setState(() => _masterLinks = []);
+        return;
+      }
 
-      final res = await http.get(url);
+      final url = Uri.parse("$_baseUrl/user/$targetUserId/master-links");
+      final res = await http.get(url,
+          headers: await _getHeaders()); // Add headers if needed
 
       debugPrint("🟦 MASTER LINKS API: ${res.statusCode} => ${res.body}");
 
       final decoded = jsonDecode(res.body);
-
       if (res.statusCode == 200 && decoded["status"] == true) {
         final List data = decoded["data"] ?? [];
-
         final links = data
             .map((e) => Map<String, dynamic>.from(e))
-            .where((e) => (e["name"] != null &&
-                e["link"] != null &&
-                e["name"].toString().trim().isNotEmpty &&
-                e["link"].toString().trim().isNotEmpty))
+            .where((e) =>
+                (e["name"]?.toString().trim().isNotEmpty ?? false) &&
+                (e["link"]?.toString().trim().isNotEmpty ?? false))
             .toList();
 
         if (mounted) {
-          setState(() {
-            _masterLinks = links;
-          });
+          setState(() => _masterLinks = links);
         }
       } else {
-        if (mounted) {
-          setState(() => _masterLinks = []);
-        }
+        if (mounted) setState(() => _masterLinks = []);
       }
     } catch (e) {
       debugPrint("🔴 ERROR _fetchMasterLinks(): $e");
@@ -635,186 +682,45 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+
   Widget _brandCard({
     required Widget child,
-    String? label,
-    String? subtitle,
     Color? color,
   }) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final cs = Theme.of(context).colorScheme;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      margin: const EdgeInsets.only(right: 10),
+      width: 132, // 🔥 width increase
+      height: 70, // 🔥 height reduce (half feel)
+      margin: const EdgeInsets.only(right: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12),
       decoration: BoxDecoration(
-        // Using surface default but ensuring it feels dark if possible
-        // If the theme is light, this might need adjustment, but the user asked for "dark" styling
-        // while avoiding hardcoded colors. Using surfaceContainer or similar is best.
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(12),
+        color: (color ?? cs.primary).withOpacity(0.08),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: color?.withOpacity(0.5) ?? colorScheme.outline.withOpacity(0.2),
-          width: 1,
+          color: (color ?? cs.primary).withOpacity(0.25),
         ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          /// ICON / IMAGE
-          child,
-
-          if (label != null && label.isNotEmpty) ...[
-            const SizedBox(width: 8),
-
-            /// TEXT
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  label,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-                if (subtitle != null)
-                  Text(
-                    subtitle,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant.withOpacity(0.7),
-                      fontSize: 11,
-                    ),
-                  ),
-              ],
-            ),
-          ],
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+            color: Colors.black.withOpacity(0.05),
+          ),
         ],
+      ),
+
+      child: Center(
+        child: SizedBox(
+          height: 64,
+          width: 84,
+          child: child,
+        ),
       ),
     );
   }
 
-  /// ================= DYNAMIC BRAND CARDS =================
-
-  // Widget _buildBrandCards() {
-  //   final user = _userDetails;
-
-  //   final business = user?['business_info'];
-  //   final master = user?['master_user'];
-  //   final subscriptions = user?['subscriptions'] ?? [];
-
-  //   /// ✅ GST
-  //   final hasGST = business?['gst_no'] != null &&
-  //       business['gst_no'].toString().trim().isNotEmpty;
-
-  //   /// ✅ JCI / BNI
-  //   final hasJCI = master?['jci_member'] == 1;
-  //   final hasBNI = master?['bni_member'] == 1;
-
-  //   /// ✅ PRO PLAN
-  //   bool hasPro = false;
-  //   for (var sub in subscriptions) {
-  //     if (sub['is_active'] == true) {
-  //       final price =
-  //           double.tryParse(sub['plan']?['price'].toString() ?? "0") ?? 0;
-  //       if (price > 0) {
-  //         hasPro = true;
-  //         break;
-  //       }
-  //     }
-  //   }
-
-  //   /// ================= BUILD CARDS =================
-  //   List<Widget> cards = [];
-
-  //   if (hasJCI) {
-  //     cards.add(
-  //       // _brandCard(
-  //       //   child: Center(
-  //       //     child: Image.asset('assets/jci.jpeg', width: 50),
-  //       //   ),
-  //       // ),
-  //       _brandCard(
-  //         label: "JCI",
-  //         child: Image.asset('assets/jci.jpeg', width: 40, height: 40),
-  //       ),
-  //     );
-  //   }
-
-  //   if (hasBNI) {
-  //     cards.add(
-  //       // _brandCard(
-  //       //   child: Align(
-  //       //     alignment: Alignment.centerLeft,
-  //       //     child: Image.asset('assets/bni.png', width: 50),
-  //       //   ),
-  //       // ),
-  //       _brandCard(
-  //         label: "BNI",
-  //         child: Image.asset('assets/bni.png', width: 40, height: 40),
-  //       ),
-  //     );
-  //   }
-
-  //   if (hasPro) {
-  //     cards.add(
-  //       // _brandCard(
-  //       //   child: Center(
-  //       //     child: Image.asset('assets/pro.png', width: 50),
-  //       //   ),
-  //       // ),
-  //       _brandCard(
-  //         label: "PRO",
-  //         color: Colors.orange,
-  //         child: Icon(Icons.workspace_premium, color: Colors.orange, size: 36),
-  //       ),
-  //     );
-  //   }
-
-  //   if (hasGST) {
-  //     cards.add(
-  //       // _brandCard(
-  //       //   child: Row(
-  //       //     mainAxisAlignment: MainAxisAlignment.center,
-  //       //     children: const [
-  //       //       Text(
-  //       //         "GST",
-  //       //         style: TextStyle(fontWeight: FontWeight.w800),
-  //       //       ),
-  //       //       SizedBox(width: 6),
-  //       //       Icon(Icons.verified, color: Colors.green, size: 18),
-  //       //     ],
-  //       //   ),
-  //       // ),
-
-  //       _brandCard(
-  //         label: "GST Verified",
-  //         color: Colors.green,
-  //         child: const Icon(Icons.verified, color: Colors.green, size: 36),
-  //       ),
-  //     );
-  //   }
-
-  //   /// ✅ Agar koi card nahi hai → hide
-  //   if (cards.isEmpty) return const SizedBox();
-
-  //   /// ================= UI =================
-  //   return SizedBox(
-  //     height: 110,
-  //     child: ListView(
-  //       scrollDirection: Axis.horizontal,
-  //       children: cards,
-  //     ),
-  //   );
-  // }
-
-
-Widget _buildBrandCards() {
-  // ... (Aapka existing data logic yahan rahega)
-
-     final user = _userDetails;
+  Widget _buildBrandCards() {
+    final user = _userDetails;
 
     final business = user?['business_info'];
     final master = user?['master_user'];
@@ -844,23 +750,10 @@ Widget _buildBrandCards() {
     /// ================= BUILD CARDS =================
     List<Widget> cards = [];
 
-    /// ⭐ RATING CARD (From second image reference)
-    if (_avgRating >= 0) {
-      // Show rating card even if 0 if we want to match design consistently
-      cards.add(
-        _brandCard(
-          label: _avgRating > 0 ? _avgRating.toStringAsFixed(1) : "0.0",
-          subtitle: "$_totalReviews Reviews",
-          child: const Icon(Icons.star, color: Colors.amber, size: 24),
-        ),
-      );
-    }
-
     if (hasJCI) {
       cards.add(
         _brandCard(
-          label: "",
-          child: Image.asset('assets/jci.jpeg', height: 32),
+          child: Image.asset('assets/jci.jpeg', width: 56, height: 56),
         ),
       );
     }
@@ -868,30 +761,96 @@ Widget _buildBrandCards() {
     if (hasBNI) {
       cards.add(
         _brandCard(
-          label: "",
-          child: Image.asset('assets/bni.png', height: 32),
+          child: Image.asset('assets/bni.png', width: 44, height: 44),
         ),
       );
     }
+
+    // if (hasPro) {
+    //   cards.add(
+    //     _brandCard(
+    //       color: Colors.orange,
+    //       child: Icon(Icons.workspace_premium, color: Colors.orange, size: 36),
+    //     ),
+    //   );
+    // }
 
     if (hasPro) {
       cards.add(
         _brandCard(
-          label: "PRO",
-          subtitle: "Networker",
           color: Colors.orange,
-          child: const Icon(Icons.workspace_premium, color: Colors.orange, size: 26),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.workspace_premium,
+                color: Colors.orange,
+                size: 36,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                "PRO",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
 
+    // if (hasGST) {
+    //   cards.add(
+    //     _brandCard(
+    //       color: Colors.green,
+    //       child: const Icon(Icons.verified, color: Colors.green, size: 28),
+    //     ),
+    //   );
+    // }
+
     if (hasGST) {
       cards.add(
         _brandCard(
-          label: "GST",
-          subtitle: "Verified business",
-          color: Colors.blueAccent,
-          child: const Icon(Icons.verified, color: Colors.blueAccent, size: 26),
+          color: Colors.green,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment:
+                CrossAxisAlignment.center, // 🔥 Center horizontally
+            children: [
+              // GST + Tick
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center, // already center
+                children: [
+                  Text(
+                    "GST",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  const Icon(
+                    Icons.verified,
+                    color: Colors.green,
+                    size: 16,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 2),
+              // Verified text
+              Text(
+                "Verified Business",
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.green.shade700,
+                ),
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -901,10 +860,10 @@ Widget _buildBrandCards() {
 
     /// ================= UI =================
     return SizedBox(
-      height: 65, // Compact height matching reference
+      height: 70,
       child: ListView(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
+        padding: const EdgeInsets.only(left: 16),
         children: cards,
       ),
     );
@@ -1186,16 +1145,39 @@ Widget _buildBrandCards() {
 
   // ✅ MAIN DYNAMIC GRID
 
+  // Widget _buildSocialIconsGrid() {
+  //   if (_isLoadingMasterLinks) return const SizedBox.shrink();
+  //   if (_masterLinks.isEmpty) return const SizedBox.shrink();
+
+  //   final supportedLinks = _masterLinks.where((item) {
+  //     final name = (item["name"] ?? "").toString();
+  //     return _getIconForName(name) != null;
+  //   }).toList();
+
+  //   if (supportedLinks.isEmpty) return const SizedBox.shrink();
+
+  //   return GridView.count(
+  //     crossAxisCount: 4,
+  //     shrinkWrap: true,
+  //     physics: const NeverScrollableScrollPhysics(),
+  //     mainAxisSpacing: 12,
+  //     crossAxisSpacing: 12,
+  //     childAspectRatio: 1,
+  //     children: supportedLinks.map((item) {
+  //       final name = (item["name"] ?? "").toString();
+  //       final link = (item["link"] ?? "").toString();
+
+  //       final icon = _getIconForName(name)!;
+  //       final color = _getColorForName(name);
+
+  //       return _socialIconOnly(icon, color, link, name);
+  //     }).toList(),
+  //   );
+  // }
+
   Widget _buildSocialIconsGrid() {
     if (_isLoadingMasterLinks) return const SizedBox.shrink();
     if (_masterLinks.isEmpty) return const SizedBox.shrink();
-
-    final supportedLinks = _masterLinks.where((item) {
-      final name = (item["name"] ?? "").toString();
-      return _getIconForName(name) != null;
-    }).toList();
-
-    if (supportedLinks.isEmpty) return const SizedBox.shrink();
 
     return GridView.count(
       crossAxisCount: 4,
@@ -1204,13 +1186,13 @@ Widget _buildBrandCards() {
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
       childAspectRatio: 1,
-      children: supportedLinks.map((item) {
+      children: _masterLinks.map((item) {
         final name = (item["name"] ?? "").toString();
         final link = (item["link"] ?? "").toString();
-
-        final icon = _getIconForName(name)!;
-        final color = _getColorForName(name);
-
+        final icon =
+            _getIconForName(name) ?? FontAwesomeIcons.link; // fallback icon
+        final color =
+            _getColorForName(name); // fallback color already returns grey
         return _socialIconOnly(icon, color, link, name);
       }).toList(),
     );
@@ -2214,6 +2196,9 @@ Widget _buildBrandCards() {
             ? "$_imgBaseUrl/$apiProfileVideo"
             : null;
 
+    final theme = Theme.of(context);
+    final palette = theme.extension<AppThemeColors>();
+
     debugPrint("🟦 FINAL PROFILE PIC URL = $apiProfilePicUrl");
     debugPrint("🟦 FINAL PROFILE Logo URL = $apiProfileLogoUrl");
     debugPrint("🟦 FINAL PROFILE video URL = $apiProfileVideoUrl");
@@ -2250,40 +2235,6 @@ Widget _buildBrandCards() {
                                       ),
                                     ),
 
-                                    /// Profile Video............
-                                    // if (_isVideoInitialized)
-                                    //   AnimatedOpacity(
-                                    //     opacity: _showVideo ? 1.0 : 0.0,
-                                    //     duration:
-                                    //         const Duration(milliseconds: 600),
-                                    //     child: FittedBox(
-                                    //       fit: BoxFit.cover,
-                                    //       child: SizedBox(
-                                    //         width: _videoController!
-                                    //             .value.size.width,
-                                    //         height: _videoController!
-                                    //             .value.size.height,
-                                    //         child:
-                                    //             VideoPlayer(_videoController!),
-                                    //       ),
-                                    //     ),
-                                    //   ),
-
-                                    // if (_isVideoInitialized)
-                                    //   AnimatedOpacity(
-                                    //     opacity: _showVideo ? 1.0 : 0.0,
-                                    //     duration:
-                                    //         const Duration(milliseconds: 600),
-                                    //     child: SizedBox.expand(
-                                    //       child: AspectRatio(
-                                    //         aspectRatio: _videoController!
-                                    //             .value.aspectRatio,
-                                    //         child:
-                                    //             VideoPlayer(_videoController!),
-                                    //       ),
-                                    //     ),
-                                    //   ),
-
                                     if (_isVideoInitialized)
                                       AnimatedOpacity(
                                         opacity: _showVideo ? 1.0 : 0.0,
@@ -2314,23 +2265,6 @@ Widget _buildBrandCards() {
                                   ),
                                 ),
                         ),
-
-                        /// DARK GRADIENT OVERLAY
-                        // Positioned.fill(
-                        //   child: Container(
-                        //     decoration: BoxDecoration(
-                        //       gradient: LinearGradient(
-                        //         begin: Alignment.topCenter,
-                        //         end: Alignment.bottomCenter,
-                        //         colors: [
-                        //           Colors.black.withOpacity(0.6),
-                        //           Colors.transparent,
-                        //           Colors.black.withOpacity(0.7),
-                        //         ],
-                        //       ),
-                        //     ),
-                        //   ),
-                        // ),
 
                         /// BACK BUTTON
 
@@ -2498,23 +2432,6 @@ Widget _buildBrandCards() {
                               color: isDark
                                   ? colorScheme.surfaceContainerHighest
                                   : colorScheme.surface,
-                              // borderRadius: BorderRadius.circular(18),
-                              // boxShadow: isDark
-                              //     ? []
-                              //     : [
-                              //         BoxShadow(
-                              //           color: Colors.black.withOpacity(0.1),
-                              //           spreadRadius: 1,
-                              //           blurRadius: 6,
-                              //           offset: const Offset(0, 2),
-                              //         ),
-                              //       ],
-                              // border: isDark
-                              //     ? null
-                              //     : Border.all(
-                              //         color: colorScheme.outlineVariant,
-                              //         width: 0.2,
-                              //       ),
                             ),
                             child: _buildConnectionButton(),
                           ),
@@ -2708,13 +2625,6 @@ Widget _buildBrandCards() {
                                                 horizontal: 16,
                                                 vertical: 12,
                                               ),
-                                              // suffixIcon: IconButton(
-                                              //   icon: Icon(
-                                              //     Icons.camera_alt,
-                                              //     color: colorScheme.primary,
-                                              //   ),
-                                              //   onPressed: _pickImageForMessage,
-                                              // ),
                                             ),
                                           ),
                                         ),
@@ -2799,38 +2709,30 @@ Widget _buildBrandCards() {
                       padding: const EdgeInsets.all(16), // ✅ OUTER 16 PADDING
                       child: Column(
                         children: [
-                          Container(
+                          GlassBox(
                             width: double.infinity,
-                            padding: const EdgeInsets.all(
-                                16), // ✅ INNER CARD PADDING
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? colorScheme.surfaceContainerHighest
-                                  : colorScheme.surface,
-                              borderRadius: BorderRadius.circular(18),
-                              boxShadow: isDark
-                                  ? []
-                                  : [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.1),
-                                        spreadRadius: 1,
-                                        blurRadius: 6,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ],
-                              border: isDark
-                                  ? null
-                                  : Border.all(
-                                      color: colorScheme.outlineVariant,
-                                      width: 0.2,
-                                    ),
-                            ),
+                            padding: const EdgeInsets.all(16),
+
+                            /// 🔥 CUSTOM LOOK VIA EXISTING PARAMS
+                            border: isDark
+                                ? null
+                                : Border.all(
+                                    color: colorScheme.outlineVariant,
+                                    width: 0.5,
+                                  ),
+
+                            gradientColors: isDark
+                                ? null
+                                : [
+                                    colorScheme.surface.withOpacity(0.9),
+                                    colorScheme.surface.withOpacity(0.7),
+                                  ],
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 /// TITLE
                                 Text(
-                                  'Reviews',
+                                  'Reviews12',
                                   style: TextStyle(
                                     fontSize: 18,
                                     fontWeight: FontWeight.bold,

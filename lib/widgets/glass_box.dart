@@ -12,6 +12,7 @@ class GlassBox extends StatelessWidget {
   final List<Color>? gradientColors;
   final BoxBorder? border;
   final Widget child;
+  
 
   const GlassBox({
     super.key,
@@ -24,6 +25,7 @@ class GlassBox extends StatelessWidget {
     this.gradientColors,
     this.border,
     required this.child,
+   
   });
 
   @override
@@ -32,7 +34,7 @@ class GlassBox extends StatelessWidget {
     final palette = theme.extension<AppThemeColors>();
     final surfaceTint = palette?.glassTop ?? theme.colorScheme.surface;
     final borderTint = theme.colorScheme.primary;
-    
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(borderRadius),
       child: BackdropFilter(

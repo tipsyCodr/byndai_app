@@ -339,6 +339,8 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
   }
 
   Widget _sectionTitle(String title, {String? subtitle}) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cs = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -346,9 +348,10 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w800,
+                color: isDark ? Colors.white : cs.onSurface,
               ),
             ),
           ),
@@ -357,7 +360,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
               subtitle,
               style: TextStyle(
                 fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                color: isDark ? Colors.white : cs.onSurface,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -522,6 +525,8 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
 
   Widget _viewerCard(Map item) {
     final cs = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     final name = (item["viewer_fname"] ?? item["viewer_user_name"] ?? "Unknown")
         .toString();
 
@@ -559,9 +564,10 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
+                    color: isDark ? Colors.white : cs.onSurface,
                   ),
                 ),
               ),
@@ -647,7 +653,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                   name,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w800,
                   ),
@@ -814,6 +820,9 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                               final unique =
                                   (item["unique_users"] ?? 0).toString();
 
+                              final isDark = Theme.of(context).brightness ==
+                                  Brightness.dark;
+                              final cs = Theme.of(context).colorScheme;
                               return SizedBox(
                                 width: cardWidth,
                                 child: Container(
@@ -844,9 +853,12 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                                               platform.toUpperCase(),
                                               maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
-                                              style: const TextStyle(
+                                              style: TextStyle(
                                                 fontSize: 13,
                                                 fontWeight: FontWeight.w800,
+                                                color: isDark
+                                                    ? Colors.white
+                                                    : cs.onSurface,
                                               ),
                                             ),
                                           ),
@@ -855,9 +867,12 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                                       const SizedBox(height: 10),
                                       Text(
                                         "$clicks clicks",
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w900,
+                                          color: isDark
+                                              ? Colors.white
+                                              : cs.onSurface,
                                         ),
                                       ),
                                       const SizedBox(height: 4),

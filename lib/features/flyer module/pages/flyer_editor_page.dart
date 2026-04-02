@@ -17,6 +17,7 @@ import 'package:gridcard/widgets/top_alert.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:http/http.dart' as http;
 import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../../feature_map/feature_access_helper.dart';
 import '../../feature_map/feature_mapper.dart';
@@ -27,13 +28,63 @@ class _OverlayItem {
   double size;
   bool visible;
   double rotation;
+  double opacity;
 
   _OverlayItem({
     required this.position,
     this.size = 80,
     this.visible = false,
     this.rotation = 0.0,
+    this.opacity = 1.0,
   });
+}
+
+class _TextOverlayItem extends _OverlayItem {
+  String text;
+  Color color;
+  double fontSize;
+  double opacity;
+
+  _TextOverlayItem({
+    required Offset position,
+    this.text = "Your Text",
+    this.color = Colors.black,
+    this.fontSize = 24,
+    this.opacity = 1.0,
+    double size = 150,
+    bool visible = true,
+    double rotation = 0,
+  }) : super(
+          position: position,
+          size: size,
+          visible: visible,
+          rotation: rotation,
+        );
+}
+
+class _ShapeOverlayItem extends _OverlayItem {
+  Color color;
+  String shape;
+
+  double width;
+  double height;
+  double opacity;
+
+  _ShapeOverlayItem({
+    required Offset position,
+    this.color = Colors.black, // ✅ default black
+    this.shape = "rect",
+    this.width = 100,
+    this.height = 100,
+    this.opacity = 1.0,
+    bool visible = true,
+    double rotation = 0,
+  }) : super(
+          position: position,
+          size: 100, // optional, not used now
+          visible: visible,
+          rotation: rotation,
+        );
 }
 
 class FlyerEditorPage extends StatefulWidget {
@@ -47,6 +98,12 @@ class FlyerEditorPage extends StatefulWidget {
 
 class _FlyerEditorPageState extends State<FlyerEditorPage> {
   final GlobalKey _captureKey = GlobalKey();
+  List<_TextOverlayItem> _texts = [];
+  List<_ShapeOverlayItem> _shapes = [];
+  _OverlayItem? _selectedItem;
+
+  Map<String, dynamic>? _directBusinessInfo; // 🔥 newly fetched business data
+  bool _isLoadingBusinessInfo = true;
 
   late _OverlayItem _profileOverlay;
   late _OverlayItem _onlineQrOverlay;
@@ -68,9 +125,13 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
   @override
   void initState() {
     super.initState();
-
-    _profileOverlay =
-        _OverlayItem(position: const Offset(20, 20), size: 100, visible: true);
+    _fetchBusinessInfoDirect();
+    _profileOverlay = _OverlayItem(
+      position: const Offset(20, 20),
+      size: 100,
+      visible: true,
+      opacity: 1.0,
+    );
     _onlineQrOverlay = _OverlayItem(
         position: const Offset(20, 140), size: 100, visible: false);
     _offlineQrOverlay = _OverlayItem(
@@ -83,6 +144,87 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
         if (mounted) setState(() => _imageLoaded = true);
       });
     });
+  }
+
+  Future<void> _fetchBusinessInfoDirect() async {
+    setState(() => _isLoadingBusinessInfo = true);
+
+    try {
+      final url = Uri.parse('${AppConfig.apiBaseUrl}/business-info');
+      final headers = await _getHeaders();
+
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+
+        debugPrint("🔥 RAW API RESPONSE: $jsonData"); // 👈 ADD THIS
+
+        if (jsonData['status'] == true && jsonData['data'] is List) {
+          final List dataList = jsonData['data'];
+
+          if (dataList.isNotEmpty) {
+            setState(() {
+              _directBusinessInfo = dataList[0];
+            });
+
+            /// 🔥 IMPORTANT: PRINT AFTER DATA SET
+            await _printUserData();
+          }
+        }
+      } else {
+        debugPrint("❌ Business info API failed: ${response.statusCode}");
+      }
+    } catch (e) {
+      debugPrint("❌ Error fetching business info: $e");
+    } finally {
+      setState(() => _isLoadingBusinessInfo = false);
+    }
+  }
+
+  Future<void> _printUserData() async {
+    try {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final profileProvider =
+          Provider.of<ProfileProvider>(context, listen: false);
+
+      final user = authProvider.user;
+      final businessFromProvider = profileProvider.businessInfo;
+
+      final token = await UserStorageService().getToken();
+
+      debugPrint("========= USER DATA START =========");
+      debugPrint("Token: $token");
+      debugPrint("User ID: ${user?.id}");
+      debugPrint("Username: ${user?.userName}");
+      debugPrint("Name: ${user?.masterUser?.fname}");
+      debugPrint("Profile Pic: ${user?.masterUser?.profilePic}");
+      debugPrint("Designation: ${user?.masterUser?.toJson()['desg']}");
+      debugPrint("Mobile: ${user?.userMobile}");
+      debugPrint("Email: ${user?.email}");
+
+      // 🔥 Print from provider (might be null if not fetched)
+      debugPrint("--- Business Info (from Provider) ---");
+      debugPrint(
+          "Company (legal_name): ${businessFromProvider?['legal_name']}");
+      debugPrint("Website URL: ${businessFromProvider?['website_url']}");
+
+      // 🔥 Print from direct API call (guaranteed fresh)
+      debugPrint("--- Business Info (Direct API) ---");
+      debugPrint("legal_name: ${_directBusinessInfo?['legal_name']}");
+      debugPrint("gst_no: ${_directBusinessInfo?['gst_no']}");
+      debugPrint("address: ${_directBusinessInfo?['address']}");
+      debugPrint("website_url: ${_directBusinessInfo?['website_url']}");
+      debugPrint("contact_email: ${_directBusinessInfo?['contact_email']}");
+      debugPrint("upi_id: ${_directBusinessInfo?['upi_id']}");
+      debugPrint("bank_acc_no: ${_directBusinessInfo?['bank_acc_no']}");
+      debugPrint("ifsc_code: ${_directBusinessInfo?['ifsc_code']}");
+      debugPrint("branch_name: ${_directBusinessInfo?['branch_name']}");
+
+      debugPrint("========= USER DATA END =========");
+    } catch (e) {
+      debugPrint("❌ Error printing user data: $e");
+    }
   }
 
   // ================= HEADERS =================
@@ -102,6 +244,90 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
       return '${AppConfig.apiProfileImg}/${user!.masterUser!.profilePic}';
     }
     return null;
+  }
+
+  // List<Widget> _buildDynamicDataButtons() {
+  //   final auth = Provider.of<AuthProvider>(context, listen: false);
+
+  //   final name = auth.user?.masterUser?.fname;
+  //   final mobile = auth.user?.userMobile;
+  //   final email = auth.user?.email;
+  //   final company = _directBusinessInfo?['legal_name'];
+  //   final website = _directBusinessInfo?['website_url'];
+
+  //   final List<Map<String, String?>> items = [
+  //     {"label": "Name", "value": name},
+  //     {"label": "Mobile", "value": mobile},
+  //     {"label": "Email", "value": email},
+  //     {"label": "Company", "value": company},
+  //     {"label": "Website", "value": website},
+  //   ];
+
+  //   return items
+  //       .where((item) =>
+  //           item["value"] != null &&
+  //           item["value"]!.toString().trim().isNotEmpty)
+  //       .map((item) {
+  //     return Padding(
+  //       padding: const EdgeInsets.only(right: 10),
+  //       child: ElevatedButton(
+  //         onPressed: () {
+  //           setState(() {
+  //             _texts.add(
+  //               _TextOverlayItem(
+  //                 position: const Offset(60, 60),
+  //                 text: item["value"]!,
+  //                 color: Colors.black, // ✅ default black
+  //                 fontSize: 22,
+  //               ),
+  //             );
+  //           });
+  //         },
+  //         child: Text(item["label"]!),
+  //       ),
+  //     );
+  //   }).toList();
+  // }
+
+  List<Widget> _buildDynamicDataButtons() {
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+
+    final name = auth.user?.masterUser?.fname;
+    final mobile = auth.user?.userMobile;
+    final email = auth.user?.email;
+    final company = _directBusinessInfo?['legal_name'];
+    final website = _directBusinessInfo?['website_url'];
+
+    final List<Map<String, dynamic>> items = [
+      {"label": "Name", "value": name, "icon": Icons.person},
+      {"label": "Mobile", "value": mobile, "icon": Icons.phone},
+      {"label": "Email", "value": email, "icon": Icons.email},
+      {"label": "Company", "value": company, "icon": Icons.business},
+      {"label": "Website", "value": website, "icon": Icons.language},
+    ];
+
+    return items
+        .where((item) =>
+            item["value"] != null && item["value"].toString().trim().isNotEmpty)
+        .map((item) {
+      return _buildToolbarButton(
+        item["icon"] as IconData,
+        item["label"] as String,
+        false, // always inactive (no highlight)
+        () {
+          setState(() {
+            _texts.add(
+              _TextOverlayItem(
+                position: const Offset(60, 60),
+                text: item["value"].toString(),
+                color: Colors.black,
+                fontSize: 22,
+              ),
+            );
+          });
+        },
+      );
+    }).toList();
   }
 
   Future<Map<String, dynamic>> downloadFlyerApi() async {
@@ -262,6 +488,121 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
     }
   }
 
+  void _addTextDialog() {
+    String value = "";
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text("Enter Text"),
+          content: TextField(
+            onChanged: (val) => value = val,
+            decoration: const InputDecoration(hintText: "Type here..."),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (value.trim().isNotEmpty) {
+                  setState(() {
+                    _texts.add(
+                      _TextOverlayItem(
+                        position: const Offset(50, 50),
+                        text: value,
+                      ),
+                    );
+                  });
+                }
+                Navigator.pop(ctx);
+              },
+              child: const Text("Add"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _addShapeDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Select Shape",
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 16,
+                children: [
+                  _shapeOption("rect"),
+                  _shapeOption("circle"),
+                  _shapeOption("triangle"),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _shapeOption(String type) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          // _shapes.add(
+          //   _ShapeOverlayItem(
+          //     position: const Offset(80, 80),
+          //     shape: type,
+          //   ),
+          // );
+
+          _shapes.add(
+            _ShapeOverlayItem(
+              position: const Offset(80, 80),
+              shape: type,
+              width: 120,
+              height: 120,
+            ),
+          );
+        });
+        Navigator.pop(context);
+      },
+      child: Container(
+        width: 60,
+        height: 60,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: type == "circle"
+              ? BorderRadius.circular(30)
+              : BorderRadius.circular(8),
+        ),
+        child: Center(child: Text(type)),
+      ),
+    );
+  }
+
+  Widget _circleBtn(IconData icon, Color color) {
+    return Container(
+      width: 28,
+      height: 28,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 4)],
+      ),
+      child: Icon(icon, size: 16, color: Colors.white),
+    );
+  }
+
   void _showSettingsSheet() {
     showModalBottomSheet(
       context: context,
@@ -318,18 +659,43 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                       }),
                       const Divider(height: 32),
                     ],
+                    // if (_profileOverlay.visible) ...[
+                    //   _buildSectionHeader("Profile Settings", colorScheme),
+                    //   _buildSectionTitle("Size", colorScheme),
+                    //   _buildSizeSlider(_profileOverlay.size, 40, 200, (val) {
+                    //     setSheetState(() {});
+                    //     setState(() => _profileOverlay.size = val);
+                    //   }),
+                    //   _buildSectionTitle("Border Color", colorScheme),
+                    //   _buildColorPicker(_borderColor, (c) {
+                    //     setSheetState(() {});
+                    //     setState(() => _borderColor = c);
+                    //   }),
+                    //   const Divider(height: 32),
+                    // ],
                     if (_profileOverlay.visible) ...[
                       _buildSectionHeader("Profile Settings", colorScheme),
+
                       _buildSectionTitle("Size", colorScheme),
                       _buildSizeSlider(_profileOverlay.size, 40, 200, (val) {
                         setSheetState(() {});
                         setState(() => _profileOverlay.size = val);
                       }),
+
                       _buildSectionTitle("Border Color", colorScheme),
                       _buildColorPicker(_borderColor, (c) {
                         setSheetState(() {});
                         setState(() => _borderColor = c);
                       }),
+
+                      // 🔥 YAHAN ADD KARNA HAI
+                      _buildSectionTitle("Opacity", colorScheme),
+                      _buildSizeSlider(_profileOverlay.opacity, 0.1, 1.0,
+                          (val) {
+                        setSheetState(() {});
+                        setState(() => _profileOverlay.opacity = val);
+                      }),
+
                       const Divider(height: 32),
                     ],
                     if (_onlineQrOverlay.visible ||
@@ -438,6 +804,15 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
       left: item.position.dx,
       top: item.position.dy,
       child: GestureDetector(
+        onTap: () {
+          setState(() {
+            if (_selectedItem == item) {
+              _selectedItem = null; // toggle off
+            } else {
+              _selectedItem = item; // select
+            }
+          });
+        },
         onScaleStart: (_) {
           initialSize = item.size;
           initialScale = 1.0;
@@ -453,14 +828,26 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
             );
 
             // Pinch scaling (only if two fingers)
-            if (details.pointerCount == 2 &&
-                initialSize != null &&
-                initialScale != null) {
-              final newSize = (initialSize! * (details.scale / initialScale!))
-                  .clamp(40.0, 450.0);
-              if (newSize != item.size) {
-                item.size = newSize;
-              }
+
+            // if (item is _ShapeOverlayItem &&
+            //     details.pointerCount == 2 &&
+            //     initialSize != null &&
+            //     initialScale != null) {
+            //   final scale = (details.scale / initialScale!);
+
+            //   setState(() {
+            //     item.width = (item.width * scale).clamp(40.0, 400.0);
+            //     item.height = (item.height * scale).clamp(40.0, 400.0);
+            //   });
+            // }
+
+            if (item is _ShapeOverlayItem && details.pointerCount == 2) {
+              final scale = details.scale;
+
+              setState(() {
+                item.width = (item.width * scale).clamp(40.0, 400.0);
+                item.height = (item.height * scale).clamp(40.0, 400.0);
+              });
             }
           });
         },
@@ -469,13 +856,180 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
           initialScale = null;
         },
         onDoubleTap: onDoubleTap,
-        child: Transform.rotate(
-          angle: item.rotation,
-          child: child,
+        // child: Transform.rotate(
+        //   angle: item.rotation,
+        //   child: child,
+        // ),
+        // child: Container(
+        //   decoration: BoxDecoration(
+        //     border: _selectedItem == item
+        //         ? Border.all(color: Colors.red, width: 2)
+        //         : null,
+        //   ),
+        //   child: Transform.rotate(
+        //     angle: item.rotation,
+        //     child: child,
+        //   ),
+        // ),
+
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            /// MAIN CONTENT
+            Container(
+              decoration: BoxDecoration(
+                border: _selectedItem == item
+                    ? Border.all(color: Colors.blue, width: 2)
+                    : null,
+              ),
+              child: Transform.rotate(
+                angle: item.rotation,
+                child: child,
+              ),
+            ),
+
+            /// 🔥 SHOW CONTROLS ONLY IF SELECTED
+            if (_selectedItem == item) ...[
+              /// ❌ DELETE BUTTON
+              Positioned(
+                top: -12,
+                right: -12,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      if (item is _TextOverlayItem) {
+                        _texts.remove(item);
+                      } else if (item is _ShapeOverlayItem) {
+                        _shapes.remove(item);
+                      } else {
+                        item.visible = false;
+                      }
+                    });
+                  },
+                  child: _circleBtn(Icons.close, Colors.red),
+                ),
+              ),
+
+              /// 🔄 ROTATE BUTTON
+              Positioned(
+                bottom: -14,
+                right: -14,
+                child: GestureDetector(
+                  onPanUpdate: (details) {
+                    setState(() {
+                      // item.rotation += details.delta.dx * 0.02;
+                      item.rotation =
+                          (item.rotation + details.delta.dx * 0.02) % (2 * pi);
+                    });
+                  },
+                  child: _circleBtn(Icons.rotate_right, Colors.orange),
+                ),
+              ),
+
+              /// 🔲 RESIZE HANDLE
+              Positioned(
+                bottom: -14,
+                left: -14,
+                child: GestureDetector(
+                  onPanUpdate: (details) {
+                    setState(() {
+                      // if (item is _ShapeOverlayItem) {
+                      //   item.width += details.delta.dx;
+                      //   item.height += details.delta.dy;
+                      // } else {
+                      //   item.size += details.delta.dx;
+                      // }
+                      if (item is _ShapeOverlayItem) {
+                        item.width =
+                            (item.width + details.delta.dx).clamp(40.0, 400.0);
+                        item.height =
+                            (item.height + details.delta.dy).clamp(40.0, 400.0);
+                      } else {
+                        item.size =
+                            (item.size + details.delta.dx).clamp(40.0, 300.0);
+                      }
+                    });
+                  },
+                  child: _circleBtn(Icons.open_in_full, Colors.blue),
+                ),
+              ),
+            ]
+          ],
         ),
       ),
     );
   }
+
+  // void _showAdjustModal(_OverlayItem item) {
+  //   showModalBottomSheet(
+  //     context: context,
+  //     backgroundColor: Colors.transparent,
+  //     isScrollControlled: true,
+  //     builder: (ctx) {
+  //       return StatefulBuilder(
+  //         builder: (ctx, setSheetState) {
+  //           return Container(
+  //             padding: const EdgeInsets.all(20),
+  //             decoration: BoxDecoration(
+  //               color: Theme.of(context).colorScheme.surface,
+  //               borderRadius:
+  //                   const BorderRadius.vertical(top: Radius.circular(24)),
+  //             ),
+  //             child: Column(
+  //               mainAxisSize: MainAxisSize.min,
+  //               children: [
+  //                 const Text(
+  //                   "Adjust Overlay",
+  //                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  //                 ),
+  //                 const SizedBox(height: 20),
+  //                 Text("Size: ${item.size.toInt()} px"),
+  //                 Slider(
+  //                   value: item.size,
+  //                   min: 40,
+  //                   max: 450,
+  //                   onChanged: (val) {
+  //                     setSheetState(() => item.size = val);
+  //                     setState(() {}); // rebuild main UI
+  //                   },
+  //                 ),
+  //                 Text("Rotation: ${(item.rotation * 180 / pi).toInt()}°"),
+  //                 Slider(
+  //                   value: item.rotation,
+  //                   min: 0,
+  //                   max: 2 * pi,
+  //                   onChanged: (val) {
+  //                     setSheetState(() => item.rotation = val);
+  //                     setState(() {});
+  //                   },
+  //                 ),
+  //                 const SizedBox(height: 20),
+  //                 ElevatedButton(
+  //                   onPressed: () {
+  //                     setState(() {
+  //                       item.visible = false;
+  //                     });
+  //                     Navigator.pop(ctx);
+  //                   },
+  //                   style: ElevatedButton.styleFrom(
+  //                     backgroundColor: Colors.red,
+  //                     foregroundColor: Colors.white,
+  //                   ),
+  //                   child: const Text("Remove"),
+  //                 ),
+  //                 const SizedBox(height: 10),
+  //                 TextButton(
+  //                   onPressed: () => Navigator.pop(ctx),
+  //                   child: const Text("Close"),
+  //                 ),
+  //               ],
+  //             ),
+  //           );
+  //         },
+  //       );
+  //     },
+  //   );
+  // }
 
   void _showAdjustModal(_OverlayItem item) {
     showModalBottomSheet(
@@ -500,6 +1054,8 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 20),
+
+                  /// 🔵 SIZE
                   Text("Size: ${item.size.toInt()} px"),
                   Slider(
                     value: item.size,
@@ -507,9 +1063,11 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                     max: 450,
                     onChanged: (val) {
                       setSheetState(() => item.size = val);
-                      setState(() {}); // rebuild main UI
+                      setState(() {});
                     },
                   ),
+
+                  /// 🔵 ROTATION
                   Text("Rotation: ${(item.rotation * 180 / pi).toInt()}°"),
                   Slider(
                     value: item.rotation,
@@ -520,7 +1078,22 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                       setState(() {});
                     },
                   ),
+
+                  /// 🔥 NEW: OPACITY
+                  Text("Opacity: ${(item.opacity * 100).toInt()}%"),
+                  Slider(
+                    value: item.opacity,
+                    min: 0.1,
+                    max: 1.0,
+                    onChanged: (val) {
+                      setSheetState(() => item.opacity = val);
+                      setState(() {});
+                    },
+                  ),
+
                   const SizedBox(height: 20),
+
+                  /// ❌ REMOVE
                   ElevatedButton(
                     onPressed: () {
                       setState(() {
@@ -534,6 +1107,7 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                     ),
                     child: const Text("Remove"),
                   ),
+
                   const SizedBox(height: 10),
                   TextButton(
                     onPressed: () => Navigator.pop(ctx),
@@ -541,6 +1115,359 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                   ),
                 ],
               ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showTextEditModal(_TextOverlayItem item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: DraggableScrollableSheet(
+                initialChildSize: 0.6,
+                minChildSize: 0.4,
+                maxChildSize: 0.9,
+                expand: false,
+                builder: (_, controller) {
+                  return SingleChildScrollView(
+                    controller: controller,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade400,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+
+                        const Text(
+                          "Edit Text",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        /// 🔠 FONT SIZE
+                        Text("Font Size: ${item.fontSize.toInt()}"),
+                        Slider(
+                          value: item.fontSize,
+                          min: 10,
+                          max: 60,
+                          onChanged: (val) {
+                            setSheetState(() => item.fontSize = val);
+                            setState(() {});
+                          },
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        /// 🔄 ROTATION
+                        Text(
+                            "Rotation: ${(item.rotation * 180 / pi).toInt()}°"),
+                        Slider(
+                          value: item.rotation,
+                          min: 0,
+                          max: 2 * pi,
+                          onChanged: (val) {
+                            setSheetState(() => item.rotation = val);
+                            setState(() {});
+                          },
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        /// 🎨 COLOR PICKER
+                        const Text(
+                          "Text Color",
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 10),
+
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            Colors.white,
+                            Colors.black,
+                            Colors.red,
+                            Colors.blue,
+                            Colors.green,
+                            Colors.yellow,
+                            Colors.orange,
+                            Colors.purple,
+                            Colors.teal,
+                            Colors.pink,
+                            Colors.brown,
+                            Colors.grey,
+                          ].map((color) {
+                            return GestureDetector(
+                              onTap: () {
+                                setSheetState(() => item.color = color);
+                                setState(() {});
+                              },
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  color: color,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: item.color == color
+                                        ? Colors.blue
+                                        : Colors.transparent,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        Text("Opacity: ${(item.opacity * 100).toInt()}%"),
+                        Slider(
+                          value: item.opacity,
+                          min: 0.1,
+                          max: 1.0,
+                          onChanged: (val) {
+                            setSheetState(() => item.opacity = val);
+                            setState(() {});
+                          },
+                        ),
+                        const SizedBox(height: 20),
+
+                        /// ❌ DELETE BUTTON
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _texts.remove(item);
+                              });
+                              Navigator.pop(ctx);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text("Delete Text"),
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        /// ✅ CLOSE BUTTON
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text("Close"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showShapeEditModal(_ShapeOverlayItem item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true, // 🔥 IMPORTANT
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return DraggableScrollableSheet(
+              initialChildSize: 0.6,
+              minChildSize: 0.4,
+              maxChildSize: 0.9,
+              expand: false,
+              builder: (_, controller) {
+                return SingleChildScrollView(
+                  controller: controller,
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      top: 20,
+                      bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        /// drag handle
+                        Center(
+                          child: Container(
+                            width: 40,
+                            height: 4,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade400,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                        ),
+
+                        const Text("Edit Shape",
+                            style: TextStyle(
+                                fontSize: 16, fontWeight: FontWeight.bold)),
+
+                        const SizedBox(height: 16),
+
+                        /// WIDTH
+                        Text("Width: ${item.width.toInt()}"),
+                        Slider(
+                          value: item.width,
+                          min: 40,
+                          max: 400,
+                          onChanged: (val) {
+                            setSheetState(() => item.width = val);
+                            setState(() {});
+                          },
+                        ),
+
+                        /// HEIGHT
+                        Text("Height: ${item.height.toInt()}"),
+                        Slider(
+                          value: item.height,
+                          min: 40,
+                          max: 400,
+                          onChanged: (val) {
+                            setSheetState(() => item.height = val);
+                            setState(() {});
+                          },
+                        ),
+
+                        /// ROTATION
+                        Text(
+                            "Rotation: ${(item.rotation * 180 / pi).toInt()}°"),
+                        Slider(
+                          value: item.rotation,
+                          min: 0,
+                          max: 2 * pi,
+                          onChanged: (val) {
+                            setSheetState(() => item.rotation = val);
+                            setState(() {});
+                          },
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        /// COLOR
+                        const Text("Color",
+                            style: TextStyle(fontWeight: FontWeight.w600)),
+
+                        const SizedBox(height: 10),
+
+                        Wrap(
+                          spacing: 10,
+                          children: [
+                            Colors.black,
+                            Colors.red,
+                            Colors.blue,
+                            Colors.green,
+                            Colors.yellow,
+                            Colors.white,
+                          ].map((c) {
+                            return GestureDetector(
+                              onTap: () {
+                                setSheetState(() => item.color = c);
+                                setState(() {});
+                              },
+                              child: Container(
+                                width: 30,
+                                height: 30,
+                                decoration: BoxDecoration(
+                                  color: c,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: item.color == c
+                                        ? Colors.blue
+                                        : Colors.transparent,
+                                    width: 2,
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        /// 🔥 OPACITY
+                        Text("Opacity: ${(item.opacity * 100).toInt()}%"),
+                        Slider(
+                          value: item.opacity,
+                          min: 0.1,
+                          max: 1.0,
+                          onChanged: (val) {
+                            setSheetState(() => item.opacity = val);
+                            setState(() {});
+                          },
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        /// DELETE
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              setState(() => _shapes.remove(item));
+                              Navigator.pop(ctx);
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                            ),
+                            child: const Text("Delete"),
+                          ),
+                        ),
+
+                        const SizedBox(height: 10),
+
+                        /// CLOSE
+                        SizedBox(
+                          width: double.infinity,
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: const Text("Close"),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -620,6 +1547,38 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
     );
   }
 
+  Widget _buildShape(_ShapeOverlayItem item) {
+    final colorWithOpacity = item.color.withValues(alpha: item.opacity); // 🔥
+
+    switch (item.shape) {
+      case "circle":
+        return Container(
+          width: item.width,
+          height: item.height,
+          decoration: BoxDecoration(
+            color: colorWithOpacity,
+            shape: BoxShape.circle,
+          ),
+        );
+
+      case "triangle":
+        return CustomPaint(
+          size: Size(item.width, item.height),
+          painter: TrianglePainter(colorWithOpacity), // 🔥
+        );
+
+      default:
+        return Container(
+          width: item.width,
+          height: item.height,
+          decoration: BoxDecoration(
+            color: colorWithOpacity,
+            borderRadius: BorderRadius.circular(8),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthProvider>(context);
@@ -654,57 +1613,114 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                   : RepaintBoundary(
                       key: _captureKey,
                       child: LayoutBuilder(builder: (context, constraints) {
-                        return Stack(children: [
-                          Image.network(widget.imageUrl,
-                              fit: BoxFit.contain,
-                              width: constraints.maxWidth,
-                              height: constraints.maxHeight),
-                          if (_infoBarOverlay.visible)
-                            _buildDraggableOverlay(
-                                item: _infoBarOverlay,
-                                constraints: constraints,
-                                onDoubleTap: () =>
-                                    _showAdjustModal(_infoBarOverlay),
-                                child: _buildInfoBar(auth, profile)),
-                          if (_profileOverlay.visible && profileUrl != null)
-                            _buildDraggableOverlay(
-                                item: _profileOverlay,
-                                constraints: constraints,
-                                onDoubleTap: () =>
-                                    _showAdjustModal(_profileOverlay),
-                                child: Container(
-                                    width: _profileOverlay.size,
-                                    height: _profileOverlay.size,
-                                    decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(
-                                            color: _borderColor,
-                                            width: _borderWidth),
-                                        boxShadow: [
-                                          BoxShadow(
-                                              color: Colors.black26,
-                                              blurRadius: 10)
-                                        ]),
-                                    child: ClipOval(
-                                        child: Image.network(profileUrl,
-                                            fit: BoxFit.cover)))),
-                          if (_onlineQrOverlay.visible)
-                            _buildDraggableOverlay(
-                                item: _onlineQrOverlay,
-                                constraints: constraints,
-                                onDoubleTap: () =>
-                                    _showAdjustModal(_onlineQrOverlay),
-                                child: _buildQrWidget(_generateOnlineQrData(),
-                                    _onlineQrOverlay.size, "Connect")),
-                          if (_offlineQrOverlay.visible)
-                            _buildDraggableOverlay(
-                                item: _offlineQrOverlay,
-                                constraints: constraints,
-                                onDoubleTap: () =>
-                                    _showAdjustModal(_offlineQrOverlay),
-                                child: _buildQrWidget(_generateOfflineQrData(),
-                                    _offlineQrOverlay.size, "Contact")),
-                        ]);
+                        return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedItem =
+                                    null; // deselect when tapping outside
+                              });
+                            },
+                            child: Stack(children: [
+                              Image.network(widget.imageUrl,
+                                  fit: BoxFit.contain,
+                                  width: constraints.maxWidth,
+                                  height: constraints.maxHeight),
+                              if (_infoBarOverlay.visible)
+                                _buildDraggableOverlay(
+                                    item: _infoBarOverlay,
+                                    constraints: constraints,
+                                    onDoubleTap: () =>
+                                        _showAdjustModal(_infoBarOverlay),
+                                    child: _buildInfoBar(auth, profile)),
+                              if (_profileOverlay.visible && profileUrl != null)
+                                _buildDraggableOverlay(
+                                    item: _profileOverlay,
+                                    constraints: constraints,
+                                    onDoubleTap: () =>
+                                        _showAdjustModal(_profileOverlay),
+                                    child: Container(
+                                      width: _profileOverlay.size,
+                                      height: _profileOverlay.size,
+                                      decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          border: Border.all(
+                                              color: _borderColor,
+                                              width: _borderWidth),
+                                          boxShadow: [
+                                            BoxShadow(
+                                                color: Colors.black26,
+                                                blurRadius: 10)
+                                          ]),
+                                      child: Opacity(
+                                        opacity:
+                                            _profileOverlay.opacity, // 👈 APPLY
+                                        child: ClipOval(
+                                          child: Image.network(profileUrl,
+                                              fit: BoxFit.cover),
+                                        ),
+                                      ),
+                                    )),
+                              if (_onlineQrOverlay.visible)
+                                _buildDraggableOverlay(
+                                    item: _onlineQrOverlay,
+                                    constraints: constraints,
+                                    onDoubleTap: () =>
+                                        _showAdjustModal(_onlineQrOverlay),
+                                    child: _buildQrWidget(
+                                        _generateOnlineQrData(),
+                                        _onlineQrOverlay.size,
+                                        "Connect")),
+                              if (_offlineQrOverlay.visible)
+                                _buildDraggableOverlay(
+                                    item: _offlineQrOverlay,
+                                    constraints: constraints,
+                                    onDoubleTap: () =>
+                                        _showAdjustModal(_offlineQrOverlay),
+                                    child: _buildQrWidget(
+                                        _generateOfflineQrData(),
+                                        _offlineQrOverlay.size,
+                                        "Contact")),
+                              // ..._texts.map((item) {
+                              //   return _buildDraggableOverlay(
+                              //     item: item,
+                              //     constraints: constraints,
+                              //     onDoubleTap: () => _showTextEditModal(item),
+                              //     child: Text(
+                              //       item.text,
+                              //       style: TextStyle(
+                              //         color: item.color,
+                              //         fontSize: item.fontSize,
+                              //         fontWeight: FontWeight.bold,
+                              //       ),
+                              //     ),
+                              //   );
+                              // }).toList(),
+                              ..._texts.map((item) {
+                                return _buildDraggableOverlay(
+                                  item: item,
+                                  constraints: constraints,
+                                  onDoubleTap: () => _showTextEditModal(item),
+                                  child: Text(
+                                    item.text,
+                                    style: TextStyle(
+                                      color: item.color.withValues(
+                                          alpha:
+                                              item.opacity), // 🔥 APPLY OPACITY
+                                      fontSize: item.fontSize,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                              ..._shapes.map((item) {
+                                return _buildDraggableOverlay(
+                                  item: item,
+                                  constraints: constraints,
+                                  onDoubleTap: () => _showShapeEditModal(item),
+                                  child: _buildShape(item),
+                                );
+                              }).toList(),
+                            ]));
                       }),
                     ),
             ),
@@ -712,34 +1728,58 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             color: Colors.black,
-            child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
                 children: [
-                  _buildToolbarButton(
-                      Icons.badge,
-                      "Details Bar",
-                      _infoBarOverlay.visible,
-                      () => setState(() =>
-                          _infoBarOverlay.visible = !_infoBarOverlay.visible)),
+                  // _buildToolbarButton(
+                  //     Icons.badge,
+                  //     "Details Bar",
+                  //     _infoBarOverlay.visible,
+                  //     () => setState(() =>
+                  //         _infoBarOverlay.visible = !_infoBarOverlay.visible)),
                   _buildToolbarButton(
                       Icons.account_circle,
                       "Profile",
                       _profileOverlay.visible,
                       () => setState(() =>
                           _profileOverlay.visible = !_profileOverlay.visible)),
+                  const SizedBox(width: 10),
                   _buildToolbarButton(
                       Icons.qr_code,
                       "Online QR",
                       _onlineQrOverlay.visible,
                       () => setState(() => _onlineQrOverlay.visible =
                           !_onlineQrOverlay.visible)),
+                  const SizedBox(width: 10),
                   _buildToolbarButton(
                       Icons.qr_code_2,
                       "Offline QR",
                       _offlineQrOverlay.visible,
                       () => setState(() => _offlineQrOverlay.visible =
                           !_offlineQrOverlay.visible)),
-                ]),
+                  const SizedBox(width: 10),
+                  _buildToolbarButton(
+                    Icons.text_fields,
+                    "Text",
+                    false,
+                    _addTextDialog,
+                  ),
+                  const SizedBox(width: 10),
+                  _buildToolbarButton(
+                    Icons.category,
+                    "Shape",
+                    false,
+                    _addShapeDialog,
+                  ),
+                  const SizedBox(width: 10),
+                  // ..._buildDynamicDataButtons(),
+                  ..._buildDynamicDataButtons()
+                      .expand((widget) => [widget, const SizedBox(width: 10)])
+                      .toList(),
+                ],
+              ),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -813,4 +1853,25 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                   fontSize: 10))
         ]));
   }
+}
+
+class TrianglePainter extends CustomPainter {
+  final Color color;
+  TrianglePainter(this.color);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color;
+
+    final path = Path();
+    path.moveTo(size.width / 2, 0);
+    path.lineTo(0, size.height);
+    path.lineTo(size.width, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

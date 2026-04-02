@@ -443,7 +443,18 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     final palette = Theme.of(context).extension<AppThemeColors>();
 
     return GestureDetector(
-      onTap: _showMilestoneModal, // 👈 whole dashboard opens milestone modal
+      onTap: () {
+        if (_profileCompletionPercent < 100) {
+          _showMilestoneModal(); // 👈 incomplete → milestone modal
+        } else {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const UserAnaliticsPage(),
+            ),
+          ); // 👈 complete → analytics page
+        }
+      },
       child: GlassBox(
         padding: EdgeInsets.zero,
         borderRadius: 24,
@@ -681,49 +692,21 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                         ],
                       ),
                     ] else
-
-                      /// Optional: show completed badge when 100%
-                      // Container(
-                      //   padding: const EdgeInsets.symmetric(
-                      //       vertical: 8, horizontal: 16),
-                      //   decoration: BoxDecoration(
-                      //     color: Colors.green.withValues(alpha: 0.2),
-                      //     borderRadius: BorderRadius.circular(20),
-                      //     border: Border.all(color: Colors.green),
-                      //   ),
-                      //   child: const Row(
-                      //     mainAxisSize: MainAxisSize.min,
-                      //     children: [
-                      //       Icon(Icons.check_circle,
-                      //           color: Colors.green, size: 16),
-                      //       SizedBox(width: 6),
-                      //       Text(
-                      //         "Profile Completed",
-                      //         style:
-                      //             TextStyle(color: Colors.green, fontSize: 12),
-                      //       ),
-                      //     ],
-                      //   ),
-                      // ),
-
-                    // const SizedBox(height: 24),
-
-                    /// 🔹 MINI STATS
-                    Row(
-                      children: [
-                        _miniStatCard(
-                          icon: FontAwesomeIcons.clock,
-                          value:
-                              "${(_totalTimeSeconds / 60).toStringAsFixed(1)}m",
-                          label: "Time Spent",
-                        ),
-                        _miniStatCard(
-                          icon: FontAwesomeIcons.star,
-                          value: _averageRating.toStringAsFixed(1),
-                          label: "$_totalReviews reviews",
-                        ),
-                      ],
-                    ),
+                      Row(
+                        children: [
+                          _miniStatCard(
+                            icon: FontAwesomeIcons.clock,
+                            value:
+                                "${(_totalTimeSeconds / 60).toStringAsFixed(1)}m",
+                            label: "Time Spent",
+                          ),
+                          _miniStatCard(
+                            icon: FontAwesomeIcons.star,
+                            value: _averageRating.toStringAsFixed(1),
+                            label: "$_totalReviews reviews",
+                          ),
+                        ],
+                      ),
                   ]
                 ],
               ),
