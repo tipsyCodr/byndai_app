@@ -26,6 +26,7 @@ import '../profile/edit_profile_page.dart';
 import '../feature_map/feature_mapper.dart';
 import '../feature_map/feature_access_helper.dart';
 import './SubscriptionPlans.dart';
+import 'package:gridcard/core/services/auth_provider.dart';
 
 // class FeedPage extends StatefulWidget {
 //   const FeedPage({super.key});
@@ -44,6 +45,9 @@ class FeedPage extends StatefulWidget {
 // class _FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
 class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   final GlobalKey<ConnectionSuggestState> _connectionSuggestKey = GlobalKey();
+
+  static const String _baseUrl = AppConfig.apiBaseUrl;
+  Map<String, dynamic>? _userDetails;
 
   Map<String, bool> _milestones = {}; // Store milestone status
 
@@ -272,7 +276,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
       context,
       MaterialPageRoute(
         builder: (_) => EditProfilePage(
-          userDetails: null, // data will be fetched inside EditProfilePage
+          userDetails: _userDetails, // data will be fetched inside EditProfilePage
           initialTabIndex: tabIndex,
         ),
       ),
@@ -336,7 +340,8 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     _fadeAnimation =
         CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _fetchUserDetails();
       _fadeController.forward();
       _handleRefresh();
     });
@@ -1140,6 +1145,34 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
             )
           : const SizedBox(),
     );
+  }
+
+  // ================= USER DETAILS =================
+  Future<void> _fetchUserDetails() async {
+    try {
+      final int? targetUserId = await UserStorageService().getUserId();
+
+      if (targetUserId == null) return;
+
+      final headers = await _getHeaders();
+      final url = Uri.parse("$_baseUrl/user-details/$targetUserId");
+
+      final response = await http.get(url, headers: headers);
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+
+        if (decoded["status"] == true) {
+          if (mounted) {
+            setState(() {
+              _userDetails = decoded["data"];
+            });
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("🔴 EXCEPTION in _fetchUserDetails(): $e");
+    }
   }
 
   Future<void> _handleRefresh() async {
