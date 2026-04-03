@@ -935,7 +935,7 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                 //     });
                 //   },
                 //   child: _circleBtn(Icons.rotate_right, Colors.orange),
-                // ),
+                // )..,
 
                 child: GestureDetector(
                   behavior: HitTestBehavior.translucent,

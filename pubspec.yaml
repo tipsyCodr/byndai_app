@@ -2,7 +2,7 @@ name: gridcard
 description: A new Flutter project.
 publish_to: 'none' # Remove if publishing to pub.dev
 
-version: 1.0.12+12
+version: 1.0.14+14
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
