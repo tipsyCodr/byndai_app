@@ -646,7 +646,7 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       },
       child: const Text("Connect"),
-    );
+    );//...
   }
 
   // Widget _acceptButton() {
