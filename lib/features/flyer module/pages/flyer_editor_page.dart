@@ -29,10 +29,12 @@ class _OverlayItem {
   bool visible;
   double rotation;
   double opacity;
+  double height;
 
   _OverlayItem({
     required this.position,
     this.size = 80,
+    this.height = 104,
     this.visible = false,
     this.rotation = 0.0,
     this.opacity = 1.0,
@@ -48,7 +50,7 @@ class _TextOverlayItem extends _OverlayItem {
   _TextOverlayItem({
     required Offset position,
     this.text = "Your Text",
-    this.color = Colors.black,
+    this.color = const ui.Color.fromARGB(255, 151, 151, 151),
     this.fontSize = 24,
     this.opacity = 1.0,
     double size = 150,
@@ -72,7 +74,7 @@ class _ShapeOverlayItem extends _OverlayItem {
 
   _ShapeOverlayItem({
     required Offset position,
-    this.color = Colors.black, // ✅ default black
+    this.color = const ui.Color.fromARGB(255, 151, 151, 151), // ✅ default black
     this.shape = "rect",
     this.width = 100,
     this.height = 100,
@@ -101,6 +103,7 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
   List<_TextOverlayItem> _texts = [];
   List<_ShapeOverlayItem> _shapes = [];
   _OverlayItem? _selectedItem;
+  bool _isBarTransparent = false;
 
   Map<String, dynamic>? _directBusinessInfo; // 🔥 newly fetched business data
   bool _isLoadingBusinessInfo = true;
@@ -320,7 +323,7 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
               _TextOverlayItem(
                 position: const Offset(60, 60),
                 text: item["value"].toString(),
-                color: Colors.black,
+                color: const ui.Color.fromARGB(255, 151, 151, 151),
                 fontSize: 22,
               ),
             );
@@ -609,118 +612,159 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setSheetState) {
-            final colorScheme = Theme.of(context).colorScheme;
-            return Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(24))),
-              child: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
+        return DraggableScrollableSheet(
+          initialChildSize: 0.5, // 🔥 half screen
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (_, controller) {
+            return StatefulBuilder(
+              builder: (ctx, setSheetState) {
+                final colorScheme = Theme.of(context).colorScheme;
+
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: colorScheme.surface,
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(24),
+                    ),
+                  ),
+                  child: SingleChildScrollView(
+                    controller: controller, // 🔥 scroll control
+                    physics: const BouncingScrollPhysics(),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        /// 🔘 DRAG HANDLE
+                        Container(
+                          width: 40,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: 16),
+                          decoration: BoxDecoration(
                             color: colorScheme.onSurface.withValues(alpha: 0.2),
-                            borderRadius: BorderRadius.circular(2))),
-                    const SizedBox(height: 16),
-                    Text("Overlay Settings",
-                        style: TextStyle(
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+
+                        /// 🔷 TITLE
+                        Text(
+                          "Overlay Settings",
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
-                            color: colorScheme.onSurface)),
-                    const SizedBox(height: 20),
-                    if (_infoBarOverlay.visible) ...[
-                      _buildSectionHeader("Info Bar Styles", colorScheme),
-                      _buildSectionTitle("Bar Width", colorScheme),
-                      _buildSizeSlider(_infoBarOverlay.size, 150, 450, (val) {
-                        setSheetState(() {});
-                        setState(() => _infoBarOverlay.size = val);
-                      }),
-                      _buildSectionTitle("Font Size", colorScheme),
-                      _buildSizeSlider(_barFontSize, 8, 24, (val) {
-                        setSheetState(() {});
-                        setState(() => _barFontSize = val);
-                      }),
-                      _buildSectionTitle("Background Color", colorScheme),
-                      _buildColorPicker(_barBgColor, (c) {
-                        setSheetState(() {});
-                        setState(() => _barBgColor = c);
-                      }),
-                      _buildSectionTitle("Text Color", colorScheme),
-                      _buildColorPicker(_barTextColor, (c) {
-                        setSheetState(() {});
-                        setState(() => _barTextColor = c);
-                      }),
-                      const Divider(height: 32),
-                    ],
-                    // if (_profileOverlay.visible) ...[
-                    //   _buildSectionHeader("Profile Settings", colorScheme),
-                    //   _buildSectionTitle("Size", colorScheme),
-                    //   _buildSizeSlider(_profileOverlay.size, 40, 200, (val) {
-                    //     setSheetState(() {});
-                    //     setState(() => _profileOverlay.size = val);
-                    //   }),
-                    //   _buildSectionTitle("Border Color", colorScheme),
-                    //   _buildColorPicker(_borderColor, (c) {
-                    //     setSheetState(() {});
-                    //     setState(() => _borderColor = c);
-                    //   }),
-                    //   const Divider(height: 32),
-                    // ],
-                    if (_profileOverlay.visible) ...[
-                      _buildSectionHeader("Profile Settings", colorScheme),
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
 
-                      _buildSectionTitle("Size", colorScheme),
-                      _buildSizeSlider(_profileOverlay.size, 40, 200, (val) {
-                        setSheetState(() {});
-                        setState(() => _profileOverlay.size = val);
-                      }),
+                        const SizedBox(height: 20),
 
-                      _buildSectionTitle("Border Color", colorScheme),
-                      _buildColorPicker(_borderColor, (c) {
-                        setSheetState(() {});
-                        setState(() => _borderColor = c);
-                      }),
-
-                      // 🔥 YAHAN ADD KARNA HAI
-                      _buildSectionTitle("Opacity", colorScheme),
-                      _buildSizeSlider(_profileOverlay.opacity, 0.1, 1.0,
-                          (val) {
-                        setSheetState(() {});
-                        setState(() => _profileOverlay.opacity = val);
-                      }),
-
-                      const Divider(height: 32),
-                    ],
-                    if (_onlineQrOverlay.visible ||
-                        _offlineQrOverlay.visible) ...[
-                      _buildSectionHeader("QR Settings", colorScheme),
-                      if (_onlineQrOverlay.visible) ...[
-                        _buildSectionTitle("Online QR Size", colorScheme),
-                        _buildSizeSlider(_onlineQrOverlay.size, 50, 200, (val) {
-                          setSheetState(() {});
-                          setState(() => _onlineQrOverlay.size = val);
-                        }),
-                      ],
-                      if (_offlineQrOverlay.visible) ...[
-                        _buildSectionTitle("Offline QR Size", colorScheme),
-                        _buildSizeSlider(_offlineQrOverlay.size, 50, 200,
+                        /// ================= INFO BAR =================
+                        if (_infoBarOverlay.visible) ...[
+                          _buildSectionHeader("Info Bar Styles", colorScheme),
+                          SwitchListTile(
+                            title: const Text("Transparent Background"),
+                            value: _isBarTransparent,
+                            onChanged: (val) {
+                              setSheetState(() {});
+                              setState(() => _isBarTransparent = val);
+                            },
+                          ),
+                          _buildSectionTitle("Bar Width", colorScheme),
+                          _buildSizeSlider(
+                            _infoBarOverlay.size,
+                            150,
+                            450,
                             (val) {
-                          setSheetState(() {});
-                          setState(() => _offlineQrOverlay.size = val);
-                        }),
+                              setSheetState(() {});
+                              setState(() => _infoBarOverlay.size = val);
+                            },
+                          ),
+                          _buildSectionTitle("Font Size", colorScheme),
+                          _buildSizeSlider(_barFontSize, 8, 24, (val) {
+                            setSheetState(() {});
+                            setState(() => _barFontSize = val);
+                          }),
+                          _buildSectionTitle("Background Color", colorScheme),
+                          _buildColorPicker(_barBgColor, (c) {
+                            setSheetState(() {});
+                            setState(() => _barBgColor = c);
+                          }),
+                          _buildSectionTitle("Text Color", colorScheme),
+                          _buildColorPicker(_barTextColor, (c) {
+                            setSheetState(() {});
+                            setState(() => _barTextColor = c);
+                          }),
+                          const Divider(height: 32),
+                        ],
+
+                        /// ================= PROFILE =================
+                        if (_profileOverlay.visible) ...[
+                          _buildSectionHeader("Profile Settings", colorScheme),
+                          _buildSectionTitle("Size", colorScheme),
+                          _buildSizeSlider(
+                            _profileOverlay.size,
+                            40,
+                            200,
+                            (val) {
+                              setSheetState(() {});
+                              setState(() => _profileOverlay.size = val);
+                            },
+                          ),
+                          _buildSectionTitle("Border Color", colorScheme),
+                          _buildColorPicker(_borderColor, (c) {
+                            setSheetState(() {});
+                            setState(() => _borderColor = c);
+                          }),
+                          _buildSectionTitle("Opacity", colorScheme),
+                          _buildSizeSlider(
+                            _profileOverlay.opacity,
+                            0.1,
+                            1.0,
+                            (val) {
+                              setSheetState(() {});
+                              setState(() => _profileOverlay.opacity = val);
+                            },
+                          ),
+                          const Divider(height: 32),
+                        ],
+
+                        /// ================= QR =================
+                        if (_onlineQrOverlay.visible ||
+                            _offlineQrOverlay.visible) ...[
+                          _buildSectionHeader("QR Settings", colorScheme),
+                          if (_onlineQrOverlay.visible) ...[
+                            _buildSectionTitle("Online QR Size", colorScheme),
+                            _buildSizeSlider(
+                              _onlineQrOverlay.size,
+                              50,
+                              200,
+                              (val) {
+                                setSheetState(() {});
+                                setState(() => _onlineQrOverlay.size = val);
+                              },
+                            ),
+                          ],
+                          if (_offlineQrOverlay.visible) ...[
+                            _buildSectionTitle("Offline QR Size", colorScheme),
+                            _buildSizeSlider(
+                              _offlineQrOverlay.size,
+                              50,
+                              200,
+                              (val) {
+                                setSheetState(() {});
+                                setState(() => _offlineQrOverlay.size = val);
+                              },
+                            ),
+                          ],
+                        ],
+
+                        const SizedBox(height: 30),
                       ],
-                    ],
-                    const SizedBox(height: 30),
-                  ],
-                ),
-              ),
+                    ),
+                  ),
+                );
+              },
             );
           },
         );
@@ -797,85 +841,49 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
     required BoxConstraints constraints,
     required VoidCallback onDoubleTap,
   }) {
-    double? initialSize;
-    double? initialScale;
+    Offset? startPosition;
+    double? startRotation;
+    double? startSize;
+    double? startWidth;
+    double? startHeight;
 
     return Positioned(
       left: item.position.dx,
       top: item.position.dy,
       child: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+
+        /// 👉 SELECT ITEM
         onTap: () {
           setState(() {
-            if (_selectedItem == item) {
-              _selectedItem = null; // toggle off
-            } else {
-              _selectedItem = item; // select
-            }
+            _selectedItem = item;
           });
         },
-        onScaleStart: (_) {
-          initialSize = item.size;
-          initialScale = 1.0;
+
+        /// 👉 DRAG START
+        onPanStart: (details) {
+          startPosition = item.position;
         },
-        onScaleUpdate: (details) {
+
+        /// 👉 DRAG MOVE (ONLY MOVE, NOT SCALE)
+        onPanUpdate: (details) {
           setState(() {
-            // Drag
             item.position = Offset(
-              (item.position.dx + details.focalPointDelta.dx)
-                  .clamp(-item.size / 2, constraints.maxWidth - item.size / 2),
-              (item.position.dy + details.focalPointDelta.dy)
-                  .clamp(-item.size / 2, constraints.maxHeight - item.size / 2),
+              (item.position.dx + details.delta.dx)
+                  .clamp(0, constraints.maxWidth - 40),
+              (item.position.dy + details.delta.dy)
+                  .clamp(0, constraints.maxHeight - 40),
             );
-
-            // Pinch scaling (only if two fingers)
-
-            // if (item is _ShapeOverlayItem &&
-            //     details.pointerCount == 2 &&
-            //     initialSize != null &&
-            //     initialScale != null) {
-            //   final scale = (details.scale / initialScale!);
-
-            //   setState(() {
-            //     item.width = (item.width * scale).clamp(40.0, 400.0);
-            //     item.height = (item.height * scale).clamp(40.0, 400.0);
-            //   });
-            // }
-
-            if (item is _ShapeOverlayItem && details.pointerCount == 2) {
-              final scale = details.scale;
-
-              setState(() {
-                item.width = (item.width * scale).clamp(40.0, 400.0);
-                item.height = (item.height * scale).clamp(40.0, 400.0);
-              });
-            }
           });
         },
-        onScaleEnd: (_) {
-          initialSize = null;
-          initialScale = null;
-        },
+
+        /// 👉 DOUBLE TAP (OPEN EDIT)
         onDoubleTap: onDoubleTap,
-        // child: Transform.rotate(
-        //   angle: item.rotation,
-        //   child: child,
-        // ),
-        // child: Container(
-        //   decoration: BoxDecoration(
-        //     border: _selectedItem == item
-        //         ? Border.all(color: Colors.red, width: 2)
-        //         : null,
-        //   ),
-        //   child: Transform.rotate(
-        //     angle: item.rotation,
-        //     child: child,
-        //   ),
-        // ),
 
         child: Stack(
           clipBehavior: Clip.none,
           children: [
-            /// MAIN CONTENT
+            /// 🔷 MAIN CONTENT
             Container(
               decoration: BoxDecoration(
                 border: _selectedItem == item
@@ -884,13 +892,16 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
               ),
               child: Transform.rotate(
                 angle: item.rotation,
-                child: child,
+                child: Opacity(
+                  opacity: item.opacity,
+                  child: child,
+                ),
               ),
             ),
 
-            /// 🔥 SHOW CONTROLS ONLY IF SELECTED
+            /// 🔥 CONTROLS (ONLY WHEN SELECTED)
             if (_selectedItem == item) ...[
-              /// ❌ DELETE BUTTON
+              /// ❌ DELETE
               Positioned(
                 top: -12,
                 right: -12,
@@ -910,126 +921,102 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                 ),
               ),
 
-              /// 🔄 ROTATE BUTTON
+              /// 🔄 ROTATE (FIXED FOR MOBILE)
               Positioned(
                 bottom: -14,
                 right: -14,
+                // child: GestureDetector(
+                //   onPanStart: (_) {
+                //     startRotation = item.rotation;
+                //   },
+                //   onPanUpdate: (details) {
+                //     setState(() {
+                //       item.rotation = (item.rotation + details.delta.dx * 0.01);
+                //     });
+                //   },
+                //   child: _circleBtn(Icons.rotate_right, Colors.orange),
+                // )..,
+
                 child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onPanStart: (_) {
+                    startRotation = item.rotation;
+                  },
                   onPanUpdate: (details) {
                     setState(() {
-                      // item.rotation += details.delta.dx * 0.02;
-                      item.rotation =
-                          (item.rotation + details.delta.dx * 0.02) % (2 * pi);
+                      item.rotation += details.delta.dx * 0.01;
                     });
                   },
-                  child: _circleBtn(Icons.rotate_right, Colors.orange),
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: _circleBtn(Icons.rotate_right, Colors.orange),
+                  ),
                 ),
               ),
 
-              /// 🔲 RESIZE HANDLE
+              /// 🔲 RESIZE (FIXED FOR MOBILE)
               Positioned(
                 bottom: -14,
                 left: -14,
+                // child: GestureDetector(
+                //   onPanStart: (_) {
+                //     startSize = item.size;
+
+                //     if (item is _ShapeOverlayItem) {
+                //       startWidth = item.width;
+                //       startHeight = item.height;
+                //     }
+                //   },
+                //   onPanUpdate: (details) {
+                //     setState(() {
+                //       if (item is _ShapeOverlayItem) {
+                //         item.width =
+                //             (item.width + details.delta.dx).clamp(40.0, 600.0);
+                //         item.height =
+                //             (item.height + details.delta.dy).clamp(40.0, 600.0);
+                //       } else {
+                //         item.size =
+                //             (item.size + details.delta.dx).clamp(40.0, 600.0);
+                //       }
+                //     });
+                //   },
+                //   child: _circleBtn(Icons.open_in_full, Colors.blue),
+                // ),
+
                 child: GestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  onPanStart: (_) {
+                    startSize = item.size;
+                  },
                   onPanUpdate: (details) {
                     setState(() {
-                      // if (item is _ShapeOverlayItem) {
-                      //   item.width += details.delta.dx;
-                      //   item.height += details.delta.dy;
-                      // } else {
-                      //   item.size += details.delta.dx;
-                      // }
                       if (item is _ShapeOverlayItem) {
                         item.width =
-                            (item.width + details.delta.dx).clamp(40.0, 400.0);
+                            (item.width + details.delta.dx).clamp(40.0, 600.0);
                         item.height =
-                            (item.height + details.delta.dy).clamp(40.0, 400.0);
+                            (item.height + details.delta.dy).clamp(40.0, 600.0);
                       } else {
                         item.size =
-                            (item.size + details.delta.dx).clamp(40.0, 300.0);
+                            (item.size + details.delta.dx).clamp(40.0, 600.0);
                       }
                     });
                   },
-                  child: _circleBtn(Icons.open_in_full, Colors.blue),
+                  child: Container(
+                    width: 50,
+                    height: 50,
+                    alignment: Alignment.center,
+                    child: _circleBtn(Icons.open_in_full, Colors.blue),
+                  ),
                 ),
               ),
-            ]
+            ],
           ],
         ),
       ),
     );
   }
-
-  // void _showAdjustModal(_OverlayItem item) {
-  //   showModalBottomSheet(
-  //     context: context,
-  //     backgroundColor: Colors.transparent,
-  //     isScrollControlled: true,
-  //     builder: (ctx) {
-  //       return StatefulBuilder(
-  //         builder: (ctx, setSheetState) {
-  //           return Container(
-  //             padding: const EdgeInsets.all(20),
-  //             decoration: BoxDecoration(
-  //               color: Theme.of(context).colorScheme.surface,
-  //               borderRadius:
-  //                   const BorderRadius.vertical(top: Radius.circular(24)),
-  //             ),
-  //             child: Column(
-  //               mainAxisSize: MainAxisSize.min,
-  //               children: [
-  //                 const Text(
-  //                   "Adjust Overlay",
-  //                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-  //                 ),
-  //                 const SizedBox(height: 20),
-  //                 Text("Size: ${item.size.toInt()} px"),
-  //                 Slider(
-  //                   value: item.size,
-  //                   min: 40,
-  //                   max: 450,
-  //                   onChanged: (val) {
-  //                     setSheetState(() => item.size = val);
-  //                     setState(() {}); // rebuild main UI
-  //                   },
-  //                 ),
-  //                 Text("Rotation: ${(item.rotation * 180 / pi).toInt()}°"),
-  //                 Slider(
-  //                   value: item.rotation,
-  //                   min: 0,
-  //                   max: 2 * pi,
-  //                   onChanged: (val) {
-  //                     setSheetState(() => item.rotation = val);
-  //                     setState(() {});
-  //                   },
-  //                 ),
-  //                 const SizedBox(height: 20),
-  //                 ElevatedButton(
-  //                   onPressed: () {
-  //                     setState(() {
-  //                       item.visible = false;
-  //                     });
-  //                     Navigator.pop(ctx);
-  //                   },
-  //                   style: ElevatedButton.styleFrom(
-  //                     backgroundColor: Colors.red,
-  //                     foregroundColor: Colors.white,
-  //                   ),
-  //                   child: const Text("Remove"),
-  //                 ),
-  //                 const SizedBox(height: 10),
-  //                 TextButton(
-  //                   onPressed: () => Navigator.pop(ctx),
-  //                   child: const Text("Close"),
-  //                 ),
-  //               ],
-  //             ),
-  //           );
-  //         },
-  //       );
-  //     },
-  //   );
-  // }
 
   void _showAdjustModal(_OverlayItem item) {
     showModalBottomSheet(
@@ -1087,6 +1074,18 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                     max: 1.0,
                     onChanged: (val) {
                       setSheetState(() => item.opacity = val);
+                      setState(() {});
+                    },
+                  ),
+
+                  /// HEIGHT
+                  Text("Height: ${item.height.toInt()} px"),
+                  Slider(
+                    value: item.height,
+                    min: 60,
+                    max: 300,
+                    onChanged: (val) {
+                      setSheetState(() => item.height = val);
                       setState(() {});
                     },
                   ),
@@ -1348,7 +1347,7 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                         Slider(
                           value: item.width,
                           min: 40,
-                          max: 400,
+                          max: 600,
                           onChanged: (val) {
                             setSheetState(() => item.width = val);
                             setState(() {});
@@ -1477,54 +1476,81 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
 
   Widget _buildInfoBar(AuthProvider auth, ProfileProvider profile) {
     final user = auth.user;
-    final business = profile.businessInfo;
-    final name = user?.masterUser?.fname ?? 'Your Name';
-    final role = user?.masterUser?.toJson()['desg'] ?? 'Designation';
 
-    // Use legal_name for Business Name
-    final company = business?['legal_name'] ??
-        user?.masterUser?.toJson()['legal_name'] ??
-        'Business Name';
+    final fname = user?.masterUser?.fname ?? '';
+    final mobile = user?.userMobile ?? '';
+    final email = user?.email ?? '';
 
-    final contact = user?.userMobile ?? 'Mobile Number';
+    final businessName = _directBusinessInfo?['legal_name'] ?? '';
 
-    // Use website_url for Business Website
-    final website = business?['website_url'] ?? 'Your Website';
+    /// 🔥 FONT SIZES
+    const double nameSize = 16; // biggest
+    const double infoSize = 12; // same for all below
 
-    return Container(
-      width: _infoBarOverlay.size,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: _barBgColor.withValues(alpha: _barOpacity),
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black26, blurRadius: 8, offset: const Offset(0, 4))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(name,
+    return Opacity(
+      opacity: _infoBarOverlay.opacity,
+      child: Container(
+        width: _infoBarOverlay.size,
+        height: _infoBarOverlay.height,
+        padding: const EdgeInsets.all(12),
+        // decoration: BoxDecoration(
+        //   // color: Colors.grey.withValues(alpha: 0.9),
+        //   borderRadius: BorderRadius.circular(10),
+        // ),
+        // decoration: BoxDecoration(
+        //   color: _barBgColor.withValues(alpha: _barOpacity),
+        //   borderRadius: BorderRadius.circular(10),
+        // ),
+        decoration: _isBarTransparent
+            ? null
+            : BoxDecoration(
+                color: _barBgColor.withValues(alpha: _barOpacity),
+                borderRadius: BorderRadius.circular(10),
+              ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween, // 🔥 spacing fix
+          children: [
+            /// 👤 NAME (BIGGEST)
+            Text(
+              fname,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                  color: _barTextColor,
-                  fontSize: _barFontSize + 4,
-                  fontWeight: FontWeight.bold)),
-          if (role.toString().isNotEmpty)
-            Text(role.toString(),
-                style: TextStyle(
-                    color: _barTextColor.withValues(alpha: 0.8),
-                    fontSize: _barFontSize,
-                    fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
-          Divider(color: _barTextColor.withValues(alpha: 0.2), height: 8),
-          const SizedBox(height: 4),
-          _buildInfoRow(Icons.business, company.toString()),
-          _buildInfoRow(Icons.phone, contact),
-          _buildInfoRow(Icons.language, website.toString()),
-        ],
+                color: _barTextColor,
+                fontWeight: FontWeight.bold,
+                fontSize: nameSize,
+              ),
+            ),
+
+            /// 🏢 BUSINESS
+            _buildFixedRow(businessName, infoSize),
+
+            /// 📱 MOBILE (CONTACT removed → yahan show hoga)
+            _buildFixedRow(mobile, infoSize),
+
+            /// 📧 EMAIL
+            _buildFixedRow(email, infoSize),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildFixedRow(String text, double fontSize) {
+    return SizedBox(
+      height: 18, // 🔥 fixed height → spacing always same
+      child: text.isNotEmpty
+          ? Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: _barTextColor,
+                fontSize: fontSize,
+              ),
+            )
+          : const SizedBox(), // empty but space reserved
     );
   }
 
@@ -1625,6 +1651,14 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                                   fit: BoxFit.contain,
                                   width: constraints.maxWidth,
                                   height: constraints.maxHeight),
+                              ..._shapes.map((item) {
+                                return _buildDraggableOverlay(
+                                  item: item,
+                                  constraints: constraints,
+                                  onDoubleTap: () => _showShapeEditModal(item),
+                                  child: _buildShape(item),
+                                );
+                              }).toList(),
                               if (_infoBarOverlay.visible)
                                 _buildDraggableOverlay(
                                     item: _infoBarOverlay,
@@ -1680,21 +1714,6 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                                         _generateOfflineQrData(),
                                         _offlineQrOverlay.size,
                                         "Contact")),
-                              // ..._texts.map((item) {
-                              //   return _buildDraggableOverlay(
-                              //     item: item,
-                              //     constraints: constraints,
-                              //     onDoubleTap: () => _showTextEditModal(item),
-                              //     child: Text(
-                              //       item.text,
-                              //       style: TextStyle(
-                              //         color: item.color,
-                              //         fontSize: item.fontSize,
-                              //         fontWeight: FontWeight.bold,
-                              //       ),
-                              //     ),
-                              //   );
-                              // }).toList(),
                               ..._texts.map((item) {
                                 return _buildDraggableOverlay(
                                   item: item,
@@ -1710,14 +1729,6 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
-                                );
-                              }).toList(),
-                              ..._shapes.map((item) {
-                                return _buildDraggableOverlay(
-                                  item: item,
-                                  constraints: constraints,
-                                  onDoubleTap: () => _showShapeEditModal(item),
-                                  child: _buildShape(item),
                                 );
                               }).toList(),
                             ]));
@@ -1738,6 +1749,24 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                   //     _infoBarOverlay.visible,
                   //     () => setState(() =>
                   //         _infoBarOverlay.visible = !_infoBarOverlay.visible)),
+
+                  _buildToolbarButton(
+                    Icons.badge,
+                    "Details Bar",
+                    _infoBarOverlay.visible,
+                    () {
+                      setState(() {
+                        _infoBarOverlay.visible = !_infoBarOverlay.visible;
+
+                        if (_infoBarOverlay.visible) {
+                          _infoBarOverlay.position = const Offset(40, 250);
+                          _infoBarOverlay.size = 280; // width control
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 10),
+
                   _buildToolbarButton(
                       Icons.account_circle,
                       "Profile",
