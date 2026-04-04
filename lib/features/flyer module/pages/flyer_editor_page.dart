@@ -113,6 +113,10 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
   late _OverlayItem _offlineQrOverlay;
   late _OverlayItem _infoBarOverlay;
 
+  late _OverlayItem _logoOverlay;
+  double _logoBorderWidth = 3.0;
+  Color _logoBorderColor = Colors.white;
+
   bool _isSaving = false;
   bool _imageLoaded = false;
 
@@ -135,6 +139,13 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
       visible: true,
       opacity: 1.0,
     );
+
+    _logoOverlay = _OverlayItem(
+      position: const Offset(140, 20), // different from profile pic (20,20)
+      size: 100,
+      visible: false,
+      opacity: 1.0,
+    );
     _onlineQrOverlay = _OverlayItem(
         position: const Offset(20, 140), size: 100, visible: false);
     _offlineQrOverlay = _OverlayItem(
@@ -147,6 +158,15 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
         if (mounted) setState(() => _imageLoaded = true);
       });
     });
+  }
+
+  String? _getProfileLogoUrl() {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final user = authProvider.user;
+    if (user?.masterUser?.profileLogo != null) {
+      return '${AppConfig.apiProfileImg}/${user!.masterUser!.profileLogo}';
+    }
+    return null;
   }
 
   Future<void> _fetchBusinessInfoDirect() async {
@@ -202,6 +222,7 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
       debugPrint("Username: ${user?.userName}");
       debugPrint("Name: ${user?.masterUser?.fname}");
       debugPrint("Profile Pic: ${user?.masterUser?.profilePic}");
+      debugPrint("Profile logo: ${user?.masterUser?.profileLogo}");
       debugPrint("Designation: ${user?.masterUser?.toJson()['desg']}");
       debugPrint("Mobile: ${user?.userMobile}");
       debugPrint("Email: ${user?.email}");
@@ -724,6 +745,37 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                             (val) {
                               setSheetState(() {});
                               setState(() => _profileOverlay.opacity = val);
+                            },
+                          ),
+                          const Divider(height: 32),
+                        ],
+
+                        /// ================= LOGO =================
+                        if (_logoOverlay.visible) ...[
+                          _buildSectionHeader("Logo Settings", colorScheme),
+                          _buildSectionTitle("Size", colorScheme),
+                          _buildSizeSlider(
+                            _logoOverlay.size,
+                            40,
+                            200,
+                            (val) {
+                              setSheetState(() {});
+                              setState(() => _logoOverlay.size = val);
+                            },
+                          ),
+                          _buildSectionTitle("Border Color", colorScheme),
+                          _buildColorPicker(_logoBorderColor, (c) {
+                            setSheetState(() {});
+                            setState(() => _logoBorderColor = c);
+                          }),
+                          _buildSectionTitle("Opacity", colorScheme),
+                          _buildSizeSlider(
+                            _logoOverlay.opacity,
+                            0.1,
+                            1.0,
+                            (val) {
+                              setSheetState(() {});
+                              setState(() => _logoOverlay.opacity = val);
                             },
                           ),
                           const Divider(height: 32),
@@ -1694,6 +1746,39 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                                         ),
                                       ),
                                     )),
+                              if (_logoOverlay.visible &&
+                                  _getProfileLogoUrl() != null)
+                                _buildDraggableOverlay(
+                                  item: _logoOverlay,
+                                  constraints: constraints,
+                                  onDoubleTap: () =>
+                                      _showAdjustModal(_logoOverlay),
+                                  child: Container(
+                                    width: _logoOverlay.size,
+                                    height: _logoOverlay.size,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: _logoBorderColor,
+                                        width: _logoBorderWidth,
+                                      ),
+                                      boxShadow: const [
+                                        BoxShadow(
+                                            color: Colors.black26,
+                                            blurRadius: 10)
+                                      ],
+                                    ),
+                                    child: Opacity(
+                                      opacity: _logoOverlay.opacity,
+                                      child: ClipOval(
+                                        child: Image.network(
+                                          _getProfileLogoUrl()!,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               if (_onlineQrOverlay.visible)
                                 _buildDraggableOverlay(
                                     item: _onlineQrOverlay,
@@ -1806,6 +1891,16 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                   ..._buildDynamicDataButtons()
                       .expand((widget) => [widget, const SizedBox(width: 10)])
                       .toList(),
+                  const SizedBox(width: 10),
+
+                  if (_getProfileLogoUrl() != null)
+                    _buildToolbarButton(
+                      Icons.image,
+                      "Logo",
+                      _logoOverlay.visible,
+                      () => setState(
+                          () => _logoOverlay.visible = !_logoOverlay.visible),
+                    ),
                 ],
               ),
             ),

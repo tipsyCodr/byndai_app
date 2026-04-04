@@ -596,7 +596,17 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _connectButton() {
+    final colorScheme = Theme.of(context).colorScheme;
     return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: colorScheme.primary, // button color
+        foregroundColor: Colors.white, // text/icon color
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8), // rounded corners
+        ),
+        shadowColor: Colors.transparent, // removes extra shadow in dark mode
+        elevation: 0, // removes elevation if needed
+      ),
       onPressed: () async {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -636,52 +646,102 @@ class _ProfilePageState extends State<ProfilePage> {
         }
       },
       child: const Text("Connect"),
-    );
+    );//.......
   }
+
+  // Widget _acceptButton() {
+  //   return ElevatedButton(
+  //     // onPressed: () async {
+  //     //   await _acceptPendingRequest();
+  //     //   _checkConnectionStatus();
+  //     // },
+
+  //     onPressed: () async {
+  //       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+  //       await authProvider.refreshSubscription();
+
+  //       final auth = Provider.of<AuthProvider>(context, listen: false);
+
+  //       int? featureId =
+  //           FeatureMapper.getFeatureId('connection_request_accept');
+
+  //       bool canUse = FeatureAccessHelper.canUseFeature(
+  //         featureId: featureId!,
+  //         subscription: auth.subscriptionDetails,
+  //       );
+
+  //       debugPrint(
+  //           "connection suggested page connect button click connection_request_accept: $canUse");
+
+  //       if (canUse) {
+  //         await _acceptPendingRequest();
+  //         _checkConnectionStatus();
+  //       } else {
+  //         // ❌ Navigate to Subscription Plans
+  //         Navigator.push(
+  //           context,
+  //           MaterialPageRoute(
+  //             builder: (context) => const SubscriptionPlans(), // 👈 apna page
+  //           ),
+  //         );
+  //       }
+  //     },
+
+  //     child: const Text("Accept"),
+  //   );
+  // }
 
   Widget _acceptButton() {
-    return ElevatedButton(
-      // onPressed: () async {
-      //   await _acceptPendingRequest();
-      //   _checkConnectionStatus();
-      // },
+    final colorScheme = Theme.of(context).colorScheme;
 
-      onPressed: () async {
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    return Expanded(
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: colorScheme.primary, // button color
+          foregroundColor: Colors.white, // text/icon color
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8), // rounded corners
+          ),
+          shadowColor: Colors.transparent, // removes extra shadow in dark mode
+          elevation: 0, // removes elevation if needed
+        ),
+        onPressed: () async {
+          final authProvider =
+              Provider.of<AuthProvider>(context, listen: false);
 
-        await authProvider.refreshSubscription();
+          await authProvider.refreshSubscription();
 
-        final auth = Provider.of<AuthProvider>(context, listen: false);
+          final auth = Provider.of<AuthProvider>(context, listen: false);
 
-        int? featureId =
-            FeatureMapper.getFeatureId('connection_request_accept');
+          int? featureId =
+              FeatureMapper.getFeatureId('connection_request_accept');
 
-        bool canUse = FeatureAccessHelper.canUseFeature(
-          featureId: featureId!,
-          subscription: auth.subscriptionDetails,
-        );
-
-        debugPrint(
-            "connection suggested page connect button click connection_request_accept: $canUse");
-
-        if (canUse) {
-          await _acceptPendingRequest();
-          _checkConnectionStatus();
-        } else {
-          // ❌ Navigate to Subscription Plans
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const SubscriptionPlans(), // 👈 apna page
-            ),
+          bool canUse = FeatureAccessHelper.canUseFeature(
+            featureId: featureId!,
+            subscription: auth.subscriptionDetails,
           );
-        }
-      },
 
-      child: const Text("Accept"),
+          debugPrint(
+              "connection suggested page connect button click connection_request_accept: $canUse");
+
+          if (canUse) {
+            await _acceptPendingRequest();
+            _checkConnectionStatus();
+          } else {
+            // ❌ Navigate to Subscription Plans
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SubscriptionPlans(),
+              ),
+            );
+          }
+        },
+        child: const Text("Accept"),
+      ),
     );
   }
-
 
   Widget _brandCard({
     required Widget child,
@@ -870,7 +930,18 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _removeButton() {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return ElevatedButton(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: colorScheme.primary, // button color
+        foregroundColor: Colors.white, // text/icon color
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8), // rounded corners
+        ),
+        shadowColor: Colors.transparent, // removes extra shadow in dark mode
+        elevation: 0, // removes elevation if needed
+      ),
       onPressed: () async {
         await _removeSentRequest();
         _checkConnectionStatus();
@@ -2430,7 +2501,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             padding: const EdgeInsets.all(14),
                             decoration: BoxDecoration(
                               color: isDark
-                                  ? colorScheme.surfaceContainerHighest
+                                  ? Colors.transparent
                                   : colorScheme.surface,
                             ),
                             child: _buildConnectionButton(),
