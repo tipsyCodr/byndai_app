@@ -18,7 +18,6 @@ import '../qr_scan/profile_qr_code.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/nfc_service.dart';
 
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -30,10 +29,17 @@ class _HomePageState extends State<HomePage> {
   DateTime? _lastBackPressed;
 
   final GlobalKey<FeedPageState> _feedKey = GlobalKey<FeedPageState>();
+  late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
+    _screens = [
+      FeedPage(key: _feedKey),
+      const LeadsPage(),
+      const DiscoverPage(),
+      const SettingsPage(),
+    ];
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeNfc();
       final auth = Provider.of<AuthProvider>(context, listen: false);
@@ -76,14 +82,14 @@ class _HomePageState extends State<HomePage> {
 
   int _selectedIndex = 0;
 
-  List<Widget> _screens() {
-    return [
-      FeedPage(key: _feedKey),
-      const LeadsPage(),
-      const DiscoverPage(),
-      const SettingsPage(),
-    ];
-  }
+  // List<Widget> _screens() {
+  //   return [
+  //     FeedPage(key: _feedKey),
+  //     const LeadsPage(),
+  //     const DiscoverPage(),
+  //     const SettingsPage(),
+  //   ];
+  // }
 
   final List<String> _titles = [
     'Home',
@@ -232,7 +238,11 @@ class _HomePageState extends State<HomePage> {
             children: [
               if (isDark) _buildDarkModePattern(context),
               if (!isDark) _buildLightModePattern(context),
-              _screens()[_selectedIndex],
+              // _screens()[_selectedIndex],
+              IndexedStack(
+                index: _selectedIndex,
+                children: _screens,
+              ),
               _buildFloatingDock(),
             ],
           ),
