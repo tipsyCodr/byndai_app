@@ -1,121 +1,8 @@
-// import 'package:flutter/cupertino.dart';
-// import 'package:flutter/material.dart';
-// import 'package:gridcard/core/services/auth_provider.dart';
-// import 'package:provider/provider.dart';
-
-// class ChangePinPage extends StatefulWidget {
-//   const ChangePinPage({super.key});
-
-//   @override
-//   State<ChangePinPage> createState() => _ChangePinPageState();
-// }
-
-// class _ChangePinPageState extends State<ChangePinPage> {
-//   final _formKey = GlobalKey<FormState>();
-//   final _oldPinController = TextEditingController();
-//   final _newPinController = TextEditingController();
-//   final _confirmPinController = TextEditingController();
-
-//   Future<void> _updatePin() async {
-//     if (!_formKey.currentState!.validate()) return;
-
-//     final authProvider = context.read<AuthProvider>();
-//     // Assuming authProvider or AuthService handles PIN updates
-//     // For now we use the logic that might be in AuthService.setPin
-//     final success = await authProvider.updatePin(
-//         _oldPinController.text, _newPinController.text);
-
-//     if (mounted && success) {
-//       ScaffoldMessenger.of(context).showSnackBar(
-//           const SnackBar(content: Text("PIN updated successfully")));
-//       Navigator.pop(context);
-//     } else if (mounted) {
-//       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-//           content:
-//               Text("Failed to update PIN. Please check your current PIN.")));
-//     }
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: Colors.black,
-//       appBar: AppBar(
-//         title: const Text("Change PIN", style: TextStyle(color: Colors.white)),
-//         backgroundColor: Colors.black,
-//       ),
-//       body: Padding(
-//         padding: const EdgeInsets.all(24.0),
-//         child: Form(
-//           key: _formKey,
-//           child: Column(
-//             crossAxisAlignment: CrossAxisAlignment.stretch,
-//             children: [
-//               const Text(
-//                   "Enter your current and new PIN to keep your account secure.",
-//                   style: TextStyle(color: Colors.white70)),
-//               const SizedBox(height: 32),
-//               _buildPinField(_oldPinController, "Current PIN"),
-//               const SizedBox(height: 16),
-//               _buildPinField(_newPinController, "New PIN"),
-//               const SizedBox(height: 16),
-//               _buildPinField(_confirmPinController, "Confirm New PIN",
-//                   validator: (val) {
-//                 if (val != _newPinController.text) return "PINs do not match";
-//                 return null;
-//               }),
-//               const Spacer(),
-//               ElevatedButton(
-//                 onPressed: _updatePin,
-//                 style: ElevatedButton.styleFrom(
-//                   backgroundColor: Colors.blueAccent,
-//                   padding: const EdgeInsets.symmetric(vertical: 16),
-//                   shape: RoundedRectangleBorder(
-//                       borderRadius: BorderRadius.circular(12)),
-//                 ),
-//                 child: const Text("Update PIN",
-//                     style: TextStyle(
-//                         color: Colors.white, fontWeight: FontWeight.bold)),
-//               ),
-//               const SizedBox(height: 20),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-
-//   Widget _buildPinField(TextEditingController controller, String label,
-//       {String? Function(String?)? validator}) {
-//     return TextFormField(
-//       controller: controller,
-//       obscureText: true,
-//       keyboardType: TextInputType.number,
-//       maxLength: 4,
-//       style:
-//           const TextStyle(color: Colors.white, fontSize: 18, letterSpacing: 8),
-//       textAlign: TextAlign.center,
-//       decoration: InputDecoration(
-//         labelText: label,
-//         labelStyle: const TextStyle(color: Colors.white38, letterSpacing: 0),
-//         counterText: "",
-//         filled: true,
-//         fillColor: Colors.grey[900],
-//         border: OutlineInputBorder(
-//             borderRadius: BorderRadius.circular(12),
-//             borderSide: BorderSide.none),
-//       ),
-//       validator: validator ??
-//           (val) =>
-//               (val == null || val.length < 4) ? "PIN must be 4 digits" : null,
-//     );
-//   }
-// }
-
 import 'package:flutter/material.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/widgets/glass_box.dart';
 
 class ChangePinPage extends StatefulWidget {
   const ChangePinPage({super.key});
@@ -146,74 +33,164 @@ class _ChangePinPageState extends State<ChangePinPage> {
   }
 
   @override
+  void dispose() {
+    _newPinController.dispose();
+    _confirmPinController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text("Change PIN", style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.black,
+        title: Text("Change PIN", 
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.bold,
+          )
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        iconTheme: IconThemeData(color: colorScheme.onSurface),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text("Enter your new PIN to keep your account secure.",
-                  style: TextStyle(color: Colors.white70)),
-              const SizedBox(height: 32),
-              _buildPinField(_newPinController, "New PIN"),
-              const SizedBox(height: 16),
-              _buildPinField(_confirmPinController, "Confirm New PIN",
-                  validator: (val) {
-                if (val != _newPinController.text) return "PINs do not match";
-                return null;
-              }),
-              const Spacer(),
-              ElevatedButton(
-                onPressed: _updatePin,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blueAccent,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ),
-                child: const Text("Update PIN",
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold)),
-              ),
-              const SizedBox(height: 20),
+      extendBodyBehindAppBar: true,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              colorScheme.surface,
+              colorScheme.surfaceContainerHighest,
             ],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    "Enter your new PIN to keep your account secure.",
+                    style: textTheme.bodyLarge?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  GlassBox(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        _buildPinField(
+                          context,
+                          _newPinController,
+                          "New PIN",
+                        ),
+                        const SizedBox(height: 20),
+                        _buildPinField(
+                          context,
+                          _confirmPinController,
+                          "Confirm New PIN",
+                          validator: (val) {
+                            if (val != _newPinController.text) {
+                              return "PINs do not match";
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Spacer(),
+                  ElevatedButton(
+                    onPressed: _updatePin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      foregroundColor: colorScheme.onPrimary,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: const Text(
+                      "Update PIN",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildPinField(TextEditingController controller, String label,
-      {String? Function(String?)? validator}) {
+  Widget _buildPinField(
+    BuildContext context,
+    TextEditingController controller,
+    String label, {
+    String? Function(String?)? validator,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    
     return TextFormField(
       controller: controller,
       obscureText: true,
       keyboardType: TextInputType.number,
       maxLength: 4,
-      style:
-          const TextStyle(color: Colors.white, fontSize: 18, letterSpacing: 8),
+      style: TextStyle(
+        color: colorScheme.onSurface,
+        fontSize: 24,
+        letterSpacing: 16,
+        fontWeight: FontWeight.bold,
+      ),
       textAlign: TextAlign.center,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.white38, letterSpacing: 0),
+        labelStyle: TextStyle(
+          color: colorScheme.onSurfaceVariant,
+          letterSpacing: 0,
+          fontSize: 14,
+        ),
         counterText: "",
         filled: true,
-        fillColor: Colors.grey,
+        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none),
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide(
+            color: colorScheme.primary,
+            width: 1.5,
+          ),
+        ),
+        floatingLabelBehavior: FloatingLabelBehavior.always,
       ),
       validator: validator ??
-          (val) =>
-              (val == null || val.length < 4) ? "PIN must be 4 digits" : null,
+          (val) => (val == null || val.length < 4) ? "PIN must be 4 digits" : null,
     );
   }
 }

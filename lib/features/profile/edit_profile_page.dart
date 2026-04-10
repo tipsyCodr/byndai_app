@@ -19,6 +19,15 @@ class EditProfilePage extends StatefulWidget {
 class _EditProfilePageState extends State<EditProfilePage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
+  bool _hasChanges = false;
+
+  void _onChanged() {
+    if (!_hasChanges) {
+      setState(() {
+        _hasChanges = true;
+      });
+    }
+  }
 
   @override
   void initState() {
@@ -42,41 +51,53 @@ class _EditProfilePageState extends State<EditProfilePage>
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: colorScheme.surface,
-      appBar: AppBar(
-        backgroundColor: isDark ? colorScheme.surfaceContainerHighest : null,
-        foregroundColor: colorScheme.onSurface,
-        title: Text(
-          "Edit Profile",
-          style: TextStyle(color: colorScheme.onSurface),
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.of(context).pop(_hasChanges);
+      },
+      child: Scaffold(
+        backgroundColor: colorScheme.surface,
+        appBar: AppBar(
+          backgroundColor: isDark ? colorScheme.surfaceContainerHighest : null,
+          foregroundColor: colorScheme.onSurface,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.of(context).pop(_hasChanges),
+          ),
+          title: Text(
+            "Edit Profile",
+            style: TextStyle(color: colorScheme.onSurface),
+          ),
+          bottom: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            labelColor: colorScheme.primary,
+            unselectedLabelColor: colorScheme.onSurfaceVariant,
+            indicatorColor: colorScheme.primary,
+            tabs: const [
+              Tab(text: "Profile"),
+              Tab(text: "Links"),
+              Tab(text: "Keywords"),
+              Tab(text: "Business Info"),
+              Tab(text: "Products"),
+              Tab(text: "Review"),
+            ],
+          ),
         ),
-        bottom: TabBar(
+        body: TabBarView(
           controller: _tabController,
-          isScrollable: true,
-          labelColor: colorScheme.primary,
-          unselectedLabelColor: colorScheme.onSurfaceVariant,
-          indicatorColor: colorScheme.primary,
-          tabs: const [
-            Tab(text: "Profile"),
-            Tab(text: "Links"),
-            Tab(text: "Keywords"),
-            Tab(text: "Business Info"),
-            Tab(text: "Product"),
-            Tab(text: "Review"),
+          children: [
+            ProfileTab(userDetails: widget.userDetails, onSaved: _onChanged),
+            LinksTab(userDetails: widget.userDetails, onSaved: _onChanged),
+            KeywordsTab(userDetails: widget.userDetails, onSaved: _onChanged),
+            BusinessInfoTab(
+                userDetails: widget.userDetails, onSaved: _onChanged),
+            ProductsTab(userDetails: widget.userDetails, onSaved: _onChanged),
+            ReviewTab(userDetails: widget.userDetails, onSaved: _onChanged),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          ProfileTab(userDetails: widget.userDetails),
-          LinksTab(userDetails: widget.userDetails),
-          KeywordsTab(userDetails: widget.userDetails),
-          BusinessInfoTab(userDetails: widget.userDetails),
-          ProductsTab(userDetails: widget.userDetails),
-          ReviewTab(userDetails: widget.userDetails),
-        ],
       ),
     );
   }

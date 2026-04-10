@@ -7,9 +7,16 @@ class SocialProvider extends ChangeNotifier {
   List<FeedItem> _posts = [];
   final Map<int, List<dynamic>> _comments = {};
   bool _isLoading = false;
+  DateTime? _lastFetched;
 
   List<FeedItem> get posts => _posts;
   bool get isLoading => _isLoading;
+
+  /// Returns true if data is empty or older than 5 minutes
+  bool get shouldRefresh {
+    if (_posts.isEmpty || _lastFetched == null) return true;
+    return DateTime.now().difference(_lastFetched!) > const Duration(minutes: 5);
+  }
 
   List<dynamic> getComments(int postId) => _comments[postId] ?? [];
 
@@ -20,6 +27,7 @@ class SocialProvider extends ChangeNotifier {
     try {
       final rawPosts = await SocialService.fetchPosts(industryType);
       _posts = rawPosts.map((json) => FeedItem.fromJson(json)).toList();
+      _lastFetched = DateTime.now();
     } catch (e) {
       debugPrint('🚨 Error in SocialProvider.fetchPosts: $e');
     } finally {

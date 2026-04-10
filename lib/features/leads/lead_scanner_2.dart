@@ -1,11 +1,13 @@
 import 'dart:io';
-import 'package:camera/camera.dart';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
+import 'package:crop_your_image/crop_your_image.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/core/services/leads_provider.dart';
 import 'package:flutter/cupertino.dart';
@@ -14,29 +16,30 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
-import 'package:provider/provider.dart';
 
 
 class LeadScanner2 extends StatefulWidget {
   final Function(Map<String, dynamic>)? onDataExtracted;
+  final bool autoOpenCamera;
 
-  const LeadScanner2({super.key, this.onDataExtracted});
+  const LeadScanner2({
+    super.key,
+    this.onDataExtracted,
+    this.autoOpenCamera = false,
+  });
 
   @override
   State<LeadScanner2> createState() => _LeadScanner2State();
 }
 
 class _LeadScanner2State extends State<LeadScanner2> {
-  CameraController? _cameraController;
-  List<CameraDescription> _cameras = [];
-  int _selectedCameraIndex = 0;
-
   XFile? _capturedImage;
-  bool _isCameraInitialized = false;
   bool _isCapturedMode = false;
   bool _isLoading = false;
   String _errorMessage = '';
   Map<String, dynamic>? _extractedData;
+  static const double _frameAspectRatio = 1.58;
+  bool _didAutoOpen = false;
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
   final String apiUrl = "$_baseUrl/gpt-ocr";
@@ -44,69 +47,31 @@ class _LeadScanner2State extends State<LeadScanner2> {
   @override
   void initState() {
     super.initState();
-    _initCamera();
-    
-  }
-
-  Future<void> _initCamera() async {
-    await _requestPermissions();
-    _cameras = await availableCameras();
-    await _startCamera(0);
-  }
-
-  Future<void> _requestPermissions() async {
-    if (!kIsWeb) {
-      await [
-        Permission.camera,
-        Permission.storage,
-        Permission.photos,
-        Permission.microphone,
-      ].request();
+    if (widget.autoOpenCamera) {
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        if (!mounted || _didAutoOpen) return;
+        _didAutoOpen = true;
+        await _captureImage();
+      });
     }
-  }
-
-  Future<void> _startCamera(int index) async {
-    _cameraController?.dispose();
-
-    // _cameraController = CameraController(
-    //   _cameras[index],
-    //   ResolutionPreset.high,
-    //   enableAudio: false,
-    // );
-
-    _cameraController = CameraController(
-      _cameras[index],
-      ResolutionPreset.max,
-      enableAudio: false,
-      imageFormatGroup: ImageFormatGroup.jpeg,
-    );
-
-    await _cameraController!.initialize();
-
-    if (mounted) {
-      setState(() => _isCameraInitialized = true);
-    }
-  }
-
-  Future<void> _switchCamera() async {
-    if (_isCapturedMode) return;
-
-    _selectedCameraIndex = _selectedCameraIndex == 0 ? 1 : 0;
-
-    setState(() {
-      _isCameraInitialized = false;
-    });
-
-    await _startCamera(_selectedCameraIndex);
   }
 
   Future<void> _captureImage() async {
-    if (!_cameraController!.value.isInitialized) return;
-
-    final XFile file = await _cameraController!.takePicture();
+    final XFile? file =
+        await ImagePicker().pickImage(source: ImageSource.camera, imageQuality: 90);
+    if (file == null) {
+      _handleCancelledAutoOpenFlow();
+      return;
+    }
+    final XFile? cropped = await _openCropper(file);
+    if (cropped == null) {
+      _handleCancelledAutoOpenFlow();
+      return;
+    }
+    final XFile normalized = await _normalizeCapturedImage(cropped);
 
     setState(() {
-      _capturedImage = file;
+      _capturedImage = normalized;
       _isCapturedMode = true;
       _extractedData = null;
     });
@@ -117,21 +82,24 @@ class _LeadScanner2State extends State<LeadScanner2> {
         await ImagePicker().pickImage(source: ImageSource.gallery);
 
     if (img != null) {
+      final XFile? cropped = await _openCropper(img);
+      if (cropped == null) return;
+      final XFile normalized = await _normalizeCapturedImage(cropped);
       setState(() {
-        _capturedImage = img;
+        _capturedImage = normalized;
         _isCapturedMode = true;
         _extractedData = null;
       });
     }
   }
 
-  void _resetCamera() {
-    setState(() {
-      _capturedImage = null;
-      _isCapturedMode = false;
-      _extractedData = null;
-      _errorMessage = '';
-    });
+  void _handleCancelledAutoOpenFlow() {
+    if (!mounted) return;
+    // If scanner was opened only to auto-launch camera, cancel should return
+    // user to previous screen instead of leaving scanner in history.
+    if (widget.autoOpenCamera && !_isCapturedMode && _capturedImage == null) {
+      Navigator.maybePop(context);
+    }
   }
 
   Future<void> _submitImage() async {
@@ -240,52 +208,126 @@ class _LeadScanner2State extends State<LeadScanner2> {
 
   @override
   void dispose() {
-    _cameraController?.dispose();
     super.dispose();
   }
 
   Widget _buildPreviewBox() {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     if (_isCapturedMode && _capturedImage != null) {
       return Container(
         width: double.infinity,
         decoration: BoxDecoration(
-          border: Border.all(color: Colors.blueAccent, width: 2),
+          border: Border.all(color: colors.primary, width: 2),
           borderRadius: BorderRadius.circular(12),
+          color: colors.surfaceContainerHighest.withValues(alpha: 0.2),
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(10),
           child: AspectRatio(
-            aspectRatio: 1.6, // approx business card ratio (adjust if needed)
+            aspectRatio: _frameAspectRatio,
             child: kIsWeb
                 ? Image.network(
                     _capturedImage!.path,
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
                   )
                 : Image.file(
                     File(_capturedImage!.path),
-                    fit: BoxFit.contain,
+                    fit: BoxFit.cover,
                   ),
           ),
         ),
       );
     }
 
-    if (!_isCameraInitialized || _cameraController == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        border: Border.all(color: Colors.blueAccent, width: 2),
+        border: Border.all(color: colors.primary, width: 2),
         borderRadius: BorderRadius.circular(12),
-        color: Colors.black,
+        color: colors.surfaceContainerHighest.withValues(alpha: 0.2),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(10),
         child: AspectRatio(
-          aspectRatio: _cameraController!.value.aspectRatio,
-          child: CameraPreview(_cameraController!),
+          aspectRatio: _frameAspectRatio,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.document_scanner_outlined, size: 42, color: colors.onSurfaceVariant),
+                const SizedBox(height: 8),
+                Text(
+                  'Tap capture to open native camera',
+                  style: TextStyle(color: colors.onSurfaceVariant, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<XFile> _normalizeCapturedImage(XFile imageFile) async {
+    try {
+      final originalBytes = await imageFile.readAsBytes();
+      final decoded = img.decodeImage(originalBytes);
+      if (decoded == null) return imageFile;
+
+      final fixedOrientation = img.bakeOrientation(decoded);
+      final sourceW = fixedOrientation.width;
+      final sourceH = fixedOrientation.height;
+      final sourceRatio = sourceW / sourceH;
+      const targetRatio = _frameAspectRatio;
+
+      int cropW = sourceW;
+      int cropH = sourceH;
+      int offsetX = 0;
+      int offsetY = 0;
+
+      if (sourceRatio > targetRatio) {
+        cropW = (sourceH * targetRatio).round();
+        offsetX = ((sourceW - cropW) / 2).round();
+      } else if (sourceRatio < targetRatio) {
+        cropH = (sourceW / targetRatio).round();
+        offsetY = ((sourceH - cropH) / 2).round();
+      }
+
+      final cropped = img.copyCrop(
+        fixedOrientation,
+        x: offsetX,
+        y: offsetY,
+        width: cropW,
+        height: cropH,
+      );
+      final outputBytes = Uint8List.fromList(img.encodeJpg(cropped, quality: 90));
+
+      if (kIsWeb) {
+        return XFile.fromData(
+          outputBytes,
+          name: imageFile.name,
+          mimeType: 'image/jpeg',
+        );
+      }
+
+      final dir = await getTemporaryDirectory();
+      final outPath = '${dir.path}/leadscanner2_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final outFile = File(outPath);
+      await outFile.writeAsBytes(outputBytes, flush: true);
+      return XFile(outPath);
+    } catch (_) {
+      return imageFile;
+    }
+  }
+
+  Future<XFile?> _openCropper(XFile image) {
+    return Navigator.push<XFile>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _LeadImageCropPage(
+          imageFile: image,
+          aspectRatio: _frameAspectRatio,
         ),
       ),
     );
@@ -293,10 +335,12 @@ class _LeadScanner2State extends State<LeadScanner2> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: colors.surface,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: colors.surface,
         elevation: 0,
         title: const Text('Scan Card'),
         centerTitle: true,
@@ -304,20 +348,32 @@ class _LeadScanner2State extends State<LeadScanner2> {
       body: Column(
         children: [
           const SizedBox(height: 20),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              _isCapturedMode
+                  ? 'Review crop and confirm to scan OCR'
+                  : 'Capture a clear business card image',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colors.onSurfaceVariant,
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
           Expanded(child: Center(child: _buildPreviewBox())),
           if (_errorMessage.isNotEmpty)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
               child: Text(
                 _errorMessage,
-                style: const TextStyle(color: Colors.red, fontSize: 14),
+                style: TextStyle(color: colors.error, fontSize: 14),
                 textAlign: TextAlign.center,
               ),
             ),
           if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 10),
-              child: CircularProgressIndicator(),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: CircularProgressIndicator(color: colors.primary),
             ),
           const SizedBox(height: 20),
           Padding(
@@ -334,9 +390,9 @@ class _LeadScanner2State extends State<LeadScanner2> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _circleButton(Icons.photo, _pickFromGallery),
+        _circleButton(Icons.photo_library_outlined, _pickFromGallery),
         _captureButton(),
-        _circleButton(Icons.cameraswitch, _switchCamera),
+        const SizedBox(width: 56, height: 56),
       ],
     );
   }
@@ -345,30 +401,42 @@ class _LeadScanner2State extends State<LeadScanner2> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _circleButton(Icons.close, _resetCamera),
-        _circleButton(Icons.refresh, _resetCamera),
-        _circleButton(Icons.check, _submitImage),
+        _circleButton(Icons.arrow_back, () => Navigator.pop(context)),
+        _circleButton(Icons.crop, () async {
+          if (_capturedImage == null) return;
+          final cropped = await _openCropper(_capturedImage!);
+          if (cropped == null) return;
+          final normalized = await _normalizeCapturedImage(cropped);
+          if (!mounted) return;
+          setState(() => _capturedImage = normalized);
+        }),
+        _circleButton(Icons.check, _submitImage, filled: true),
       ],
     );
   }
 
-  Widget _circleButton(IconData icon, VoidCallback onTap) {
+  Widget _circleButton(IconData icon, VoidCallback onTap, {bool filled = false}) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(40),
       child: Container(
         width: 56,
         height: 56,
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white24,
+          color: filled ? colors.primary : colors.surfaceContainerHighest,
+          border: Border.all(color: colors.outlineVariant),
         ),
-        child: Icon(icon, color: Colors.white),
+        child: Icon(icon, color: filled ? colors.onPrimary : colors.onSurface),
       ),
     );
   }
 
   Widget _captureButton() {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
     return InkWell(
       onTap: _captureImage,
       borderRadius: BorderRadius.circular(40),
@@ -377,11 +445,124 @@ class _LeadScanner2State extends State<LeadScanner2> {
         height: 74,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white, width: 4),
+          border: Border.all(color: colors.primary, width: 4),
+          color: colors.surface,
         ),
-        child: const Center(
-          child: Icon(Icons.camera_alt, color: Colors.white),
+        child: Center(
+          child: Icon(Icons.camera_alt, color: colors.primary),
         ),
+      ),
+    );
+  }
+}
+
+class _LeadImageCropPage extends StatefulWidget {
+  final XFile imageFile;
+  final double aspectRatio;
+
+  const _LeadImageCropPage({
+    required this.imageFile,
+    required this.aspectRatio,
+  });
+
+  @override
+  State<_LeadImageCropPage> createState() => _LeadImageCropPageState();
+}
+
+class _LeadImageCropPageState extends State<_LeadImageCropPage> {
+  final CropController _controller = CropController();
+  Uint8List? _imageBytes;
+  bool _isCropping = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadImage();
+  }
+
+  Future<void> _loadImage() async {
+    final bytes = await widget.imageFile.readAsBytes();
+    if (!mounted) return;
+    setState(() => _imageBytes = bytes);
+  }
+
+  Future<void> _finishCrop(Uint8List croppedData) async {
+    if (_isCropping) return;
+    if (mounted) setState(() => _isCropping = true);
+    if (kIsWeb) {
+      Navigator.pop(
+        context,
+        XFile.fromData(
+          croppedData,
+          name: 'lead_crop_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          mimeType: 'image/jpeg',
+        ),
+      );
+      return;
+    }
+    final dir = await getTemporaryDirectory();
+    final outPath = '${dir.path}/lead_crop_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final outFile = File(outPath);
+    await outFile.writeAsBytes(croppedData, flush: true);
+    if (!mounted) return;
+    Navigator.pop(context, XFile(outFile.path));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colors = theme.colorScheme;
+    if (_imageBytes == null) {
+      return Scaffold(
+        body: Center(child: CircularProgressIndicator(color: colors.primary)),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Adjust Card Crop'),
+        actions: [
+          IconButton(
+            onPressed: _isCropping ? null : () => _controller.crop(),
+            icon: const Icon(Icons.check),
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          Crop(
+            controller: _controller,
+            image: _imageBytes!,
+            aspectRatio: widget.aspectRatio,
+            initialSize: 0.95,
+            withCircleUi: false,
+            onCropped: (croppedData) async {
+              await _finishCrop(croppedData);
+            },
+          ),
+          if (_isCropping)
+            Positioned.fill(
+              child: Container(
+                color: colors.scrim.withValues(alpha: 0.55),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: colors.primary),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Cropping image...',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colors.onPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

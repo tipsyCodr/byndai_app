@@ -3,11 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
+import 'package:gridcard/widgets/glass_box.dart';
 
 class ReviewTab extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
+  final VoidCallback? onSaved;
 
-  const ReviewTab({super.key, this.userDetails});
+  const ReviewTab({super.key, this.userDetails, this.onSaved});
 
   @override
   State<ReviewTab> createState() => _ReviewTabState();
@@ -18,6 +20,16 @@ class _ReviewTabState extends State<ReviewTab> {
 
   bool isLoading = false;
   List reviews = [];
+
+  // Static cache
+  static List _cachedReviews = [];
+  static int? _cachedUserId;
+  static DateTime? _lastFetchTime;
+
+  bool get _shouldRefresh {
+    if (_cachedReviews.isEmpty || _lastFetchTime == null) return true;
+    return DateTime.now().difference(_lastFetchTime!) > const Duration(minutes: 60);
+  }
 
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {
@@ -32,11 +44,17 @@ class _ReviewTabState extends State<ReviewTab> {
   Future<void> _fetchReviews() async {
     if (isLoading) return;
 
+    final userIdId = await UserStorageService().getUserId();
+    if (!_shouldRefresh && _cachedReviews.isNotEmpty && _cachedUserId == userIdId) {
+      if (mounted) setState(() => reviews = List.from(_cachedReviews));
+      return;
+    }
+
     setState(() => isLoading = true);
 
     try {
       final headers = await _getHeaders();
-      final userId = await UserStorageService().getUserId();
+      final userId = userIdId;
 
       if (userId == null) {
         throw "User not logged in (userId null)";
@@ -56,6 +74,8 @@ class _ReviewTabState extends State<ReviewTab> {
         } else {
           reviews = [];
         }
+        _cachedReviews = List.from(reviews);
+        _cachedUserId = userIdId;
 
         if (mounted) setState(() {});
       } else {
@@ -67,7 +87,12 @@ class _ReviewTabState extends State<ReviewTab> {
         SnackBar(content: Text("Error: $e")),
       );
     } finally {
-      if (mounted) setState(() => isLoading = false);
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+          _lastFetchTime = DateTime.now();
+        });
+      }
     }
   }
 
@@ -82,7 +107,6 @@ class _ReviewTabState extends State<ReviewTab> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       // backgroundColor: Colors.grey.shade100,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -91,15 +115,17 @@ class _ReviewTabState extends State<ReviewTab> {
           : reviews.isEmpty
               ? _emptyUI()
               : RefreshIndicator(
-                  onRefresh: _fetchReviews,
+                  onRefresh: () async {
+                    _lastFetchTime = null;
+                    await _fetchReviews();
+                  },
                   child: ListView.builder(
                     padding: const EdgeInsets.all(14),
                     itemCount: reviews.length,
                     itemBuilder: (_, i) {
                       final r = reviews[i] as Map<String, dynamic>;
 
-                      final fromUser =
-                          (r["from_user"] ?? {}) as Map<String, dynamic>;
+                      final fromUser = Map<String, dynamic>.from(r["from_user"] ?? {});
                       final username =
                           (fromUser["user_name"] ?? "Unknown User").toString();
 
@@ -126,21 +152,24 @@ class _ReviewTabState extends State<ReviewTab> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.rate_review, size: 60, color: Colors.grey.shade400),
+            Icon(Icons.rate_review, size: 60, color: Theme.of(context).disabledColor.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
-            const Text(
+            Text(
               "No reviews yet",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 6),
             Text(
               "Jab koi aapko review dega,\nyaha show hoga.",
               textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Theme.of(context).disabledColor),
             ),
             const SizedBox(height: 14),
             ElevatedButton.icon(
-              onPressed: _fetchReviews,
+              onPressed: () {
+                _lastFetchTime = null;
+                _fetchReviews();
+              },
               icon: const Icon(Icons.refresh),
               label: const Text("Reload"),
             ),
@@ -157,113 +186,83 @@ class _ReviewTabState extends State<ReviewTab> {
     required String message,
     required String createdAt,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 14),
-      padding: const EdgeInsets.all(14),
-      // decoration: BoxDecoration(
-      //   color: Colors.white,
-      //   borderRadius: BorderRadius.circular(16),
-      //   boxShadow: [
-      //     BoxShadow(
-      //       color: Colors.black.withOpacity(0.06),
-      //       blurRadius: 12,
-      //       offset: const Offset(0, 4),
-      //     ),
-      //   ],
-      // ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).brightness == Brightness.dark
-            ? Theme.of(context).colorScheme.surfaceContainerHighest
-            : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: Theme.of(context).brightness == Brightness.dark
-            ? []
-            : [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.06),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Top Row (User + Rating)
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: Colors.blue.shade50,
-                child: Text(
-                  username.isNotEmpty ? username[0].toUpperCase() : "U",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue.shade800,
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: GlassBox(
+        padding: const EdgeInsets.all(14),
+        borderRadius: 16,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Top Row (User + Rating)
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: colorScheme.primaryContainer,
+                  child: Text(
+                    username.isNotEmpty ? username[0].toUpperCase() : "U",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onPrimaryContainer,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      username,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        username,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface),
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    _starsRow(rating),
-                  ],
+                      const SizedBox(height: 4),
+                      _starsRow(rating, colorScheme),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Message
+            if (message.trim().isNotEmpty)
+              Text(
+                message,
+                style: TextStyle(
+                  fontSize: 14,
+                  height: 1.4,
+                  color: colorScheme.onSurface,
+                ),
+              )
+            else
+              Text(
+                "No message",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
-            ],
-          ),
-
-          const SizedBox(height: 12),
-
-          // Message
-          if (message.trim().isNotEmpty)
+            const SizedBox(height: 10),
+            // Date (optional)
             Text(
-              message,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.4,
-                // color: Colors.grey.shade800,
-                color: Theme.of(context).colorScheme.onSurface,
-              ),
-            )
-          else
-            Text(
-              "No message",
-              style: TextStyle(
-                fontSize: 14,
-                // color: Colors.grey.shade500,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontStyle: FontStyle.italic,
-              ),
+              createdAt.isNotEmpty ? createdAt.split("T").first : "",
+              style: theme.textTheme.labelSmall
+                  ?.copyWith(color: colorScheme.onSurfaceVariant.withOpacity(0.5)),
             ),
-
-          const SizedBox(height: 10),
-
-          // Date (optional)
-          Text(
-            createdAt.isNotEmpty ? createdAt.split("T").first : "",
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey.shade500,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   // ================= STARS UI =================
-  Widget _starsRow(int rating) {
+  Widget _starsRow(int rating, ColorScheme colorScheme) {
     // rating 0-5 clamp
     int safeRating = rating;
     if (safeRating < 0) safeRating = 0;
@@ -276,14 +275,14 @@ class _ReviewTabState extends State<ReviewTab> {
         return Icon(
           Icons.star,
           size: 18,
-          color: isFilled ? Colors.amber : Colors.grey.shade400,
-          shadows: [
+          color: isFilled ? Colors.amber : colorScheme.onSurface.withOpacity(0.1),
+          shadows: isFilled ? [
             Shadow(
-              color: Colors.black.withOpacity(0.25),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
+              color: Colors.amber.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 0),
             )
-          ],
+          ] : null,
         );
       }),
     );

@@ -15,6 +15,7 @@ import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import './full_screen_image_viewer.dart';
 import 'package:gridcard/widgets/glass_box.dart';
+import 'package:gridcard/widgets/app_network_image.dart';
 
 class HomePostCard extends StatefulWidget {
   final Map<String, dynamic> post;
@@ -501,8 +502,8 @@ class _HomePostCardState extends State<HomePostCard> {
                               child: ClipOval(
                                 child: (profilePicUrl != null &&
                                         profilePicUrl.isNotEmpty)
-                                    ? Image.network(
-                                        profilePicUrl,
+                                    ? AppNetworkImage(
+                                        imageUrl: profilePicUrl,
                                         width: 36,
                                         height: 36,
                                         fit: BoxFit.cover,

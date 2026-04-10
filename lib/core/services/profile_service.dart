@@ -7,7 +7,8 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 class ProfileService {
-  static const String _baseUrl = AppConfig.apiBaseUrl;
+  static const String baseUrl = AppConfig.apiBaseUrl;
+  static const String _baseUrl = baseUrl;
 
   static Future<Map<String, String>> _getHeaders(
       {bool isMultipart = false}) async {
@@ -30,6 +31,38 @@ class ProfileService {
       return null;
     } catch (e) {
       debugPrint('🚨 Error fetching profile: $e');
+      return null;
+    }
+  }
+
+  /// GET /is-pro (current logged-in user)
+  static Future<Map<String, dynamic>?> fetchIsProForCurrentUser() async {
+    final url = Uri.parse('$_baseUrl/is-pro');
+    try {
+      final response = await http.get(url, headers: await _getHeaders());
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      debugPrint('❌ fetchIsProForCurrentUser failed: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      debugPrint('🚨 Error fetching current user pro status: $e');
+      return null;
+    }
+  }
+
+  /// GET /user/{id}/is-pro
+  static Future<Map<String, dynamic>?> fetchIsProForUser(int userId) async {
+    final url = Uri.parse('$_baseUrl/user/$userId/is-pro');
+    try {
+      final response = await http.get(url, headers: await _getHeaders());
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      debugPrint('❌ fetchIsProForUser failed: ${response.statusCode} (userId=$userId)');
+      return null;
+    } catch (e) {
+      debugPrint('🚨 Error fetching pro status for user $userId: $e');
       return null;
     }
   }
@@ -288,6 +321,179 @@ static Future<Map<String, dynamic>?> fetchUserProfileByUsername(
       return null;
     } catch (e) {
       debugPrint('🚨 Error updating business info: $e');
+      return null;
+    }
+  }
+
+  /// GET /user-videos/{user_id}
+  static Future<Map<String, dynamic>?> fetchUserVideos(int userId) async {
+    final url = Uri.parse('$_baseUrl/user-videos/$userId');
+    try {
+      final response = await http.get(url, headers: await _getHeaders());
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('🚨 Error fetching user videos: $e');
+      return null;
+    }
+  }
+
+  /// POST /user-videos
+  static Future<bool> addUserVideo(Map<String, dynamic> videoData) async {
+    final url = Uri.parse('$_baseUrl/user-videos');
+    final headers = await _getHeaders();
+    debugPrint('🎥 POST Add Video: $url');
+    debugPrint('🎥 Headers: $headers');
+    debugPrint('🎥 Body: ${jsonEncode(videoData)}');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: jsonEncode(videoData),
+      );
+      debugPrint('🎥 Response Status: ${response.statusCode}');
+      debugPrint('🎥 Response Body: ${response.body}');
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) {
+      debugPrint('🚨 Error adding user video: $e');
+      return false;
+    }
+  }
+
+  /// PUT /user-videos/{id}
+  static Future<bool> updateUserVideo(int videoId, Map<String, dynamic> videoData) async {
+    final url = Uri.parse('$_baseUrl/user-videos/$videoId');
+    final headers = await _getHeaders();
+    debugPrint('🎥 PUT Update Video: $url');
+    debugPrint('🎥 Body: ${jsonEncode(videoData)}');
+
+    try {
+      final response = await http.put(
+        url,
+        headers: headers,
+        body: jsonEncode(videoData),
+      );
+      debugPrint('🎥 Response Status: ${response.statusCode}');
+      debugPrint('🎥 Response Body: ${response.body}');
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('🚨 Error updating user video: $e');
+      return false;
+    }
+  }
+
+  /// DELETE /user-videos/{id}
+  static Future<bool> deleteUserVideo(int id) async {
+    final url = Uri.parse('$_baseUrl/user-videos/$id');
+    try {
+      final response = await http.delete(url, headers: await _getHeaders());
+      return response.statusCode == 200;
+    } catch (e) {
+      debugPrint('🚨 Error deleting user video: $e');
+      return false;
+    }
+  }
+
+  /// GET /user/subscription
+  static Future<Map<String, dynamic>?> fetchUserSubscription() async {
+    final url = Uri.parse('$_baseUrl/user/subscription');
+    try {
+      final response = await http.get(url, headers: await _getHeaders());
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('🚨 Error fetching subscription: $e');
+      return null;
+    }
+  }
+
+  /// POST /search-users
+  static Future<List<dynamic>> searchUsers(String query) async {
+    final url = Uri.parse('$_baseUrl/search-users');
+    try {
+      final response = await http.post(
+        url,
+        headers: await _getHeaders(),
+        body: jsonEncode({
+          'keywords': query,
+          'keyword': query,
+        }),
+      );
+      
+      debugPrint("🔍 [API] POST /search-users | Query: $query");
+      debugPrint("🔍 [API] Status: ${response.statusCode}");
+      debugPrint("🔍 [API] Response: ${response.body}");
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == true) {
+          final results = data['data'] ?? [];
+          return results;
+        }
+      }
+      return [];
+    } catch (e) {
+      debugPrint('🚨 Error searching users: $e');
+      return [];
+    }
+  }
+  /// GET /profile/id-card
+  static Future<Map<String, dynamic>?> getIdCards() async {
+    final url = Uri.parse('$_baseUrl/profile/id-card');
+    debugPrint('🔍 [API] GET $url');
+    try {
+      final response = await http.get(url, headers: await _getHeaders());
+      debugPrint('📥 Status: ${response.statusCode}');
+      debugPrint('📥 Response: ${response.body}');
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('🚨 Error fetching ID cards: $e');
+      return null;
+    }
+  }
+
+  /// POST /profile/id-card
+  static Future<Map<String, dynamic>?> uploadIdCard({
+    required String type, // 'bni' or 'jci'
+    required List<int> imageBytes,
+    String filename = 'id_card.jpg',
+  }) async {
+    final url = Uri.parse('$_baseUrl/profile/id-card');
+    debugPrint('📤 [API] POST $url');
+    try {
+      var request = http.MultipartRequest('POST', url);
+      request.headers.addAll(await _getHeaders(isMultipart: true));
+
+      request.fields['type'] = type.toLowerCase();
+      debugPrint('📤 Fields: ${request.fields}');
+
+      request.files.add(http.MultipartFile.fromBytes(
+        'id_card',
+        imageBytes,
+        filename: filename,
+        contentType: MediaType('image', 'jpeg'),
+      ));
+
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      debugPrint('📥 Status: ${response.statusCode}');
+      debugPrint('📥 Response: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return jsonDecode(response.body);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('🚨 Error uploading ID card: $e');
       return null;
     }
   }

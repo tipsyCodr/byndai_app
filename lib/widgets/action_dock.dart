@@ -36,7 +36,7 @@ class ActionDock extends StatelessWidget {
           _buildActionItem(FontAwesomeIcons.chartLine, 'Analytics', context,
               const UserAnaliticsPage()),
           _buildActionItem(
-            FontAwesomeIcons.users, 'Connects', context,
+            FontAwesomeIcons.userGroup, 'Connects', context,
             // const ConnectionsPage()
             const ConnectionsPage(initialTabIndex: 0),
           ),
@@ -61,7 +61,7 @@ class ActionDock extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: isDark
                   ? Colors.white.withValues(alpha: 0.07)
@@ -77,7 +77,7 @@ class ActionDock extends StatelessWidget {
             ),
             child: Icon(
               icon,
-              size: 26,
+              size: 24,
               color: isDark ? colorScheme.onSurface : colorScheme.primary,
             ),
           ),

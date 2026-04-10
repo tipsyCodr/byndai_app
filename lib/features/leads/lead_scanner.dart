@@ -1,10 +1,14 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:image/image.dart' as img;
+import 'package:path_provider/path_provider.dart';
+import 'package:crop_your_image/crop_your_image.dart';
 import 'package:gridcard/config/app_config.dart';
 
 class LeadsScannerPage extends StatefulWidget {
@@ -22,6 +26,7 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
   String _errorMessage = '';
   String _ocrText = '';
   Map<String, dynamic>? _formData;
+  static const double _scannerAspectRatio = 1.58; // Business-card friendly ratio
 
   // final String apiUrl = "http://byndai_server-main.test/api/ocr-extract";
   static const String _baseUrl = AppConfig.apiBaseUrl;
@@ -52,10 +57,43 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Preview Images
-            if (_capturedImages.isNotEmpty)
+            // Main scanner frame (fixed ratio, same for placeholder + captured)
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final frameWidth = constraints.maxWidth;
+                return SizedBox(
+                  width: frameWidth,
+                  child: AspectRatio(
+                    aspectRatio: _scannerAspectRatio,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.blueGrey, width: 1.5),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: _capturedImages.isNotEmpty
+                            ? _buildImageWidget(_capturedImages.first, fit: BoxFit.cover)
+                            : const Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.camera_alt, size: 40, color: Colors.grey),
+                                  SizedBox(height: 10),
+                                  Text("Align card inside this frame"),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+
+            // Captured image strip (same ratio thumbnails)
+            if (_capturedImages.isNotEmpty) ...[
+              const SizedBox(height: 12),
               SizedBox(
-                height: 120,
+                height: 96,
                 child: ListView.builder(
                   scrollDirection: Axis.horizontal,
                   itemCount: _capturedImages.length,
@@ -64,18 +102,16 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
                       padding: const EdgeInsets.only(right: 8),
                       child: Stack(
                         children: [
-                          Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.blue, width: 2),
-                              borderRadius: BorderRadius.circular(10),
+                          AspectRatio(
+                            aspectRatio: _scannerAspectRatio,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.blue, width: 2),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              clipBehavior: Clip.antiAlias,
+                              child: _buildImageWidget(_capturedImages[index], fit: BoxFit.cover),
                             ),
-                            child: kIsWeb
-                                ? Image.network(_capturedImages[index].path,
-                                    fit: BoxFit.cover)
-                                : Image.file(File(_capturedImages[index].path),
-                                    fit: BoxFit.cover),
                           ),
                           Positioned(
                             top: 0,
@@ -85,35 +121,17 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
                               child: const CircleAvatar(
                                 radius: 12,
                                 backgroundColor: Colors.red,
-                                child: Icon(Icons.close,
-                                    size: 14, color: Colors.white),
+                                child: Icon(Icons.close, size: 14, color: Colors.white),
                               ),
                             ),
-                          )
+                          ),
                         ],
                       ),
                     );
                   },
                 ),
-              )
-            else
-              Container(
-                height: 200,
-                width: 200,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.camera_alt, size: 40, color: Colors.grey),
-                    SizedBox(height: 10),
-                    Text("No image captured"),
-                  ],
-                ),
               ),
+            ],
 
             const SizedBox(height: 20),
 
@@ -253,7 +271,10 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
           await picker.pickImage(source: ImageSource.camera, imageQuality: 80);
 
       if (image != null) {
-        setState(() => _capturedImages.add(image));
+        final cropped = await _openCropper(image);
+        if (cropped == null) return;
+        final normalized = await _normalizeToScannerRatio(cropped);
+        setState(() => _capturedImages.add(normalized));
       }
     } catch (e) {
       setState(() => _errorMessage = e.toString());
@@ -262,6 +283,79 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
 
   void _removeImage(int index) {
     setState(() => _capturedImages.removeAt(index));
+  }
+
+  Widget _buildImageWidget(XFile image, {BoxFit fit = BoxFit.cover}) {
+    if (kIsWeb) {
+      return Image.network(image.path, fit: fit);
+    }
+    return Image.file(File(image.path), fit: fit);
+  }
+
+  Future<XFile?> _openCropper(XFile image) async {
+    return Navigator.push<XFile>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => _LeadImageCropPage(
+          imageFile: image,
+          aspectRatio: _scannerAspectRatio,
+        ),
+      ),
+    );
+  }
+
+  Future<XFile> _normalizeToScannerRatio(XFile imageFile) async {
+    try {
+      final originalBytes = await imageFile.readAsBytes();
+      final decoded = img.decodeImage(originalBytes);
+      if (decoded == null) return imageFile;
+
+      final fixedOrientation = img.bakeOrientation(decoded);
+      final sourceW = fixedOrientation.width;
+      final sourceH = fixedOrientation.height;
+      final sourceRatio = sourceW / sourceH;
+      final targetRatio = _scannerAspectRatio;
+
+      int cropW = sourceW;
+      int cropH = sourceH;
+      int offsetX = 0;
+      int offsetY = 0;
+
+      if (sourceRatio > targetRatio) {
+        // Source too wide -> crop left/right
+        cropW = (sourceH * targetRatio).round();
+        offsetX = ((sourceW - cropW) / 2).round();
+      } else if (sourceRatio < targetRatio) {
+        // Source too tall -> crop top/bottom
+        cropH = (sourceW / targetRatio).round();
+        offsetY = ((sourceH - cropH) / 2).round();
+      }
+
+      final cropped = img.copyCrop(
+        fixedOrientation,
+        x: offsetX,
+        y: offsetY,
+        width: cropW,
+        height: cropH,
+      );
+      final outputBytes = Uint8List.fromList(img.encodeJpg(cropped, quality: 90));
+
+      if (kIsWeb) {
+        return XFile.fromData(
+          outputBytes,
+          name: imageFile.name,
+          mimeType: 'image/jpeg',
+        );
+      }
+
+      final dir = await getTemporaryDirectory();
+      final outPath = '${dir.path}/scanner_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final outFile = File(outPath);
+      await outFile.writeAsBytes(outputBytes, flush: true);
+      return XFile(outFile.path);
+    } catch (_) {
+      return imageFile;
+    }
   }
 
   Future<void> _submitImages() async {
@@ -335,5 +429,86 @@ class _LeadsScannerPageState extends State<LeadsScannerPage> {
     }
 
     return data;
+  }
+}
+
+class _LeadImageCropPage extends StatefulWidget {
+  final XFile imageFile;
+  final double aspectRatio;
+
+  const _LeadImageCropPage({
+    required this.imageFile,
+    required this.aspectRatio,
+  });
+
+  @override
+  State<_LeadImageCropPage> createState() => _LeadImageCropPageState();
+}
+
+class _LeadImageCropPageState extends State<_LeadImageCropPage> {
+  final CropController _controller = CropController();
+  Uint8List? _imageBytes;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadImage();
+  }
+
+  Future<void> _loadImage() async {
+    final bytes = await widget.imageFile.readAsBytes();
+    if (!mounted) return;
+    setState(() => _imageBytes = bytes);
+  }
+
+  Future<void> _finishCrop(Uint8List croppedData) async {
+    if (kIsWeb) {
+      Navigator.pop(
+        context,
+        XFile.fromData(
+          croppedData,
+          name: 'lead_crop_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          mimeType: 'image/jpeg',
+        ),
+      );
+      return;
+    }
+    final dir = await getTemporaryDirectory();
+    final outPath = '${dir.path}/lead_crop_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final outFile = File(outPath);
+    await outFile.writeAsBytes(croppedData, flush: true);
+    if (!mounted) return;
+    Navigator.pop(context, XFile(outFile.path));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_imageBytes == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Adjust Card Crop'),
+        actions: [
+          IconButton(
+            onPressed: () => _controller.crop(),
+            icon: const Icon(Icons.check),
+          ),
+        ],
+      ),
+      body: Crop(
+        controller: _controller,
+        image: _imageBytes!,
+        aspectRatio: widget.aspectRatio,
+        initialSize: 0.95,
+        withCircleUi: false,
+        onCropped: (croppedData) async {
+          await _finishCrop(croppedData);
+        },
+      ),
+    );
   }
 }

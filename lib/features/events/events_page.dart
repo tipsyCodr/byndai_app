@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/social_provider.dart';
 import 'package:gridcard/features/business_feed/post_details_page.dart';
-import 'package:gridcard/widgets/post_card.dart';
+import 'package:gridcard/widgets/app_network_image.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class EventsPage extends StatefulWidget {
   const EventsPage({super.key});
@@ -46,6 +48,8 @@ class _EventsPageState extends State<EventsPage> {
               separatorBuilder: (context, index) => const SizedBox(height: 16),
               itemBuilder: (context, index) {
                 final item = posts[index];
+                final avatarUrl = AppConfig.getFullUrl(item.user.imageUrl) ?? '';
+                final postImageUrl = AppConfig.getFullUrl(item.imageUrl) ?? '';
                 return GestureDetector(
                   onTap: () {
                     Navigator.push(
@@ -58,21 +62,122 @@ class _EventsPageState extends State<EventsPage> {
                       ),
                     );
                   },
-                  child: PostCard(
-                    userName: item.user.fullName,
-                    userRole: item.user.designation,
-                    location: item.industry ?? "Business",
-                    avatarUrl: item.user.imageUrl,
-                    postImageUrl: item.imageUrl ?? '',
-                    description: item.content,
-                    likesCount: item.likesCount,
-                    commentsCount: item.commentsCount,
-                    onLike: () => socialProvider.toggleLike(item.id),
-                    onSave: () => socialProvider.toggleSave(item.id),
+                  child: _buildEventPostCard(
+                    context: context,
+                    item: item,
+                    avatarUrl: avatarUrl,
+                    postImageUrl: postImageUrl,
                   ),
                 );
               },
             ),
     );
+  }
+
+  Widget _buildEventPostCard({
+    required BuildContext context,
+    required dynamic item,
+    required String avatarUrl,
+    required String postImageUrl,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final eventLink = _extractFirstUrl(item.content ?? '');
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (postImageUrl.isNotEmpty)
+            SizedBox(
+              width: double.infinity,
+              height: 220,
+              child: AppNetworkImage(
+                imageUrl: postImageUrl,
+                fit: BoxFit.cover,
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundImage:
+                          avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
+                      child:
+                          avatarUrl.isEmpty ? const Icon(Icons.person, size: 18) : null,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        item.user.fullName,
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if ((item.content ?? '').toString().trim().isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    item.content.toString(),
+                    style: TextStyle(
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: ElevatedButton.icon(
+                    onPressed: () async {
+                      if (eventLink != null) {
+                        await launchUrl(
+                          Uri.parse(eventLink),
+                          mode: LaunchMode.externalApplication,
+                        );
+                        return;
+                      }
+                      if (!context.mounted) return;
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => PostDetailsPage(
+                            item: item,
+                            isLiked: item.isLiked,
+                          ),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.open_in_new, size: 18),
+                    label: Text(
+                      eventLink != null ? 'Open Event Link' : 'View Event Details',
+                    ),
+                  ),
+                ),
+                // Event details section intentionally removed from this page design.
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String? _extractFirstUrl(String input) {
+    final match = RegExp(r'(https?:\/\/[^\s]+)').firstMatch(input);
+    return match?.group(0);
   }
 }

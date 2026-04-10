@@ -8,6 +8,7 @@ import 'package:gridcard/core/services/product_provider.dart';
 import 'package:gridcard/core/services/profile_provider.dart';
 import 'package:gridcard/core/services/social_provider.dart';
 import 'package:gridcard/core/services/theme_provider.dart';
+import 'package:gridcard/core/services/user_stats_provider.dart';
 import 'package:gridcard/core/theme/app_theme.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/routes/app_routes.dart';
@@ -65,7 +66,14 @@ void main() async {
     UserSession? session;
     try {
       final storageService = UserStorageService();
-      session = await storageService.loadSession();
+      // Add a 3-second timeout to prevent app hang on certain devices/emulators
+      session = await storageService.loadSession().timeout(
+            const Duration(seconds: 3),
+            onTimeout: () {
+              debugPrint('[MAIN] ⚠️ Session loading timed out after 3s.');
+              return UserSession(); // Return empty session on timeout
+            },
+          );
       hasValidSession = session.isValid;
       debugPrint('[MAIN] Session valid: $hasValidSession');
     } catch (e) {
@@ -93,6 +101,7 @@ void main() async {
           ChangeNotifierProvider(create: (context) => ChatProvider()),
           ChangeNotifierProvider(create: (context) => ThemeProvider()),
           ChangeNotifierProvider(create: (context) => NfcService()),
+          ChangeNotifierProvider(create: (context) => UserStatsProvider()),
         ],
         child: MyApp(initialRoute: initialRoute),
       ),

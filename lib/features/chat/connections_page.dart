@@ -1119,13 +1119,38 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                       final viewerId = session.user?.id;
                                       if (viewerId == null) return;
 
-                                      await deleteConnectionRequest(
-                                        senderId: viewerId,
-                                        receiverId: friendId,
-                                        status: 2,
-                                        fromTab: "accepted",
-                                        index: index,
+                                      final confirmed = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('Remove Connection'),
+                                          content: const Text(
+                                              'Are you sure you want to remove this connection?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, true),
+                                              child: const Text('Remove',
+                                                  style: TextStyle(
+                                                      color: Colors.red)),
+                                            ),
+                                          ],
+                                        ),
                                       );
+
+                                      if (confirmed == true && mounted) {
+                                        await deleteConnectionRequest(
+                                          senderId: viewerId,
+                                          receiverId: friendId,
+                                          status: 2,
+                                          fromTab: "accepted",
+                                          index: index,
+                                        );
+                                      }
                                     }
                                   },
                                   itemBuilder: (context) => const [

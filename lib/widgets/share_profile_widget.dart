@@ -13,6 +13,7 @@ import '../features/feature_map/feature_access_helper.dart';
 import '../features/feature_map/feature_mapper.dart';
 import '../features/home/SubscriptionPlans.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
+import 'package:gridcard/core/services/leads_provider.dart';
 import 'package:provider/provider.dart';
 
 class ShareProfileWidget extends StatefulWidget {
@@ -130,7 +131,7 @@ class _ShareProfileWidgetState extends State<ShareProfileWidget> {
     final user = context.read<AuthProvider>().user;
     final profileId = user?.userName ?? user?.id?.toString() ?? 'me';
     final baseUrl = AppConfig.apiBaseUrl.replaceAll(RegExp(r'/api$'), '');
-    final profileUrl = "$baseUrl/profile/$profileId";
+    final profileUrl = "$baseUrl/u/$profileId";
 
     final message =
         "Hi, check out my bynd AI digital business card here: $profileUrl";
@@ -145,6 +146,117 @@ class _ShareProfileWidgetState extends State<ShareProfileWidget> {
     super.dispose();
   }
 
+  void _showLeadPicker() {
+    final colors = Theme.of(context).colorScheme;
+    final leadProvider = context.read<LeadProviders>();
+
+    // Ensure leads are fetched if list is empty
+    if (leadProvider.leads.isEmpty) {
+      final userId = context.read<AuthProvider>().user?.id;
+      if (userId != null) {
+        leadProvider.fetchLeadsByUserId(userId: userId, reset: true);
+      }
+    }
+
+    final TextEditingController searchController = TextEditingController();
+    String searchQuery = "";
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setPickerState) => DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          builder: (_, scrollController) => Container(
+            decoration: BoxDecoration(
+              color: colors.surface,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 12),
+                Container(width: 40, height: 4, decoration: BoxDecoration(color: colors.onSurface.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(2))),
+                const SizedBox(height: 20),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Text("Select Contact", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: colors.primary)),
+                      const Spacer(),
+                      IconButton(onPressed: () => Navigator.pop(context), icon: const Icon(Icons.close)),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  child: TextField(
+                    controller: searchController,
+                    onChanged: (val) => setPickerState(() => searchQuery = val.toLowerCase()),
+                    decoration: InputDecoration(
+                      hintText: "Search name...",
+                      prefixIcon: const Icon(Icons.search),
+                      filled: true,
+                      fillColor: colors.surfaceContainerHighest.withValues(alpha: 0.3),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                ),
+                const Divider(),
+                Expanded(
+                  child: Consumer<LeadProviders>(
+                    builder: (context, provider, _) {
+                      if (provider.isLoading && provider.leads.isEmpty) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      
+                      final filteredLeads = provider.leads.where((l) {
+                        final nameMatch = (l.name ?? "").toLowerCase().contains(searchQuery);
+                        final companyMatch = (l.company_name ?? "").toLowerCase().contains(searchQuery);
+                        return nameMatch || companyMatch;
+                      }).toList();
+
+                      if (filteredLeads.isEmpty) {
+                        return const Center(child: Text("No leads found"));
+                      }
+
+                      return ListView.builder(
+                        controller: scrollController,
+                        itemCount: filteredLeads.length,
+                        itemBuilder: (context, i) {
+                          final lead = filteredLeads[i];
+                          final mobile = lead.mobile_no_1 ?? lead.mobile_no_2 ?? lead.mobile_no_3 ?? "";
+                          if (mobile.isEmpty) return const SizedBox.shrink();
+
+                          return ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: colors.primary.withValues(alpha: 0.1),
+                              child: Text(lead.name?[0].toUpperCase() ?? "?", style: TextStyle(color: colors.primary)),
+                            ),
+                            title: Text(lead.name ?? "Unknown", style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Text(mobile),
+                            onTap: () {
+                              setState(() {
+                                _phoneController.text = mobile.replaceAll(RegExp(r'\D'), '');
+                              });
+                              Navigator.pop(context);
+                            },
+                          );
+                        },
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
@@ -154,90 +266,115 @@ class _ShareProfileWidgetState extends State<ShareProfileWidget> {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              "Share Profile",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: colors.primary,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      "+91",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: colors.primary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                "Share Profile",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: colors.primary,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  flex: 3,
-                  child: TextField(
-                    controller: _phoneController,
-                    style: TextStyle(color: colors.onSurface),
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      filled: true,
-                      fillColor: Theme.of(context).brightness == Brightness.dark
-                          ? colors.surfaceContainerHighest
-                          : Colors.grey[100],
-                      hintText: "Enter Phone",
-                      hintStyle:
-                          TextStyle(color: colors.onSurface.withOpacity(0.3)),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      border: OutlineInputBorder(
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colors.primary.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
+                      ),
+                      child: Text(
+                        "+91",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: colors.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            OutlinedButton.icon(
-              onPressed: _sendToWhatsApp,
-              icon: const Icon(Icons.share, size: 18),
-              label: const Text("Share Your Profile Card"),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                side: BorderSide(color: colors.primary.withOpacity(0.2)),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 3,
+                    child: TextField(
+                      controller: _phoneController,
+                      style: TextStyle(color: colors.onSurface),
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Theme.of(context).brightness == Brightness.dark
+                            ? colors.surfaceContainerHighest
+                            : Colors.grey[100],
+                        hintText: "Enter Phone",
+                        hintStyle:
+                            TextStyle(color: colors.onSurface.withOpacity(0.3)),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                "Cancel",
-                style: TextStyle(color: colors.onSurface.withOpacity(0.5)),
+              const SizedBox(height: 12),
+              GestureDetector(
+                onTap: _showLeadPicker,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  decoration: BoxDecoration(
+                    color: colors.secondary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: colors.secondary.withValues(alpha: 0.2)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.contacts_outlined, size: 16, color: colors.secondary),
+                      const SizedBox(width: 8),
+                      Text(
+                        "Select from Leads",
+                        style: TextStyle(color: colors.secondary, fontWeight: FontWeight.bold, fontSize: 13),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            )
-          ],
+              const SizedBox(height: 24),
+              OutlinedButton.icon(
+                onPressed: _sendToWhatsApp,
+                icon: const Icon(Icons.share, size: 18),
+                label: const Text("Share Your Profile Card"),
+                style: OutlinedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  side: BorderSide(color: colors.primary.withOpacity(0.2)),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  "Cancel",
+                  style: TextStyle(color: colors.onSurface.withOpacity(0.5)),
+                ),
+              )
+            ],
+          ),
         ),
       ),
     );

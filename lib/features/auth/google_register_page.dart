@@ -7,9 +7,10 @@ import 'package:gridcard/routes/route_names.dart';
 import 'package:gridcard/widgets/secure_input_dialog.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:provider/provider.dart';
+import 'package:gridcard/widgets/glass_box.dart';
 
 /// Registration page for Google Sign-In users.
-/// Step 1: Prefilled form (name, email, username, password)
+/// Step 1: Prefilled form (name, email, username)
 /// Step 2: Mobile number + OTP verification
 class GoogleRegisterPage extends StatefulWidget {
   const GoogleRegisterPage({super.key});
@@ -23,15 +24,10 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
 
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmController = TextEditingController();
   final _usernameController = TextEditingController();
   final _phoneController = TextEditingController();
 
   final FocusNode _usernameFocusNode = FocusNode();
-
-  bool _passwordVisible = false;
-  bool _confirmPasswordVisible = false;
 
   // Step tracking: 0 = form, 1 = mobile + OTP
   int _currentStep = 0;
@@ -66,8 +62,6 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
     _nameController.dispose();
     _usernameController.dispose();
     _emailController.dispose();
-    _passwordController.dispose();
-    _confirmController.dispose();
     _phoneController.dispose();
     super.dispose();
   }
@@ -124,12 +118,13 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
   }
 
   void _showLoaderDialog() {
+    final cs = Theme.of(context).colorScheme;
     showDialog(
       barrierDismissible: false,
       context: context,
-      builder: (_) => const Center(
-        child: SpinKitPulsingGrid(
-          color: Color.fromARGB(255, 92, 165, 225),
+      builder: (_) => Center(
+        child: SpinKitPulse(
+          color: cs.primary,
           size: 60.0,
         ),
       ),
@@ -201,7 +196,7 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
       'name': _nameController.text.trim(),
       'user_name': _usernameController.text.trim(),
       'email': _emailController.text.trim(),
-      'password': _passwordController.text.trim(),
+      'password': "", // Password not needed
       'mobile': mobile,
       'id_token': googleData?['id_token'] ?? '',
     };
@@ -237,8 +232,9 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
     return Scaffold(
       backgroundColor: cs.surface,
       appBar: AppBar(
-        backgroundColor: cs.surface,
+        backgroundColor: Colors.transparent,
         elevation: 0,
+        iconTheme: IconThemeData(color: cs.onSurface),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () {
@@ -252,11 +248,28 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
           },
         ),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _currentStep == 0 ? _buildFormStep(cs) : _buildMobileStep(cs),
+      extendBodyBehindAppBar: true,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              cs.surface,
+              cs.surfaceContainerHighest.withValues(alpha: 0.5),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              child: _currentStep == 0 ? _buildFormStep(cs) : _buildMobileStep(cs),
+            ),
+          ),
         ),
       ),
     );
@@ -282,104 +295,102 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
           Text(
             "We got your info from Google. Fill in the remaining details.",
             style: TextStyle(
-              color: cs.onSurface.withValues(alpha: 0.7),
+              color: cs.onSurfaceVariant,
               fontSize: 14,
             ),
           ),
           const SizedBox(height: 32),
 
-          // Name (prefilled, editable)
-          TextFormField(
-            controller: _nameController,
-            decoration: _inputDecoration("Full Name", Icons.person),
-            validator: (v) => v == null || v.isEmpty ? "Enter name" : null,
-          ),
-          const SizedBox(height: 20),
-
-          // Username
-          TextFormField(
-            controller: _usernameController,
-            focusNode: _usernameFocusNode,
-            decoration: _inputDecoration(
-              "Username",
-              Icons.alternate_email,
-              borderColor: _isUsernameAvailable == false ? Colors.red : null,
-            ),
-            validator: (v) {
-              if (v == null || v.isEmpty) return "Enter username";
-              if (v.length < 4) return "Minimum 4 characters";
-              return null;
-            },
-          ),
-          if (_isCheckingUsername) const LinearProgressIndicator(minHeight: 2),
-          if (_usernameMessage != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                _usernameMessage!,
-                style: TextStyle(
-                  color:
-                      _isUsernameAvailable == true ? Colors.green : Colors.red,
-                  fontSize: 13,
+          GlassBox(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                // Name (prefilled, editable)
+                TextFormField(
+                  controller: _nameController,
+                  decoration: _inputDecoration("Full Name", Icons.person),
+                  validator: (v) => v == null || v.isEmpty ? "Enter name" : null,
                 ),
-              ),
-            ),
-          const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-          // Email (prefilled, read-only)
-          TextFormField(
-            controller: _emailController,
-            decoration: _inputDecoration("Email", Icons.email).copyWith(
-              filled: true,
-              fillColor: cs.onSurface.withValues(alpha: 0.08),
-            ),
-            readOnly: true,
-            style: TextStyle(color: cs.onSurface.withValues(alpha: 0.78)),
-          ),
-          const SizedBox(height: 20),
+                // Username
+                TextFormField(
+                  controller: _usernameController,
+                  focusNode: _usernameFocusNode,
+                  decoration: _inputDecoration(
+                    "Username",
+                    Icons.alternate_email,
+                    borderColor: _isUsernameAvailable == false ? Colors.red : null,
+                  ),
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return "Enter username";
+                    if (v.length < 4) return "Minimum 4 characters";
+                    return null;
+                  },
+                ),
+                if (_isCheckingUsername) 
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: LinearProgressIndicator(minHeight: 2),
+                  ),
+                if (_usernameMessage != null && !_isCheckingUsername)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6, left: 4),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        _usernameMessage!,
+                        style: TextStyle(
+                          color:
+                              _isUsernameAvailable == true ? Colors.green : Colors.red,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ),
+                const SizedBox(height: 20),
 
-          // Password
-          TextFormField(
-            controller: _passwordController,
-            obscureText: !_passwordVisible,
-            decoration: _inputDecoration("Password", Icons.lock).copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(
-                    _passwordVisible ? Icons.visibility : Icons.visibility_off),
-                onPressed: () =>
-                    setState(() => _passwordVisible = !_passwordVisible),
-              ),
+                // Email (prefilled, read-only)
+                TextFormField(
+                  controller: _emailController,
+                  decoration: _inputDecoration("Email", Icons.email).copyWith(
+                    filled: true,
+                    fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  ),
+                  readOnly: true,
+                  style: TextStyle(color: cs.onSurface.withValues(alpha: 0.7)),
+                ),
+              ],
             ),
-            validator: (v) => v != null && v.length >= 6 ? null : "Min 6 chars",
           ),
-          const SizedBox(height: 20),
-
-          // Confirm Password
-          TextFormField(
-            controller: _confirmController,
-            obscureText: !_confirmPasswordVisible,
-            decoration: _inputDecoration("Confirm Password", Icons.lock_outline)
-                .copyWith(
-              suffixIcon: IconButton(
-                icon: Icon(_confirmPasswordVisible
-                    ? Icons.visibility
-                    : Icons.visibility_off),
-                onPressed: () => setState(
-                    () => _confirmPasswordVisible = !_confirmPasswordVisible),
-              ),
-            ),
-            validator: (v) =>
-                v == _passwordController.text ? null : "Passwords mismatch",
-          ),
-          const SizedBox(height: 30),
+          
+          const SizedBox(height: 48),
 
           // Next Button
           SizedBox(
             width: double.infinity,
-            height: 50,
+            height: 56,
             child: FilledButton(
               onPressed: _onFormNext,
-              child: const Text("Next", style: TextStyle(fontSize: 18)),
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+              ),
+              child: const Text("Next", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+          ),
+          const SizedBox(height: 20),
+          // TEST POP BUTTON
+          Center(
+            child: TextButton.icon(
+              onPressed: () => Navigator.pop(context),
+              icon: const Icon(Icons.bug_report, size: 16),
+              label: const Text("Dev: Back"),
+              style: TextButton.styleFrom(
+                foregroundColor: cs.error.withValues(alpha: 0.7),
+              ),
             ),
           ),
         ],
@@ -405,89 +416,95 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
         Text(
           "Enter your mobile number to receive an OTP for verification.",
           style: TextStyle(
-            color: cs.onSurface.withValues(alpha: 0.7),
+            color: cs.onSurfaceVariant,
             fontSize: 14,
           ),
         ),
         const SizedBox(height: 32),
-        Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: cs.primary,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(
-                "🇮🇳 +91",
-                style: TextStyle(fontSize: 16, color: cs.onPrimary),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                style: TextStyle(
-                  color: cs.onSurface,
-                  fontWeight: FontWeight.w600,
+        GlassBox(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
                 ),
-                cursorColor: cs.primary,
-                textInputAction: TextInputAction.done,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                  LengthLimitingTextInputFormatter(10),
-                ],
-                onSubmitted: (value) {
-                  if (value.trim().length == 10) {
-                    _sendOtp();
-                  }
-                },
-                decoration: InputDecoration(
-                  hintText: "Mobile Number",
-                  hintStyle: TextStyle(
-                    color: cs.onSurface.withValues(alpha: 0.58),
+                child: Text(
+                  "🇮🇳 +91",
+                  style: TextStyle(
+                      fontSize: 16,
+                      color: cs.onPrimaryContainer,
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  style: TextStyle(
+                    color: cs.onSurface,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
                   ),
-                  filled: true,
-                  fillColor: Theme.of(context).brightness == Brightness.dark
-                      ? cs.onSurface.withValues(alpha: 0.08)
-                      : Colors.white.withValues(alpha: 0.94),
-                  prefixIcon: Icon(Icons.phone, color: cs.primary),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide:
-                        BorderSide(color: cs.primary.withValues(alpha: 0.24)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide:
-                        BorderSide(color: cs.primary.withValues(alpha: 0.24)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(14),
-                    borderSide: BorderSide(
-                      color: cs.primary.withValues(alpha: 0.7),
-                      width: 1.4,
+                  cursorColor: cs.primary,
+                  textInputAction: TextInputAction.done,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  onSubmitted: (value) {
+                    if (value.trim().length == 10) {
+                      _sendOtp();
+                    }
+                  },
+                  decoration: InputDecoration(
+                    hintText: "Mobile Number",
+                    hintStyle: TextStyle(
+                      color: cs.onSurfaceVariant,
+                      fontSize: 16,
+                    ),
+                    filled: true,
+                    fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                    prefixIcon: Icon(Icons.phone, color: cs.primary),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                          color: cs.outlineVariant.withValues(alpha: 0.5)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: cs.primary,
+                        width: 1.5,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
+        const SizedBox(height: 24),
         const SizedBox(height: 24),
         SizedBox(
           width: double.infinity,
-          height: 50,
+          height: 56,
           child: FilledButton(
             onPressed: _sendOtp,
             style: FilledButton.styleFrom(
-              backgroundColor: cs.primary,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
             ),
-            child: Text("Send OTP",
-                style: TextStyle(fontSize: 18, color: cs.onPrimary)),
+            child: const Text("Send OTP",
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           ),
         ),
       ],
@@ -500,37 +517,35 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
     Color? borderColor,
   }) {
     final cs = Theme.of(context).colorScheme;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return InputDecoration(
       labelText: label,
       labelStyle: TextStyle(
-        color: cs.onSurface.withValues(alpha: 0.8),
+        color: cs.onSurfaceVariant,
+        fontSize: 14,
       ),
       floatingLabelStyle: TextStyle(
         color: cs.primary,
         fontWeight: FontWeight.w600,
       ),
-      prefixIcon: Icon(icon, color: cs.primary),
+      prefixIcon: Icon(icon, color: cs.primary, size: 22),
       filled: true,
-      fillColor: isDark
-          ? cs.onSurface.withValues(alpha: 0.08)
-          : Colors.white.withValues(alpha: 0.94),
+      fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide:
-            BorderSide(color: borderColor ?? cs.primary.withValues(alpha: 0.24)),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide:
-            BorderSide(color: borderColor ?? cs.primary.withValues(alpha: 0.24)),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(
+          color: borderColor ?? cs.outlineVariant.withValues(alpha: 0.5),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         borderSide: BorderSide(
-          color: borderColor ?? cs.primary.withValues(alpha: 0.75),
-          width: 1.4,
+          color: borderColor ?? cs.primary,
+          width: 1.5,
         ),
       ),
     );

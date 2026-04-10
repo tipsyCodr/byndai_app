@@ -5,12 +5,7 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:http/http.dart' as http;
-
-import '../features/feature_map/feature_access_helper.dart';
-import '../features/feature_map/feature_mapper.dart';
 import '../features/home/SubscriptionPlans.dart';
-import 'package:gridcard/core/services/auth_provider.dart';
-import 'package:provider/provider.dart';
 
 class ConnectionSuggest extends StatefulWidget {
   final int viewerUserId;
@@ -190,7 +185,7 @@ class ConnectionSuggestState extends State<ConnectionSuggest> {
 
   // ================= CARD UI =================
   Widget _userCard(Map<String, dynamic> user) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
     final fname = _safeText(user["fname"]);
     final userName = _safeText(user["user_name"]);
@@ -248,15 +243,35 @@ class ConnectionSuggestState extends State<ConnectionSuggest> {
               Positioned.fill(
                 child: profilePic == null
                     ? Container(
-                        color: isDark
-                            ? Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest
-                            : Colors.grey.shade300,
-                        child: Icon(
-                          Icons.account_circle,
-                          size: 80,
-                          color: isDark ? Colors.grey.shade600 : null,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              colorScheme.primary.withValues(alpha: 0.8),
+                              colorScheme.secondary.withValues(alpha: 0.6),
+                            ],
+                          ),
+                        ),
+                        child: Stack(
+                          children: [
+                            Positioned(
+                              top: -10,
+                              right: -10,
+                              child: Icon(
+                                Icons.person,
+                                size: 120,
+                                color: Colors.white.withValues(alpha: 0.1),
+                              ),
+                            ),
+                            Center(
+                              child: Icon(
+                                Icons.account_circle_outlined,
+                                size: 100,
+                                color: Colors.white.withValues(alpha: 0.8),
+                              ),
+                            ),
+                          ],
                         ),
                       )
                     : Image.network(

@@ -31,6 +31,7 @@ class UserStorageService {
   static const String _kPrefUserBackup = 'user_backup';
   static const String _kPrefTokenBackup = 'token_backup';
   static const String _kPrefUserId = 'user_id';
+  static const String _kPrefShortVideosPrefix = 'profile_short_videos_';
 
   Future<void> updateUser(UserModel user) async {
     final userJson = jsonEncode(user.toJson());
@@ -93,19 +94,22 @@ class UserStorageService {
   Future<UserSession> loadSession() async {
     debugPrint("UserStorage: Loading session...");
 
-    // 1. Try Secure Storage
+    // 1. Try Secure Storage (with timeout)
     try {
-      final userJson = await _secureStorage.read(key: _kKeyUser);
-      final token = await _secureStorage.read(key: _kKeyToken);
+      final userJson = await _secureStorage
+          .read(key: _kKeyUser)
+          .timeout(const Duration(seconds: 1));
+      final token = await _secureStorage
+          .read(key: _kKeyToken)
+          .timeout(const Duration(seconds: 1));
 
       if (userJson != null && token != null) {
         final user = UserModel.fromJson(jsonDecode(userJson));
         debugPrint("UserStorage: Loaded from SecureStorage.");
-        // return UserSession(user: user, token: token, isValid: true);
         return UserSession(user: user, token: token);
       }
     } catch (e) {
-      debugPrint("UserStorage: ⚠️ SecureStorage load failed: $e");
+      debugPrint("UserStorage: ⚠️ SecureStorage load failed or timed out: $e");
     }
 
     // 2. Fallback to Backup
@@ -160,9 +164,11 @@ class UserStorageService {
 
   /// Retrieves the token, attempting SecureStorage first, then Backup.
   Future<String?> getToken() async {
-    // 1. Try Secure Storage
+    // 1. Try Secure Storage (with timeout)
     try {
-      final token = await _secureStorage.read(key: _kKeyToken);
+      final token = await _secureStorage
+          .read(key: _kKeyToken)
+          .timeout(const Duration(seconds: 1));
       if (token != null) return token;
     } catch (_) {}
 
@@ -173,5 +179,36 @@ class UserStorageService {
     } catch (_) {}
 
     return null;
+  }
+
+  Future<List<Map<String, dynamic>>> getProfileShortVideos(int profileId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('$_kPrefShortVideosPrefix$profileId');
+      if (raw == null || raw.isEmpty) return [];
+      final decoded = jsonDecode(raw);
+      if (decoded is List) {
+        return decoded
+            .whereType<Map>()
+            .map((e) => Map<String, dynamic>.from(e))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint('UserStorage: Failed loading short videos: $e');
+    }
+    return [];
+  }
+
+  Future<void> saveProfileShortVideos(
+      int profileId, List<Map<String, dynamic>> videos) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(
+        '$_kPrefShortVideosPrefix$profileId',
+        jsonEncode(videos),
+      );
+    } catch (e) {
+      debugPrint('UserStorage: Failed saving short videos: $e');
+    }
   }
 }

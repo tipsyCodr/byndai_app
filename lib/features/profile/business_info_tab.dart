@@ -411,7 +411,9 @@
 //           );
 
 //           if (result == true) {
+//             _lastFetchTime = null;
 //             _fetchBusinessInfo();
+//             widget.onSaved?.call();
 //           }
 //         },
 //         child: const Icon(Icons.add),
@@ -436,7 +438,8 @@ import './business_info_details_page.dart';
 
 class BusinessInfoTab extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
-  const BusinessInfoTab({super.key, this.userDetails});
+  final VoidCallback? onSaved;
+  const BusinessInfoTab({super.key, this.userDetails, this.onSaved});
 
   @override
   State<BusinessInfoTab> createState() => _BusinessInfoTabState();
@@ -450,6 +453,16 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
 
   int? userId;
   List<dynamic> businessList = [];
+
+  // Static cache for business info to prevent redundant fetches
+  static List<dynamic> _cachedBusinessList = [];
+  static int? _cachedUserId;
+  static DateTime? _lastFetchTime;
+
+  bool get _shouldRefresh {
+    if (_cachedBusinessList.isEmpty || _lastFetchTime == null || _cachedUserId != userId) return true;
+    return DateTime.now().difference(_lastFetchTime!) > const Duration(minutes: 60);
+  }
 
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {
@@ -486,6 +499,15 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
   Future<void> _fetchBusinessInfo() async {
     if (userId == null) return;
 
+    if (!_shouldRefresh && _cachedBusinessList.isNotEmpty) {
+      if (mounted) {
+        setState(() {
+          businessList = _cachedBusinessList;
+        });
+      }
+      return;
+    }
+
     setState(() {
       isLoading = true;
       errorMessage = null;
@@ -501,6 +523,8 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
       if (res.statusCode == 200 && jsonData["status"] == true) {
         setState(() {
           businessList = jsonData["data"] ?? [];
+          _cachedBusinessList = businessList;
+          _cachedUserId = userId;
         });
       } else {
         setState(() {
@@ -512,7 +536,10 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
         errorMessage = "Error: $e";
       });
     } finally {
-      setState(() => isLoading = false);
+      setState(() {
+        isLoading = false;
+        _lastFetchTime = DateTime.now();
+      });
     }
   }
 
@@ -536,6 +563,7 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
         if (!mounted) return;
         TopAlert.show(context, jsonData["message"] ?? "Deleted successfully",
             isSuccess: true);
+        widget.onSaved?.call();
       } else {
         if (!mounted) return;
         TopAlert.show(context, jsonData["message"] ?? "Delete failed",
@@ -712,7 +740,9 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
 
                       // ✅ update success -> refresh
                       if (result == true) {
+                        _lastFetchTime = null;
                         _fetchBusinessInfo();
+                        widget.onSaved?.call();
                       }
                     }
 
@@ -769,7 +799,10 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
-          onRefresh: _fetchBusinessInfo,
+          onRefresh: () async {
+            _lastFetchTime = null;
+            await _fetchBusinessInfo();
+          },
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
@@ -830,6 +863,7 @@ class _BusinessInfoTabState extends State<BusinessInfoTab> {
                   ),
                 );
                 if (result == true) {
+                  _lastFetchTime = null;
                   _fetchBusinessInfo();
                 }
               },

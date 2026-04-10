@@ -344,14 +344,13 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
 
   // ================= UPDATED CARD UI =================
   Widget _userCard(Map<String, dynamic> user) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
     final profilePic = _fullStorageUrl(user["profile_pic"]);
     final fname = user["fname"] ?? "";
     final friendCount = user["friend_count"] ?? 0;
 
     final business = user["business"];
     final legalName = business?["legal_name"] ?? "";
-    final description = business?["description"] ?? "";
 
     return GestureDetector(
       onTap: () async {
@@ -380,14 +379,14 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
       },
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        height: 400, // Card height thodi badhayi hai design match karne ke liye
+        height: 400,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28), // Rounded corners like image
+          borderRadius: BorderRadius.circular(28),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
             )
           ],
           image: profilePic != null
@@ -396,21 +395,49 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                   fit: BoxFit.cover,
                 )
               : null,
-          color: profilePic == null
-              ? (isDark ? Colors.grey.shade900 : Colors.grey.shade200)
+          gradient: profilePic == null
+              ? LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    colorScheme.primary.withValues(alpha: 0.8),
+                    colorScheme.secondary.withValues(alpha: 0.6),
+                  ],
+                )
               : null,
         ),
         child: Stack(
           children: [
-            // Placeholder Icon (agar image nahi hai)
-            if (profilePic == null)
-              Center(
+            // Placeholder Icon / Patterns (agar image nahi hai)
+            if (profilePic == null) ...[
+              Positioned(
+                top: -20,
+                right: -20,
                 child: Icon(
                   Icons.person,
-                  size: 120,
-                  color: isDark ? Colors.white10 : Colors.black12,
+                  size: 200,
+                  color: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.15),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.2),
+                      width: 2,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.person_outline,
+                    size: 80,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
 
             // Design wala Gradient (Frosted/Blur effect look)
             Positioned.fill(
@@ -422,12 +449,12 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                     end: Alignment.bottomCenter,
                     colors: [
                       Colors.transparent,
-                      Colors.black.withOpacity(0.0),
-                      Colors.black.withOpacity(0.4),
-                      Colors.black.withOpacity(0.85),
+                      Colors.black.withValues(alpha: 0.1),
+                      Colors.black.withValues(alpha: 0.5),
+                      Colors.black.withValues(alpha: 0.9),
                       Colors.black,
                     ],
-                    stops: const [0.0, 0.4, 0.6, 0.85, 1.0],
+                    stops: const [0.0, 0.3, 0.6, 0.85, 1.0],
                   ),
                 ),
               ),
@@ -490,13 +517,10 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                             const BorderSide(color: Colors.white60, width: 1.5),
                         shape: const StadiumBorder(),
                         backgroundColor: Colors.white.withOpacity(0.1),
-
-                        // 👇 IMPORTANT FIX
                         padding: const EdgeInsets.symmetric(vertical: 10),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       onPressed: () async {
-                        // --- Existing Functionality Logic ---
                         final authProvider =
                             Provider.of<AuthProvider>(context, listen: false);
                         await authProvider.refreshSubscription();

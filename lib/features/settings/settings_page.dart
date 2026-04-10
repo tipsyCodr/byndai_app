@@ -4,6 +4,7 @@ import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:gridcard/core/services/theme_provider.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:gridcard/features/profile/edit_profile_page.dart';
+import 'package:gridcard/features/profile/profile_tab.dart';
 import 'package:gridcard/features/settings/change_pin_page.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/routes/route_names.dart';
@@ -146,9 +147,9 @@ class _SettingsPageState extends State<SettingsPage> {
                   Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProfilePage(
-                          userId: userId,
-                          viewerUserId: userId, // self view.......
+                        builder: (context) => EditProfilePage(
+                          userDetails: _userDetails,
+                          initialTabIndex: 0, // 👈 Links tab ka index
                         ),
                       ));
                 },
@@ -309,8 +310,6 @@ class _SettingsPageState extends State<SettingsPage> {
                   }
                 },
               ),
-
-              
               const SizedBox(height: 80),
             ],
           ),

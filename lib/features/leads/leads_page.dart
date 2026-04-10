@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:async';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
@@ -10,13 +11,13 @@ import 'package:gridcard/core/services/leads_provider.dart';
 import 'package:gridcard/core/utils/file_exporter.dart';
 
 import 'package:gridcard/models/lead_model.dart';
-import './lead_details.dart';
-import './lead_chat_page.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import './manage_category_page.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:intl/intl.dart';
+import './widgets/lead_item_card.dart';
+import './widgets/lead_category_selector.dart';
 
 class LeadsPage extends StatefulWidget {
   const LeadsPage({super.key});
@@ -28,9 +29,9 @@ class LeadsPage extends StatefulWidget {
 class _LeadsPageState extends State<LeadsPage> {
   final ScrollController _scrollCtrl = ScrollController();
   final TextEditingController _searchCtrl = TextEditingController();
+  Timer? _searchDebounce;
   static const String _baseUrl = AppConfig.apiBaseUrl;
-  String _selectedCategory = "All";
-  // List<String> _categories = [];
+  
   List<Map<String, dynamic>> _categories = [];
   bool _isCategoryLoading = false;
   bool _isExporting = false;
@@ -59,7 +60,12 @@ class _LeadsPageState extends State<LeadsPage> {
   void dispose() {
     _scrollCtrl.dispose();
     _searchCtrl.dispose();
+    _searchDebounce?.cancel();
     super.dispose();
+  }
+
+  void _onSearchChanged(String query) {
+    context.read<LeadProviders>().setSearchQuery(query);
   }
 
   Future<void> _fetchLeadCategories() async {
@@ -79,10 +85,6 @@ class _LeadsPageState extends State<LeadsPage> {
 
       if (data["status"] == true) {
         final List list = data["data"];
-        // setState(() {
-        //   _categories = list.map((e) => e["category"].toString()).toList();
-        // });
-
         setState(() {
           _categories = list
               .map((e) => {
@@ -225,22 +227,34 @@ class _LeadsPageState extends State<LeadsPage> {
     );
   }
 
-  // 🔁 New method to get user ID and fetch leads
   Future<void> _loadUserIdAndFetchLeads() async {
     final userId = await UserStorageService().getUserId();
     if (userId != null) {
-      setState(() => _currentUserId = userId);
+      if (mounted) setState(() => _currentUserId = userId);
       if (mounted) {
-        context.read<LeadProviders>().fetchLeadsByUserId(
-              userId: userId,
-              perPage: 10,
-              reset: true,
-            );
+        final provider = context.read<LeadProviders>();
+        if (provider.shouldRefresh) {
+          provider.fetchLeadsByUserId(
+            userId: userId,
+            perPage: 10,
+            reset: true,
+          );
+        }
       }
     } else {
-      // Handle no user – maybe show error or redirect to login
       debugPrint("No user ID found");
     }
+  }
+
+  Future<void> _onRefresh() async {
+    if (_currentUserId != null) {
+      await context.read<LeadProviders>().fetchLeadsByUserId(
+            userId: _currentUserId!,
+            perPage: 10,
+            reset: true,
+          );
+    }
+    await _fetchLeadCategories();
   }
 
   void _onScroll() {
@@ -249,7 +263,7 @@ class _LeadsPageState extends State<LeadsPage> {
     if (_scrollCtrl.position.pixels >=
             _scrollCtrl.position.maxScrollExtent - 100 &&
         !provider.isPaginating) {
-      provider.loadNextPage(); // 🔁 Now uses new provider's pagination
+      provider.loadNextPage(); 
     }
   }
 
@@ -264,10 +278,11 @@ class _LeadsPageState extends State<LeadsPage> {
   }
 
   String _selectedCategoryName() {
-    if (_selectedCategory == 'All') return 'All';
+    final selectedCategory = context.read<LeadProviders>().selectedCategory;
+    if (selectedCategory == null || selectedCategory == 'All') return 'All';
 
     for (final category in _categories) {
-      if (category['id']?.toString() == _selectedCategory) {
+      if (category['id']?.toString() == selectedCategory) {
         return category['name']?.toString() ?? 'Category';
       }
     }
@@ -408,218 +423,6 @@ class _LeadsPageState extends State<LeadsPage> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 900;
-
-    // 🔁 Replace Consumer<LeadProviders> with Consumer<ScannedLeadProvider>
-    return Consumer<LeadProviders>(
-      builder: (context, provider, _) {
-        return Column(
-          children: [
-            _buildTopBar(provider),
-            _buildCategoryRow(),
-            Expanded(
-              child: isDesktop
-                  ? _buildDesktopTable(provider)
-                  : _buildMobileCards(provider),
-            ),
-            if (provider.isPaginating)
-              const Padding(
-                padding: EdgeInsets.all(8),
-                child: CircularProgressIndicator(),
-              )
-          ],
-        );
-      },
-    );
-  }
-
-  void _showImagePreview(BuildContext context, LeadModel lead) {
-    final imageUrl = lead.imageUrl;
-
-    showDialog(
-      context: context,
-      barrierColor: Colors.black54,
-      builder: (context) {
-        final screenHeight = MediaQuery.of(context).size.height;
-        final screenWidth = MediaQuery.of(context).size.width;
-        final colorScheme = Theme.of(context).colorScheme;
-
-        final maxImageHeight = screenHeight * 0.6;
-        final maxImageWidth = screenWidth * 0.8;
-
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          insetPadding: EdgeInsets.all(20),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: screenHeight * 0.8,
-              maxWidth: screenWidth * 0.9,
-            ),
-            child: Stack(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surface,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.all(20),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16),
-                          child: Text(
-                            "${lead.name}",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                        if (imageUrl != null)
-                          ConstrainedBox(
-                            constraints: BoxConstraints(
-                              maxHeight: maxImageHeight,
-                              maxWidth: maxImageWidth,
-                            ),
-                            child: Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(12),
-                                color: colorScheme.surfaceContainerHighest,
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  imageUrl,
-                                  fit: BoxFit.contain,
-                                  headers: {
-                                    'Access-Control-Allow-Origin': '*',
-                                  },
-                                  loadingBuilder:
-                                      (context, child, loadingProgress) {
-                                    if (loadingProgress == null) return child;
-                                    return Center(
-                                      child: CircularProgressIndicator(
-                                        value: loadingProgress
-                                                    .expectedTotalBytes !=
-                                                null
-                                            ? loadingProgress
-                                                    .cumulativeBytesLoaded /
-                                                loadingProgress
-                                                    .expectedTotalBytes!
-                                            : null,
-                                      ),
-                                    );
-                                  },
-                                  errorBuilder: (context, error, stackTrace) {
-                                    print('Image Error: $error');
-                                    return SizedBox(
-                                      height: 300,
-                                      width: double.infinity,
-                                      child: _buildNoImagePlaceholder(context),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          )
-                        else
-                          SizedBox(
-                            height: 300,
-                            width: double.infinity,
-                            child: _buildNoImagePlaceholder(context),
-                          ),
-                        if (lead.imageFilename != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 12),
-                            child: Text(
-                              "File: ${lead.imageFilename}",
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  right: 8,
-                  child: GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: colorScheme.surface,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 8,
-                          ),
-                        ],
-                      ),
-                      padding: const EdgeInsets.all(6),
-                      child: Icon(
-                        Icons.close,
-                        size: 20,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildNoImagePlaceholder(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      height: 300,
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: colorScheme.surfaceContainerHighest,
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.image_not_supported_outlined,
-            size: 60,
-            color: colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            "No Image Available",
-            style: TextStyle(
-              fontSize: 16,
-              color: colorScheme.onSurfaceVariant,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            "This lead doesn't have an image",
-            style: TextStyle(
-              fontSize: 12,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _confirmDelete(int leadId) {
     showDialog(
       context: context,
@@ -644,14 +447,13 @@ class _LeadsPageState extends State<LeadsPage> {
             onPressed: () async {
               Navigator.pop(context);
 
-              // 🔁 Use old LeadProviders for delete (if it supports delete)
               final provider = context.read<LeadProviders>();
               final success = await provider.deleteLead(leadId);
 
               if (success) {
+                if (!mounted) return;
                 TopAlert.show(context, "🗑 Lead deleted successfully",
                     isSuccess: true);
-                // Refresh scanned leads list
                 if (_currentUserId != null) {
                   context.read<LeadProviders>().fetchLeadsByUserId(
                         userId: _currentUserId!,
@@ -659,6 +461,7 @@ class _LeadsPageState extends State<LeadsPage> {
                       );
                 }
               } else {
+                if (!mounted) return;
                 TopAlert.show(context, "❌ Delete failed", isError: true);
               }
             },
@@ -668,185 +471,33 @@ class _LeadsPageState extends State<LeadsPage> {
     );
   }
 
-  // ================= TOP BAR =================
+  @override
+  Widget build(BuildContext context) {
+    final isDesktop = MediaQuery.of(context).size.width > 900;
 
-  Widget _buildCategoryRow() {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        children: [
-          // ================= ALL BUTTON =================
-          GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedCategory = "All";
-              });
-
-              if (_currentUserId != null) {
-                context.read<LeadProviders>().setCategory(
-                      null, // 🔥 null = ALL
-                      _currentUserId!,
-                    );
-              }
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: _selectedCategory == "All"
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
+    return Consumer<LeadProviders>(
+      builder: (context, provider, _) {
+        return RefreshIndicator(
+          onRefresh: _onRefresh,
+          color: Theme.of(context).colorScheme.primary,
+          child: Column(
+            children: [
+              _buildTopBar(provider),
+              _buildCategoryRow(),
+              Expanded(
+                child: isDesktop
+                    ? _buildDesktopTable(provider)
+                    : _buildMobileCards(provider),
               ),
-              child: Text(
-                "All",
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: _selectedCategory == "All"
-                      ? colorScheme.onPrimary
-                      : colorScheme.onSurfaceVariant,
+              if (provider.isPaginating)
+                const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: CircularProgressIndicator(),
                 ),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 10),
-
-          // ================= CATEGORY CHIPS =================
-          Expanded(
-            child: SizedBox(
-              height: 32,
-              child: _isCategoryLoading
-                  ? const Center(
-                      child: SizedBox(
-                        height: 16,
-                        width: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    )
-                  : ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _categories.length,
-                      itemBuilder: (context, index) {
-                        // final category = _categories[index];
-
-                        final category = _categories[index];
-                        final categoryName = category["name"];
-                        final categoryId = category["id"];
-                        final isSelected =
-                            _selectedCategory == categoryId.toString();
-
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedCategory = categoryId.toString();
-                            });
-
-                            if (_currentUserId != null) {
-                              context.read<LeadProviders>().setCategory(
-                                    categoryId.toString(), // 🔥 ID PASS KARO
-                                    _currentUserId!,
-                                  );
-                            }
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(right: 8),
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 14, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? colorScheme.primary
-                                  : colorScheme.surface,
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: isSelected
-                                    ? colorScheme.primary
-                                    : colorScheme.outlineVariant,
-                              ),
-                            ),
-                            child: Text(
-                              categoryName,
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: isSelected
-                                    ? colorScheme.onPrimary
-                                    : colorScheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ),
-
-          const SizedBox(width: 6),
-
-          // ================= ADD BUTTON =================
-          GestureDetector(
-            onTap: _showAddCategoryModal,
-            child: Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                shape: BoxShape.circle,
-                border: Border.all(color: colorScheme.outlineVariant),
-              ),
-              child: Icon(Icons.add, size: 18, color: colorScheme.onSurface),
-            ),
-          ),
-
-          const SizedBox(width: 6),
-
-          // ================= MENU =================
-          PopupMenuButton<String>(
-            padding: EdgeInsets.zero,
-            icon: const Icon(
-              CupertinoIcons.ellipsis_vertical,
-              size: 18,
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-
-            // 👇 YAHAN ADD KARNA HAI
-            onSelected: (value) async {
-              if (value == "manage_category") {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const ManageCategoryPage(),
-                  ),
-                ).then((_) {
-                  _fetchLeadCategories(); // 🔁 refresh after back
-                });
-              }
-
-              if (value == "sort") {
-                // future me sorting logic
-              }
-            },
-
-            itemBuilder: (context) => const [
-              PopupMenuItem(
-                value: "manage_category",
-                child: Text("Manage Categories"),
-              ),
-              PopupMenuItem(
-                value: "sort",
-                child: Text("Sort Leads"),
-              ),
             ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -855,10 +506,21 @@ class _LeadsPageState extends State<LeadsPage> {
       height: 42,
       child: TextField(
         controller: _searchCtrl,
+        onChanged: _onSearchChanged,
         decoration: InputDecoration(
           prefixIcon: Icon(CupertinoIcons.search,
               size: 18,
               color: Theme.of(context).colorScheme.onSurfaceVariant),
+          suffixIcon: _searchCtrl.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(CupertinoIcons.clear_circled_solid, size: 18),
+                  onPressed: () {
+                    _searchCtrl.clear();
+                    _onSearchChanged("");
+                    setState(() {});
+                  },
+                )
+              : null,
           hintText: "Search lead...",
           hintStyle:
               TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -880,10 +542,6 @@ class _LeadsPageState extends State<LeadsPage> {
               .surfaceContainerHighest
               .withOpacity(0.3),
         ),
-        onChanged: (val) {
-          // agar future me search implement karna ho
-          // provider.searchLeads(val);
-        },
       ),
     );
 
@@ -938,247 +596,121 @@ class _LeadsPageState extends State<LeadsPage> {
     );
   }
 
-  // ================= MOBILE VIEW =================
-  Widget _buildMobileCards(LeadProviders provider) {
-    if (provider.isLoading && provider.leads.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (!provider.isLoading && provider.leads.isEmpty) {
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          return RefreshIndicator(
-            onRefresh: () async {
-              await _fetchLeadCategories();
-              await _loadUserIdAndFetchLeads();
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                child: const Center(
-                  child: Text(
-                    "No Data Found",
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+  Widget _buildCategoryRow() {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          Selector<LeadProviders, String?>(
+            selector: (_, p) => p.selectedCategory,
+            builder: (context, selectedCategory, _) {
+              final isAll = selectedCategory == null || selectedCategory == "All";
+              return GestureDetector(
+                onTap: () {
+                  if (_currentUserId != null) {
+                    context.read<LeadProviders>().setCategory(
+                          null,
+                          _currentUserId!,
+                        );
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: isAll
+                        ? Theme.of(context).colorScheme.primary
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                ),
-              ),
-            ),
-          );
-        },
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: () async {
-        await _fetchLeadCategories();
-        await _loadUserIdAndFetchLeads();
-      },
-      child: ListView.builder(
-        physics: const AlwaysScrollableScrollPhysics(),
-        controller: _scrollCtrl,
-        padding: const EdgeInsets.only(bottom: 110),
-        itemCount: provider.leads.length,
-        itemBuilder: (_, i) {
-          final lead = provider.leads[i];
-          final colorScheme = Theme.of(context).colorScheme;
-          final isDark = Theme.of(context).brightness == Brightness.dark;
-          final leadTitleColor = isDark
-              ? Colors.white.withValues(alpha: 0.95)
-              : colorScheme.onSurface;
-          final leadSecondaryColor = isDark
-              ? Colors.white.withValues(alpha: 0.84)
-              : colorScheme.onSurfaceVariant;
-          final leadContactColor = isDark
-              ? Colors.white.withValues(alpha: 0.92)
-              : colorScheme.onSurface;
-
-          return InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => LeadDetailsPage(lead: lead),
+                  child: Text(
+                    "All",
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: isAll
+                          ? colorScheme.onPrimary
+                          : colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                 ),
               );
             },
-            child: Card(
-              elevation: 1.2,
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14)),
-              
-
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    /// 🔥 TOP ROW — NAME + ACTIONS
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        /// NAME (LEFT)
-                        Expanded(
-                          child: Text(
-                            lead.name ?? "",
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 15.5,
-                              fontWeight: FontWeight.w600,
-                              color: leadTitleColor,
-                            ),
-                          ),
-                        ),
-
-                        /// CHAT ICON
-                        IconButton(
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
-                          icon: const Icon(
-                            Icons.chat_bubble_outline,
-                            size: 19,
-                            color: Colors.green,
-                          ),
-                          onPressed: () async {
-                            final session =
-                                await UserStorageService().loadSession();
-                            final viewerUserId = session.user?.id;
-
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => LeadChatPage(
-                                  lead: lead,
-                                  viewerUserId: viewerUserId,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-
-                        /// POPUP MENU
-                        PopupMenuButton<String>(
-                          padding: EdgeInsets.zero,
-                          icon: Icon(
-                            CupertinoIcons.ellipsis_vertical,
-                            size: 19,
-                            color: leadSecondaryColor,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          onSelected: (value) async {
-                            if (value == 'edit') {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => LeadDetailsPage(lead: lead),
-                                ),
-                              );
-                            }
-                            if (value == 'delete') {
-                              _confirmDelete(lead.id!);
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(
-                              value: 'edit',
-                              child: Text("Edit"),
-                            ),
-                            PopupMenuItem(
-                              value: 'delete',
-                              child: Text(
-                                "Delete",
-                                style: TextStyle(
-                                    color: Theme.of(context).colorScheme.error),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    /// 🔥 SMALL GAP (Reduced)
-                    const SizedBox(height: 4),
-
-                    /// COMPANY NAME
-                    if ((lead.company_name ?? "").isNotEmpty)
-                      Text(
-                        lead.company_name!,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: leadSecondaryColor,
-                        ),
-                      ),
-
-                    const SizedBox(height: 6),
-
-                    /// PHONE
-                    Row(
-                      children: [
-                        Icon(CupertinoIcons.phone,
-                            size: 13, color: leadSecondaryColor),
-                        const SizedBox(width: 4),
-                        Text(
-                          lead.mobile_no_1 ?? "",
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            color: leadContactColor,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    /// EMAIL
-                    if ((lead.email ?? "").isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(CupertinoIcons.mail,
-                              size: 13, color: leadSecondaryColor),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              lead.email!,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 12.5,
-                                color: leadContactColor,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: SizedBox(
+              height: 32,
+              child: LeadCategorySelector(
+                categories: _categories,
+                isLoading: _isCategoryLoading,
+                currentUserId: _currentUserId,
               ),
             ),
-          );
-        },
+          ),
+          const SizedBox(width: 6),
+          GestureDetector(
+            onTap: _showAddCategoryModal,
+            child: Container(
+              padding: const EdgeInsets.all(6),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                shape: BoxShape.circle,
+                border: Border.all(color: colorScheme.outlineVariant),
+              ),
+              child: Icon(Icons.add, size: 18, color: colorScheme.onSurface),
+            ),
+          ),
+          const SizedBox(width: 6),
+          PopupMenuButton<String>(
+            padding: EdgeInsets.zero,
+            icon: const Icon(
+              CupertinoIcons.ellipsis_vertical,
+              size: 18,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            onSelected: (value) async {
+              if (value == "manage_category") {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ManageCategoryPage(),
+                  ),
+                ).then((_) {
+                  _fetchLeadCategories();
+                });
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(
+                value: "manage_category",
+                child: Text("Manage Categories"),
+              ),
+              PopupMenuItem(
+                value: "sort",
+                child: Text("Sort Leads"),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  // ================= DESKTOP VIEW =================
   Widget _buildDesktopTable(LeadProviders provider) {
     if (provider.isLoading && provider.leads.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        await _fetchLeadCategories();
-        await _loadUserIdAndFetchLeads();
-      },
+      onRefresh: _onRefresh,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         controller: _scrollCtrl,
@@ -1206,51 +738,46 @@ class _LeadsPageState extends State<LeadsPage> {
     );
   }
 
-  Widget _buildValidatedField(
-    String label,
-    TextEditingController controller,
-    FocusNode focusNode, {
-    TextInputType keyboard = TextInputType.text,
-    int maxLines = 1,
-    String? error,
-    Widget? suffix,
-    Function(String)? onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: TextField(
-        controller: controller,
-        focusNode: focusNode,
-        keyboardType: keyboard,
-        maxLines: maxLines,
-        onChanged: onChanged,
-        decoration: InputDecoration(
-          labelText: label,
-          errorText: error,
-          suffixIcon: suffix,
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide:
-                BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: Theme.of(context).colorScheme.primary,
-              width: 1.6,
+  Widget _buildMobileCards(LeadProviders provider) {
+    if (provider.isLoading && provider.leads.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (!provider.isLoading && provider.leads.isEmpty) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          return RefreshIndicator(
+            onRefresh: _onRefresh,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: const Center(
+                  child: Text(
+                    "No Data Found",
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ),
             ),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.error, width: 1.4),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-                color: Theme.of(context).colorScheme.error, width: 1.6),
-          ),
-        ),
+          );
+        },
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        controller: _scrollCtrl,
+        padding: const EdgeInsets.only(bottom: 110),
+        itemCount: provider.leads.length,
+        itemBuilder: (_, i) {
+          return LeadItemCard(
+            leadId: provider.leads[i].id!,
+            onDelete: () => _confirmDelete(provider.leads[i].id!),
+          );
+        },
       ),
     );
   }

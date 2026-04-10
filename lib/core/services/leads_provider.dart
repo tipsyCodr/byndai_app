@@ -8,10 +8,36 @@ class LeadProviders extends ChangeNotifier {
   String? _errorMessage;
   bool _isBackendLive = true;
 
-  List<LeadModel> get leads => _leads;
+  DateTime? _lastFetched;
+
+  List<LeadModel> get leads {
+    if (_searchQuery == null || _searchQuery!.isEmpty) {
+      return _leads;
+    }
+    final q = _searchQuery!.toLowerCase();
+    return _leads.where((l) {
+      final name = (l.name ?? '').toLowerCase();
+      final company = (l.company_name ?? '').toLowerCase();
+      final mobile = (l.mobile_no_1 ?? '').toLowerCase();
+      final email = (l.email ?? '').toLowerCase();
+      return name.contains(q) || company.contains(q) || mobile.contains(q) || email.contains(q);
+    }).toList();
+  }
+
+  String? _searchQuery;
+  void setSearchQuery(String? query) {
+    _searchQuery = query;
+    notifyListeners();
+  }
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isBackendLive => _isBackendLive;
+
+  /// Returns true if data is empty or older than 5 minutes
+  bool get shouldRefresh {
+    if (_leads.isEmpty || _lastFetched == null) return true;
+    return DateTime.now().difference(_lastFetched!) > const Duration(minutes: 5);
+  }
 
   int get currentPage => _currentPage;
   int get lastPage => _lastPage;
@@ -80,6 +106,7 @@ class LeadProviders extends ChangeNotifier {
         }
 
         _currentPage++;
+        _lastFetched = DateTime.now();
 
         notifyListeners();
       } else {
@@ -123,6 +150,7 @@ class LeadProviders extends ChangeNotifier {
     _total = 0;
     _currentUserId = null;
     _errorMessage = null;
+    _lastFetched = null;
     notifyListeners();
   }
 

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/config/app_config.dart';
-import '../services/festival_service.dart';
 
 class FestivalService {
   static const String _baseUrl = AppConfig.apiBaseUrl;

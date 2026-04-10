@@ -37,19 +37,22 @@ class NfcService with ChangeNotifier {
   // ===============================
 
   Future<void> initialize({required BuildContext context}) async {
+    debugPrint("🔍 Initializing NFC...");
     try {
+      // Check if NFC is even supported by the hardware/platform
       _isNfcAvailable = await NfcManager.instance.isAvailable();
 
       if (_isNfcAvailable) {
-        debugPrint("✅ NFC available");
+        debugPrint("✅ NFC available and ready to listen.");
         _startListening(context);
       } else {
-        debugPrint("❌ NFC not available");
+        debugPrint("ℹ️ NFC is not available on this device.");
       }
-
       notifyListeners();
     } catch (e) {
-      debugPrint("🔴 NFC init error: $e");
+      debugPrint("⚠️ NFC initialization skipped: $e");
+      _isNfcAvailable = false;
+      notifyListeners();
     }
   }
 

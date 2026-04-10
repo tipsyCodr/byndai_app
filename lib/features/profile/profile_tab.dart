@@ -10,12 +10,14 @@ import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/core/services/profile_service.dart';
 import './crop_screen.dart';
 
 class ProfileTab extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
+  final VoidCallback? onSaved;
 
-  const ProfileTab({super.key, this.userDetails});
+  const ProfileTab({super.key, this.userDetails, this.onSaved});
 
   @override
   State<ProfileTab> createState() => _ProfileTabState();
@@ -48,9 +50,22 @@ class _ProfileTabState extends State<ProfileTab> {
   String? _selectedDistrictName;
 
   // API Lists
-  List<Map<String, dynamic>> _states = [];
-  List<Map<String, dynamic>> _districts = [];
+  List<Map<String, dynamic>> _states = _cachedStates;
+  List<Map<String, dynamic>> _districts = _cachedDistricts;
   List<Map<String, dynamic>> _filteredDistricts = [];
+
+  // Static cache for locations to prevent redundant fetches
+  static List<Map<String, dynamic>> _cachedStates = [];
+  static List<Map<String, dynamic>> _cachedDistricts = [];
+  static DateTime? _lastLocationsFetchTime;
+
+  bool get _shouldRefreshLocations {
+    if (_cachedStates.isEmpty ||
+        _cachedDistricts.isEmpty ||
+        _lastLocationsFetchTime == null) return true;
+    return DateTime.now().difference(_lastLocationsFetchTime!) >
+        const Duration(minutes: 60);
+  }
 
   // Loading states
   bool _isLoadingStates = false;
@@ -61,11 +76,13 @@ class _ProfileTabState extends State<ProfileTab> {
   XFile? _profileImage;
   XFile? _logoImage;
   XFile? _profileVideo;
-  XFile? _bannerImage;
-
-  // Media bytes for immediate preview
-  Uint8List? _logoBytes; // for logo
-  Uint8List? _bannerBytes; // for banner 👈 new
+  // XFile? _bannerImage;
+  // Uint8List? _bannerBytes;
+  Uint8List? _logoBytes;
+  String? _bniIdCardUrl;
+  String? _jciIdCardUrl;
+  Uint8List? _bniIdCardBytes;
+  Uint8List? _jciIdCardBytes;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -97,6 +114,11 @@ class _ProfileTabState extends State<ProfileTab> {
 
   // ================= FETCH STATES =================
   Future<void> _fetchStates() async {
+    if (!_shouldRefreshLocations && _cachedStates.isNotEmpty) {
+      if (mounted) setState(() => _states = _cachedStates);
+      return;
+    }
+
     try {
       setState(() => _isLoadingStates = true);
 
@@ -125,6 +147,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 "c_id": e["c_id"],
               };
             }).toList();
+            _cachedStates = _states;
           });
 
           debugPrint("TOTAL STATES: ${_states.length}");
@@ -139,6 +162,11 @@ class _ProfileTabState extends State<ProfileTab> {
 
   // ================= FETCH DISTRICTS =================
   Future<void> _fetchDistricts() async {
+    if (!_shouldRefreshLocations && _cachedDistricts.isNotEmpty) {
+      if (mounted) setState(() => _districts = _cachedDistricts);
+      return;
+    }
+
     try {
       setState(() => _isLoadingDistricts = true);
 
@@ -167,6 +195,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 "s_id": e["s_id"],
               };
             }).toList();
+            _cachedDistricts = _districts;
           });
 
           debugPrint("TOTAL DISTRICTS: ${_districts.length}");
@@ -175,17 +204,22 @@ class _ProfileTabState extends State<ProfileTab> {
     } catch (e) {
       debugPrint("Districts fetch error: $e");
     } finally {
-      setState(() => _isLoadingDistricts = false);
+      setState(() {
+        _isLoadingDistricts = false;
+        if (_states.isNotEmpty && _districts.isNotEmpty) {
+          _lastLocationsFetchTime = DateTime.now();
+        }
+      });
     }
   }
 
   // ================= MEDIA PICKERS =================
-  Future<void> _pickProfileImage() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
+  Future<void> _pickProfileImage(ImageSource source) async {
+    final XFile? pickedFile = await _picker.pickImage(source: source);
 
     if (pickedFile == null) return;
 
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -195,6 +229,7 @@ class _ProfileTabState extends State<ProfileTab> {
             setState(() {
               _croppedImageBytes = croppedBytes;
             });
+            _updateProfile(); // Auto-upload immediately after cropping
           },
         ),
       ),
@@ -222,12 +257,12 @@ class _ProfileTabState extends State<ProfileTab> {
   //   }
   // }
 
-  Future<void> _pickLogoImage() async {
-    final XFile? pickedFile =
-        await _picker.pickImage(source: ImageSource.gallery);
+  Future<void> _pickLogoImage(ImageSource source) async {
+    final XFile? pickedFile = await _picker.pickImage(source: source);
 
     if (pickedFile == null) return;
 
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -238,26 +273,85 @@ class _ProfileTabState extends State<ProfileTab> {
               _logoImage = pickedFile; // optional
               _logoBytes = croppedBytes; // 👈 cropped image
             });
+            _updateProfile(); // Auto-upload immediately after cropping
           },
         ),
       ),
     );
   }
 
-  Future<void> _pickProfileVideo() async {
+  Future<void> _pickProfileVideo(ImageSource source) async {
     try {
       final XFile? video = await _picker.pickVideo(
-        source: ImageSource.gallery,
+        source: source,
         maxDuration: const Duration(seconds: 30),
       );
       if (video != null) {
         setState(() {
           _profileVideo = video;
         });
+        _updateProfile(); // Auto-upload immediately
       }
     } catch (e) {
       debugPrint("Error picking profile video: $e");
       _showErrorSnackBar('Error picking video: ${e.toString()}');
+    }
+  }
+
+  Future<void> _deleteProfileVideo() async {
+    final videoIdStr = getMedia('profile_video_id') ?? getMedia('video_id');
+    if (videoIdStr == null) {
+      // If we don't have a direct ID in settings,
+      // check if it's stored under a different key in userDetails
+      _showErrorSnackBar("No video ID found for deletion");
+      return;
+    }
+
+    final int? id = int.tryParse(videoIdStr.toString());
+    if (id == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Delete Video"),
+        content:
+            const Text("Are you sure you want to delete your profile video?"),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel")),
+          ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red, foregroundColor: Colors.white),
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text("Delete")),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
+    setState(() => _isSaving = true);
+    try {
+      final success = await ProfileService.deleteUserVideo(id);
+      if (success) {
+        _showSuccessSnackBar("Video deleted successfully");
+        setState(() {
+          _profileVideo = null;
+        });
+        // Refresh profile to update UI
+        final updated = await _fetchUserDetails();
+        if (updated != null && mounted) {
+          Provider.of<AuthProvider>(context, listen: false)
+              .updateUserFromDetails(updated);
+        }
+      } else {
+        _showErrorSnackBar("Failed to delete video");
+      }
+    } catch (e) {
+      _showErrorSnackBar("Error: $e");
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -282,6 +376,7 @@ class _ProfileTabState extends State<ProfileTab> {
   //   }
   // }
 
+/*
   Future<void> _pickBannerImage() async {
     final XFile? pickedFile =
         await _picker.pickImage(source: ImageSource.gallery);
@@ -298,11 +393,13 @@ class _ProfileTabState extends State<ProfileTab> {
               _bannerImage = pickedFile; // optional
               _bannerBytes = croppedBytes; // 👈 cropped image
             });
+            _updateProfile(); // Auto-upload immediately after cropping
           },
         ),
       ),
     );
   }
+*/
 
   // ================= UPDATE PROFILE API =================
   Future<void> _updateProfile() async {
@@ -339,13 +436,20 @@ class _ProfileTabState extends State<ProfileTab> {
 
       // Primary mobile
       if (_mobileController.text.trim().isNotEmpty) {
-        request.fields['mobile_one'] = _mobileController.text.trim();
+        String digits =
+            _mobileController.text.trim().replaceAll(RegExp(r'\D'), '');
+        if (digits.length == 10) digits = '91$digits';
+        request.fields['mobile_one'] = digits;
       }
 
       // Secondary mobile
       if (_additionalMobileController != null &&
           _additionalMobileController!.text.trim().isNotEmpty) {
-        request.fields['mobile_two'] = _additionalMobileController!.text.trim();
+        String digits = _additionalMobileController!.text
+            .trim()
+            .replaceAll(RegExp(r'\D'), '');
+        if (digits.length == 10) digits = '91$digits';
+        request.fields['mobile_two'] = digits;
       }
 
       // Secondary email
@@ -411,6 +515,7 @@ class _ProfileTabState extends State<ProfileTab> {
         );
       }
 
+      /*
       // Banner Image – prefer bytes if available
       if (_bannerBytes != null) {
         request.files.add(
@@ -433,6 +538,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
         );
       }
+      */
 
       // Profile Video
       if (_profileVideo != null) {
@@ -473,7 +579,8 @@ class _ProfileTabState extends State<ProfileTab> {
           authProvider.updateUserFromDetails(updatedDetails);
         }
         if (mounted) {
-          Navigator.pop(context, true); // Return with success
+          widget.onSaved?.call();
+          // Navigator.pop(context, true); // Removed to allow side-editing other tabs
         }
       } else {
         _showErrorSnackBar(
@@ -557,50 +664,187 @@ class _ProfileTabState extends State<ProfileTab> {
   Future<void> _init() async {
     await _fetchStates();
     await _fetchDistricts();
+    await _fetchIdCards();
     _loadUserData();
+  }
+
+  Future<void> _fetchIdCards() async {
+    try {
+      final response = await ProfileService.getIdCards();
+      debugPrint("ID CARDS RESPONSE DATA: ${response?['data']}");
+      if (response != null && response['status'] == true) {
+        final data = response['data'];
+        setState(() {
+          _bniIdCardUrl = data['bni_id_card_image'];
+          _jciIdCardUrl = data['jci_id_card_image'];
+          debugPrint("SET BNI URL: $_bniIdCardUrl");
+          debugPrint("SET JCI URL: $_jciIdCardUrl");
+
+          // Clear local bytes if we have a URL now
+          if (_bniIdCardUrl != null) _bniIdCardBytes = null;
+          if (_jciIdCardUrl != null) _jciIdCardBytes = null;
+          
+          // Also update member status if returned
+          if (data['bni_member'] != null) {
+            _isBniSelected = data['bni_member'].toString() == '1';
+          }
+          if (data['jci_member'] != null) {
+            _isJciSelected = data['jci_member'].toString() == '1';
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint("Error fetching ID cards: $e");
+    } finally {
+      // Logic removed
+    }
+  }
+
+  Future<void> _pickBniIdCard(ImageSource source) async {
+    final XFile? pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile == null) return;
+
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CropScreen(
+          imageFile: pickedFile,
+          onCropped: (Uint8List croppedBytes) {
+            setState(() {
+              _bniIdCardBytes = croppedBytes;
+            });
+            _uploadIdCard('bni', croppedBytes);
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickJciIdCard(ImageSource source) async {
+    final XFile? pickedFile = await _picker.pickImage(source: source);
+    if (pickedFile == null) return;
+
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CropScreen(
+          imageFile: pickedFile,
+          onCropped: (Uint8List croppedBytes) {
+            setState(() {
+              _jciIdCardBytes = croppedBytes;
+            });
+            _uploadIdCard('jci', croppedBytes);
+          },
+        ),
+      ),
+    );
+  }
+
+  void _showPickOptions({required Function(ImageSource) onPick, bool isVideo = false}) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(isVideo ? Icons.videocam : Icons.camera_alt),
+                title: Text(isVideo ? "Record Video" : "Take Photo"),
+                onTap: () {
+                  Navigator.pop(context);
+                  onPick(ImageSource.camera);
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: Icon(isVideo ? Icons.video_library : Icons.photo_library),
+                title: Text(isVideo ? "Choose Video" : "Choose from Gallery"),
+                onTap: () {
+                  Navigator.pop(context);
+                  onPick(ImageSource.gallery);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _uploadIdCard(String type, Uint8List bytes) async {
+    setState(() => _isSaving = true);
+    try {
+      final response = await ProfileService.uploadIdCard(
+        type: type,
+        imageBytes: bytes,
+      );
+      if (response != null && response['status'] == true) {
+        _showSuccessSnackBar('${type.toUpperCase()} ID Card uploaded successfully');
+        await _fetchIdCards(); // Refresh URLs
+      } else {
+        _showErrorSnackBar('Failed to upload ${type.toUpperCase()} ID Card');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Error: $e');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   // ✅ GENDER: Convert DB code (M/F) to display text (Male/Female)
   void _loadUserData() {
     if (widget.userDetails != null) {
-      final apiMasterUser = widget.userDetails?['master_user'];
-      final user = widget.userDetails;
+      final userDetails = widget.userDetails!;
+      final apiMasterUser =
+          userDetails['master_user'] ?? userDetails['user'] ?? userDetails;
+      final user = userDetails;
 
       setState(() {
         // Name
-        _nameController.text =
-            apiMasterUser?['fname'] ?? user?['user_name'] ?? "";
+        _nameController.text = apiMasterUser['fname']?.toString() ??
+            user['fname']?.toString() ??
+            user['user_name']?.toString() ??
+            "";
 
         // Email
-        _emailController.text =
-            user?['email'] ?? apiMasterUser?['email_one'] ?? "";
+        _emailController.text = user['email']?.toString() ??
+            apiMasterUser['email_one']?.toString() ??
+            apiMasterUser['email']?.toString() ??
+            "";
 
         // Mobile
-        _mobileController.text = apiMasterUser?['mobile_one'] ?? "";
+        _mobileController.text = apiMasterUser['mobile_one']?.toString() ??
+            apiMasterUser['mobile']?.toString() ??
+            user['mobile']?.toString() ??
+            "";
 
         // Secondary Mobile
-        if (apiMasterUser?['mobile_two'] != null &&
-            apiMasterUser!['mobile_two'].toString().isNotEmpty) {
-          _additionalMobileController = TextEditingController(
-            text: apiMasterUser['mobile_two'],
-          );
+        final String mobileTwo = apiMasterUser['mobile_two']?.toString() ?? "";
+        if (mobileTwo.isNotEmpty) {
+          _additionalMobileController = TextEditingController(text: mobileTwo);
         }
 
         // Secondary Email
-        if (apiMasterUser?['email_one'] != null &&
-            apiMasterUser!['email_one'].toString().isNotEmpty &&
-            _emailController.text != apiMasterUser['email_one']) {
-          _additionalEmailController = TextEditingController(
-            text: apiMasterUser['email_one'],
-          );
+        final String emailOne = apiMasterUser['email_one']?.toString() ?? "";
+        if (emailOne.isNotEmpty && _emailController.text != emailOne) {
+          _additionalEmailController = TextEditingController(text: emailOne);
         }
 
         // DOB
-        _dobController.text = apiMasterUser?['dob'] ?? "";
+        _dobController.text =
+            apiMasterUser['dob']?.toString() ?? user['dob']?.toString() ?? "";
 
-        // ✅ GENDER: Convert DB code (M/F) to display text
-        final apiGender =
-            (apiMasterUser?['gender'] ?? '').toString().toUpperCase();
+        // Gender
+        final apiGender = (apiMasterUser['gender'] ?? user['gender'] ?? '')
+            .toString()
+            .toUpperCase();
 
         if (apiGender == 'M') {
           _selectedGender = 'Male';
@@ -611,23 +855,29 @@ class _ProfileTabState extends State<ProfileTab> {
         }
 
         // ✅ JCI & BNI load
-        _isJciSelected = (apiMasterUser?['jci_member']?.toString() == '1');
+        _isJciSelected = (apiMasterUser['jci_member']?.toString() == '1' ||
+            user['jci_member']?.toString() == '1');
 
-        _isBniSelected = (apiMasterUser?['bni_member']?.toString() == '1');
+        _isBniSelected = (apiMasterUser['bni_member']?.toString() == '1' ||
+            user['bni_member']?.toString() == '1');
 
         // Address
-        _addressController.text = apiMasterUser?['address'] ?? "";
+        _addressController.text = apiMasterUser['address']?.toString() ??
+            user['address']?.toString() ??
+            "";
 
         // State
-        _selectedStateId = apiMasterUser?['state_id'];
-        _selectedStateName = apiMasterUser?['state_name'];
+        _selectedStateId = apiMasterUser['state_id'] ?? user['state_id'];
+        _selectedStateName = apiMasterUser['state_name'] ?? user['state_name'];
 
         // District
-        _selectedDistrictId = apiMasterUser?['district_id'];
-        _selectedDistrictName = apiMasterUser?['district_name'];
+        _selectedDistrictId =
+            apiMasterUser['district_id'] ?? user['district_id'];
+        _selectedDistrictName =
+            apiMasterUser['district_name'] ?? user['district_name'];
 
         // Filter districts if state is selected
-        if (_selectedStateId != null) {
+        if (_selectedStateId != null && _districts.isNotEmpty) {
           _filteredDistricts =
               _districts.where((d) => d["s_id"] == _selectedStateId).toList();
         }
@@ -645,6 +895,16 @@ class _ProfileTabState extends State<ProfileTab> {
     _additionalEmailController?.dispose();
     _additionalMobileController?.dispose();
     super.dispose();
+  }
+
+  // Helper to find media keys anywhere in the hierarchy
+  String? getMedia(String key) {
+    if (widget.userDetails == null) return null;
+    final userData = widget.userDetails!;
+    final masterUser = userData['master_user'] ?? {};
+    final userSub = userData['user'] ?? {};
+    final val = userData[key] ?? masterUser[key] ?? userSub[key];
+    return val?.toString();
   }
 
   @override
@@ -667,7 +927,7 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
           const SizedBox(height: 16),
 
-          // Profile Image, Logo, Video, Banner Grid
+          // Profile Image & Logo Grid
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -675,59 +935,91 @@ class _ProfileTabState extends State<ProfileTab> {
               crossAxisCount: 2,
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 0.9,
+              childAspectRatio: 0.95,
             ),
-            itemCount: 4,
+            itemCount: 2,
             itemBuilder: (context, index) {
-              switch (index) {
-                case 0:
-                  return MediaUploadCard(
-                    title: 'Profile Image',
-                    size: '500px x 500px',
-                    mediaFile: _profileImage,
-                    existingFile: widget.userDetails?['master_user']
-                        ?['profile_pic'],
-                    baseUrl: _imgBaseUrl,
-                    onTap: _pickProfileImage,
-                    croppedBytes: _croppedImageBytes,
-                  );
-                case 1:
-                  return MediaUploadCard(
-                    title: 'Logo',
-                    size: '500px x 500px',
-                    mediaFile: _logoImage,
-                    existingFile: widget.userDetails?['master_user']
-                        ?['profile_logo'],
-                    baseUrl: _imgBaseUrl,
-                    onTap: _pickLogoImage,
-                    croppedBytes: _logoBytes,
-                  );
-                case 2:
-                  return MediaUploadCard(
-                    title: 'Profile Video',
-                    size: '500px x 500px (25 MB)',
-                    mediaFile: _profileVideo,
-                    existingFile: widget.userDetails?['master_user']
-                        ?['profile_video'],
-                    baseUrl: _imgBaseUrl,
-                    onTap: _pickProfileVideo,
-                    isVideo: true,
-                  );
-                case 3:
-                  return MediaUploadCard(
-                    title: 'Banner Image',
-                    size: '500px x 500px',
-                    mediaFile: _bannerImage,
-                    existingFile: widget.userDetails?['master_user']
-                        ?['profile_banner'],
-                    baseUrl: _imgBaseUrl,
-                    onTap: _pickBannerImage,
-                    croppedBytes: _bannerBytes, // 👈 Pass banner bytes
-                  );
-                default:
-                  return const SizedBox();
+              if (index == 0) {
+                return MediaUploadCard(
+                  title: 'Profile Image',
+                  size: '500px x 500px',
+                  mediaFile: _profileImage,
+                  existingFile: getMedia('profile_pic'),
+                  baseUrl: _imgBaseUrl,
+                  onTap: () => _showPickOptions(onPick: _pickProfileImage),
+                  croppedBytes: _croppedImageBytes,
+                );
+              } else {
+                return MediaUploadCard(
+                  title: 'Logo',
+                  size: '500px x 500px',
+                  mediaFile: _logoImage,
+                  existingFile: getMedia('profile_logo'),
+                  baseUrl: _imgBaseUrl,
+                  onTap: () => _showPickOptions(onPick: _pickLogoImage),
+                  croppedBytes: _logoBytes,
+                );
               }
             },
+          ),
+
+          const SizedBox(height: 16),
+
+          // Profile Video (Wide Format)
+          SizedBox(
+            height: 180,
+            width: double.infinity,
+            child: MediaUploadCard(
+              title: 'Profile Video',
+              size: 'Max 25 MB (Landscape/Portrait)',
+              mediaFile: _profileVideo,
+              existingFile: getMedia('profile_video'),
+              baseUrl: _imgBaseUrl,
+              onTap: () => _showPickOptions(onPick: _pickProfileVideo, isVideo: true),
+              // onDelete: _deleteProfileVideo, // TODO: fixed the video ID not found error later
+              isVideo: true,
+            ),
+          ),
+
+          const SizedBox(height: 16),
+          Divider(color: colorScheme.outlineVariant),
+          const SizedBox(height: 16),
+
+          // ID Cards Section
+          Text(
+            'Organization ID Cards',
+            style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.onSurface),
+          ),
+          const SizedBox(height: 16),
+
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: 0.95,
+            children: [
+              MediaUploadCard(
+                title: 'BNI ID Card',
+                size: 'Photo Upload',
+                existingFile: _bniIdCardUrl,
+                baseUrl: _imgBaseUrl,
+                onTap: () => _showPickOptions(onPick: _pickBniIdCard),
+                croppedBytes: _bniIdCardBytes,
+              ),
+              MediaUploadCard(
+                title: 'JCI ID Card',
+                size: 'Photo Upload',
+                existingFile: _jciIdCardUrl,
+                baseUrl: _imgBaseUrl,
+                onTap: () => _showPickOptions(onPick: _pickJciIdCard),
+                croppedBytes: _jciIdCardBytes,
+              ),
+            ],
           ),
 
           const SizedBox(height: 32),
@@ -1197,36 +1489,36 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
           ),
 
-          const SizedBox(height: 16),
+          // const SizedBox(height: 16),
 
-          Row(
-            children: [
-              Expanded(
-                child: CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text("JCI"),
-                  value: _isJciSelected,
-                  onChanged: (value) {
-                    setState(() {
-                      _isJciSelected = value ?? false;
-                    });
-                  },
-                ),
-              ),
-              Expanded(
-                child: CheckboxListTile(
-                  contentPadding: EdgeInsets.zero,
-                  title: const Text("BNI"),
-                  value: _isBniSelected,
-                  onChanged: (value) {
-                    setState(() {
-                      _isBniSelected = value ?? false;
-                    });
-                  },
-                ),
-              ),
-            ],
-          ),
+          // Row(
+          //   children: [
+          //     Expanded(
+          //       child: CheckboxListTile(
+          //         contentPadding: EdgeInsets.zero,
+          //         title: const Text("JCI"),
+          //         value: _isJciSelected,
+          //         onChanged: (value) {
+          //           setState(() {
+          //             _isJciSelected = value ?? false;
+          //           });
+          //         },
+          //       ),
+          //     ),
+          //     Expanded(
+          //       child: CheckboxListTile(
+          //         contentPadding: EdgeInsets.zero,
+          //         title: const Text("BNI"),
+          //         value: _isBniSelected,
+          //         onChanged: (value) {
+          //           setState(() {
+          //             _isBniSelected = value ?? false;
+          //           });
+          //         },
+          //       ),
+          //     ),
+          //   ],
+          // ),
 
           const SizedBox(height: 32),
 
@@ -1349,6 +1641,7 @@ class MediaUploadCard extends StatelessWidget {
   final VoidCallback onTap;
   final bool isVideo;
   final Uint8List? croppedBytes;
+  final VoidCallback? onDelete;
 
   const MediaUploadCard({
     super.key,
@@ -1360,183 +1653,279 @@ class MediaUploadCard extends StatelessWidget {
     required this.onTap,
     this.isVideo = false,
     this.croppedBytes,
+    this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
     final hasNewFile = mediaFile != null || croppedBytes != null;
-    final hasExistingFile = existingFile != null && existingFile!.isNotEmpty;
+    final hasExistingFile = (existingFile ?? '').isNotEmpty;
     final showPreview = hasNewFile || hasExistingFile;
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        decoration: BoxDecoration(
-          color: isDark ? colorScheme.surfaceContainerHighest : null,
-          border: isDark ? null : Border.all(color: colorScheme.outlineVariant),
-          borderRadius: BorderRadius.circular(8),
+    return Container(
+      decoration: BoxDecoration(
+        color: isDark ? colorScheme.surfaceContainerHighest : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          )
+        ],
+        border: Border.all(
+          color: isDark ? Colors.white10 : colorScheme.outlineVariant,
         ),
-        padding: const EdgeInsets.all(8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Preview or Icon
-            SizedBox(
-              width: 50,
-              height: 50,
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          // 0. Main Click Area
+          Positioned.fill(
+            child: GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              child: const SizedBox.expand(),
+            ),
+          ),
+
+          // 1. Background Media/Placeholder
+          IgnorePointer(
+            child: Positioned.fill(
               child: Container(
-                decoration: BoxDecoration(
-                  color: colorScheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(8),
-                ),
+                color: colorScheme.surfaceContainerHighest,
                 child: showPreview
                     ? _buildPreview(hasNewFile, hasExistingFile)
                     : Icon(
                         isVideo ? Icons.videocam : Icons.image,
-                        color: colorScheme.onSurfaceVariant,
-                        size: 24,
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                        size: 40,
                       ),
               ),
             ),
-            const SizedBox(height: 4),
-            // Title
-            Text(
-              title,
-              style: TextStyle(
-                  fontWeight: FontWeight.w500,
-                  fontSize: 12,
-                  color: colorScheme.onSurface),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            // Size/Status
-            Text(
-              hasNewFile
-                  ? 'New Selected'
-                  : (hasExistingFile ? 'Uploaded' : size),
-              style: TextStyle(
-                color: hasNewFile
-                    ? Colors.green
-                    : (hasExistingFile
-                        ? Colors.blue
-                        : colorScheme.onSurfaceVariant),
-                fontSize: 10,
-                fontWeight: hasNewFile || hasExistingFile
-                    ? FontWeight.w500
-                    : FontWeight.normal,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 4),
-            // Upload Button
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: hasNewFile
-                    ? Colors.green.withOpacity(0.1)
-                    : (hasExistingFile
-                        ? Colors.blue.withOpacity(0.1)
-                        : colorScheme.primary.withOpacity(0.1)),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                hasNewFile
-                    ? 'Change'
-                    : (hasExistingFile ? 'Replace' : 'Upload'),
-                style: TextStyle(
-                  color: hasNewFile
-                      ? Colors.green
-                      : (hasExistingFile ? Colors.blue : colorScheme.primary),
-                  fontSize: 10,
-                  fontWeight: FontWeight.w500,
+          ),
+
+          // 2. Status Badge Overlay (Top Left)
+          if (showPreview)
+            Positioned(
+              top: 8,
+              left: 8,
+              child: IgnorePointer(
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: (hasNewFile ? Colors.green : Colors.blue)
+                        .withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      )
+                    ],
+                  ),
+                  child: Text(
+                    hasNewFile ? 'NEW' : 'SAVED',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
+
+          // 3. Delete Action Overlay (Top Right)
+          if (showPreview && onDelete != null)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: onDelete,
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.6),
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black26,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      )
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.delete_outline,
+                    color: Colors.white,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
+
+          // 4. Bottom Info Overlay (Title & Action)
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                    ],
+                  ),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                        color: Colors.white,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          hasNewFile
+                              ? Icons.sync
+                              : (hasExistingFile
+                                  ? Icons.check_circle_outline
+                                  : Icons.add_circle_outline),
+                          size: 14,
+                          color: (hasNewFile || hasExistingFile)
+                              ? Colors.white
+                              : colorScheme.primary.withOpacity(0.8),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          hasNewFile
+                              ? 'Change'
+                              : (hasExistingFile ? 'Replace' : 'Upload'),
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildPreview(bool hasNewFile, bool hasExistingFile) {
-    // 👇 Priority 1: Show cropped bytes if available
+    // Priority 1: Cropped bytes
     if (croppedBytes != null) {
-      return ClipRRect(
-        borderRadius: BorderRadius.circular(6),
-        child: Image.memory(
-          croppedBytes!,
-          width: 50,
-          height: 50,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            return Icon(Icons.broken_image, color: Colors.red);
-          },
-        ),
+      return Image.memory(
+        croppedBytes!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _buildFallbackIcon(),
       );
     }
 
-    // 👇 Priority 2: Show newly selected file (non‑cropped, e.g., logo)
+    // Priority 2: New media file
     if (mediaFile != null) {
       if (isVideo) {
-        return const Icon(
-          Icons.play_circle_filled,
-          color: Colors.blue,
-          size: 30,
-        );
+        return _buildVideoPlaceholder();
       } else {
-        try {
-          return ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: Image.file(
-              File(mediaFile!.path),
-              width: 50,
-              height: 50,
-              fit: BoxFit.cover,
-              errorBuilder: (context, error, stackTrace) {
-                return Icon(Icons.broken_image, color: Colors.red);
-              },
-            ),
-          );
-        } catch (e) {
-          return Icon(Icons.broken_image, color: Colors.red);
-        }
+        return Image.file(
+          File(mediaFile!.path),
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildFallbackIcon(),
+        );
       }
     }
 
-    // 👇 Priority 3: Show existing uploaded file
+    // Priority 3: Existing file
     if (hasExistingFile) {
       if (isVideo) {
-        return const Icon(
-          Icons.play_circle_filled,
-          color: Colors.blue,
-          size: 30,
-        );
+        return _buildVideoPlaceholder();
       } else {
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(6),
-          child: Image.network(
-            '$baseUrl/$existingFile',
-            width: 50,
-            height: 50,
-            fit: BoxFit.cover,
-            errorBuilder: (context, error, stackTrace) {
-              return Icon(Icons.broken_image, color: Colors.red);
-            },
-          ),
+        String validUrl = AppConfig.getFullUrl(existingFile) ?? existingFile!;
+        return Image.network(
+          validUrl,
+          fit: BoxFit.cover,
+          loadingBuilder: (context, child, loadingProgress) {
+            if (loadingProgress == null) return child;
+            return const Center(
+                child: CircularProgressIndicator(strokeWidth: 2));
+          },
+          errorBuilder: (context, error, stackTrace) {
+            if (!validUrl.startsWith('http')) {
+              return Image.network(
+                '$baseUrl/$existingFile',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _buildErrorPlaceholder(validUrl),
+              );
+            }
+            return _buildErrorPlaceholder(validUrl);
+          },
         );
       }
     }
 
-    // Fallback icon
-    return Icon(isVideo ? Icons.videocam : Icons.image,
-        color: Colors.grey, size: 30);
+    return _buildFallbackIcon();
+  }
+
+  Widget _buildVideoPlaceholder() {
+    return Container(
+      color: Colors.black87,
+      child: const Center(
+        child: Icon(
+          Icons.play_circle_fill,
+          color: Colors.white,
+          size: 40,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorPlaceholder(String url) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(4.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.broken_image, color: Colors.red, size: 24),
+            const SizedBox(height: 4),
+            Text(
+              url,
+              style: const TextStyle(fontSize: 8, color: Colors.red),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildFallbackIcon() {

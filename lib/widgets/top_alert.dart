@@ -28,7 +28,8 @@ class TopAlert {
     late OverlayEntry overlayEntry;
     overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
-        top: topPadding + 12,
+        top: (topPadding > 0 ? topPadding : 20) + 48,
+
         left: 12,
         right: 12,
         child: Material(

@@ -47,15 +47,24 @@ class _BusinessEventPageState extends State<BusinessEventPage> {
       });
 
       final uri = Uri.parse("$_baseUrl/show-event");
+      final headers = await _getHeaders();
+      final loggedHeaders = Map<String, String>.from(headers);
+      if (loggedHeaders['Authorization'] != null) {
+        final auth = loggedHeaders['Authorization']!;
+        loggedHeaders['Authorization'] =
+            auth.length > 24 ? '${auth.substring(0, 16)}...${auth.substring(auth.length - 6)}' : 'Bearer ***';
+      }
 
       final response = await http.get(
         uri,
-        headers: await _getHeaders(),
+        headers: headers,
       );
 
       debugPrint("========== SHOW EVENT API ==========");
       debugPrint("URL: $uri");
+      debugPrint("HEADERS: $loggedHeaders");
       debugPrint("STATUS CODE: ${response.statusCode}");
+      debugPrint("RAW RESPONSE BODY: ${response.body}");
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);

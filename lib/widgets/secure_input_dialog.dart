@@ -32,15 +32,30 @@ class _SecureInputDialogState extends State<SecureInputDialog> {
   final TextEditingController _controller = TextEditingController();
   bool isLoading = false;
 
-  PinTheme get _pinTheme => PinTheme(
-        width: 56,
-        height: 56,
-        textStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade400),
-        ),
-      );
+  PinTheme _buildPinTheme(ColorScheme cs) {
+    return PinTheme(
+      width: 56,
+      height: 56,
+      textStyle: TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.bold,
+        color: cs.onSurface,
+      ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+      ),
+    );
+  }
+
+  PinTheme _buildFocusedPinTheme(ColorScheme cs) {
+    return _buildPinTheme(cs).copyWith(
+      decoration: _buildPinTheme(cs).decoration?.copyWith(
+            border: Border.all(color: cs.primary, width: 1.5),
+          ),
+    );
+  }
 
   @override
   void dispose() {
@@ -72,6 +87,8 @@ class _SecureInputDialogState extends State<SecureInputDialog> {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final defaultPinTheme = _buildPinTheme(colors);
+    final focusedPinTheme = _buildFocusedPinTheme(colors);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focusNode.requestFocus();
@@ -79,7 +96,8 @@ class _SecureInputDialogState extends State<SecureInputDialog> {
 
     return AlertDialog(
       backgroundColor: colors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      surfaceTintColor: Colors.transparent, // Disable default surface tint
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       title: Text(
         widget.title,
         style: TextStyle(
@@ -96,14 +114,15 @@ class _SecureInputDialogState extends State<SecureInputDialog> {
             autofocus: true,
             length: widget.length,
             obscureText: widget.type != SecureInputType.otp,
-            defaultPinTheme: _pinTheme,
+            defaultPinTheme: defaultPinTheme,
+            focusedPinTheme: focusedPinTheme,
             onCompleted: (_) => _submit(),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           Text(
             widget.description,
             textAlign: TextAlign.center,
-            style: TextStyle(color: colors.onSurface.withOpacity(0.6)),
+            style: TextStyle(color: colors.onSurfaceVariant),
           ),
         ],
       ),
@@ -113,7 +132,7 @@ class _SecureInputDialogState extends State<SecureInputDialog> {
             setState(() => isLoading = false); // stop loader inside dialog
             Navigator.pop(context, false);
           },
-          child: const Text('Cancel'),
+          child: Text('Cancel', style: TextStyle(color: colors.primary)),
         ),
         if (widget.type == SecureInputType.loginPin) // show only for login
           TextButton(
@@ -123,15 +142,23 @@ class _SecureInputDialogState extends State<SecureInputDialog> {
                 await widget.onForgotPin!();
               }
             },
-            child: const Text("Forgot PIN?"),
+            child: Text("Forgot PIN?", style: TextStyle(color: colors.primary)),
           ),
         FilledButton(
           onPressed: isLoading ? null : _submit,
+          style: FilledButton.styleFrom(
+            backgroundColor: colors.primary,
+            foregroundColor: colors.onPrimary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          ),
           child: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: colors.onPrimary,
+                  ),
                 )
               : const Text('Continue'),
         ),

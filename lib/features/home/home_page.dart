@@ -8,6 +8,7 @@ import 'package:gridcard/features/settings/settings_page.dart';
 import 'package:gridcard/features/home/feed_page.dart';
 import 'package:gridcard/core/services/auth_provider.dart'; // ✅ Your AuthProvider
 import 'package:gridcard/features/chat/connections_page.dart';
+import 'package:gridcard/core/services/social_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/routes/route_names.dart';
@@ -17,6 +18,7 @@ import 'package:gridcard/core/theme/app_theme.dart';
 import '../qr_scan/profile_qr_code.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/nfc_service.dart';
+import 'package:gridcard/widgets/app_network_image.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -30,6 +32,7 @@ class _HomePageState extends State<HomePage> {
 
   final GlobalKey<FeedPageState> _feedKey = GlobalKey<FeedPageState>();
   late final List<Widget> _screens;
+  NfcService? _nfcService;
 
   @override
   void initState() {
@@ -41,6 +44,7 @@ class _HomePageState extends State<HomePage> {
       const SettingsPage(),
     ];
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _nfcService = Provider.of<NfcService>(context, listen: false);
       _initializeNfc();
       final auth = Provider.of<AuthProvider>(context, listen: false);
 
@@ -50,14 +54,12 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
-    final nfcService = Provider.of<NfcService>(context, listen: false);
-    nfcService.stopListening();
+    _nfcService?.stopListening();
     super.dispose();
   }
 
   Future<void> _initializeNfc() async {
-    final nfcService = Provider.of<NfcService>(context, listen: false);
-    await nfcService.initialize(context: context);
+    await _nfcService?.initialize(context: context);
   }
 
   Future<void> _onPop(bool didPop, Object? result) async {
@@ -99,10 +101,18 @@ class _HomePageState extends State<HomePage> {
   ];
 
   void _onItemTapped(int index) {
-    setState(() => _selectedIndex = index);
+    if (_selectedIndex == index && index == 0) {
+      // If already on Home, just scroll to top
+      _feedKey.currentState?.onBackToTop();
+    } else {
+      setState(() => _selectedIndex = index);
 
-    if (index == 0) {
-      _feedKey.currentState?.refreshFeed();
+      if (index == 0) {
+        final socialProvider = Provider.of<SocialProvider>(context, listen: false);
+        if (socialProvider.shouldRefresh) {
+          _feedKey.currentState?.refreshFeed();
+        }
+      }
     }
   }
 
@@ -134,9 +144,7 @@ class _HomePageState extends State<HomePage> {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
 
-    final logoUrl = user?.masterUser?.profilePic != null
-        ? '${AppConfig.apiProfileImg}/${user!.masterUser!.profilePic}'
-        : null;
+    final logoUrl = _resolveProfileImageUrl(user);
 
     return PopScope<Object?>(
       canPop: false,
@@ -163,11 +171,18 @@ class _HomePageState extends State<HomePage> {
               radius: 28,
               backgroundColor: (palette?.glassTop ?? colorScheme.surface)
                   .withValues(alpha: 0.95),
-              backgroundImage: logoUrl != null ? NetworkImage(logoUrl) : null,
-              child: logoUrl == null
-                  ? Icon(FontAwesomeIcons.user,
-                      color: colorScheme.primary, size: 18)
-                  : null,
+              child: ClipOval(
+                child: logoUrl == null
+                    ? Icon(FontAwesomeIcons.user,
+                        color: colorScheme.primary, size: 18)
+                    : AppNetworkImage(
+                        imageUrl: logoUrl,
+                        width: 56,
+                        height: 56,
+                        fit: BoxFit.cover,
+                        cacheKey: authProvider.profileUpdateCounter.toString(), // 👈 Refresh on update
+                      ),
+              ),
             ),
             onPressed: () async {
               final userId = await UserStorageService().getUserId();
@@ -190,7 +205,7 @@ class _HomePageState extends State<HomePage> {
           actions: [
             IconButton(
               style: IconButton.styleFrom(
-                backgroundColor: palette?.glassTop?.withValues(alpha: 0.3),
+                backgroundColor: palette?.glassTop.withValues(alpha: 0.3),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -386,9 +401,7 @@ class _HomePageState extends State<HomePage> {
     final palette = theme.extension<AppThemeColors>();
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
-    final profilePicUrl = user?.masterUser?.profilePic != null
-        ? '${AppConfig.apiProfileImg}/${user!.masterUser!.profilePic}'
-        : null;
+    final profilePicUrl = _resolveProfileImageUrl(user);
 
     return Positioned(
       bottom: 12,
@@ -457,8 +470,19 @@ class _HomePageState extends State<HomePage> {
             child: (index == 3 && imageUrl != null)
                 ? CircleAvatar(
                     radius: 16,
-                    backgroundImage: NetworkImage(imageUrl),
                     backgroundColor: Colors.transparent,
+                    child: ClipOval(
+                      child: AppNetworkImage(
+                        imageUrl: imageUrl,
+                        width: 32,
+                        height: 32,
+                        fit: BoxFit.cover,
+                        cacheKey: context
+                            .read<AuthProvider>()
+                            .profileUpdateCounter
+                            .toString(),
+                      ),
+                    ),
                   )
                 : Icon(
                     icon,
@@ -474,5 +498,17 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  String? _resolveProfileImageUrl(dynamic user) {
+    final raw = user?.masterUser?.profilePic?.toString();
+    if (raw != null && raw.trim().isNotEmpty) {
+      return AppConfig.getFullUrl(raw);
+    }
+    final alt = user?.profilePic?.toString();
+    if (alt != null && alt.trim().isNotEmpty) {
+      return AppConfig.getFullUrl(alt);
+    }
+    return null;
   }
 }

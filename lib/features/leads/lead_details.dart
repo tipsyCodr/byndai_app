@@ -11,16 +11,15 @@ import 'package:gridcard/models/lead_model.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:video_player/video_player.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/widgets/app_network_image.dart';
+import 'package:gridcard/core/services/api_header_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
-// ✅ ADD THIS BASE URL AT TOP
-// const String baseStorageUrl =
-//     "https://byndai.in/storage/";
-
-const String baseStorageUrl = AppConfig.apiProfileImg2;
+// ✅ USE AppConfig.apiProfileImg with trailing slash
+final String baseStorageUrl = "${AppConfig.apiProfileImg}/";
 
 class LeadDetailsPage extends StatefulWidget {
   final LeadModel lead;
@@ -83,12 +82,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
       RegExp(r'^[\w\.-]+@[\w\.-]+\.\w+$').hasMatch(v);
 
   Future<Map<String, String>> _getHeaders() async {
-    final token = await UserStorageService().getToken();
-    return {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
+    return ApiHeaderService.getHeaders();
   }
 
   Future<void> _fetchCategories() async {
@@ -497,7 +491,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
             ? []
             : [
                 BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset: const Offset(0, 2))
               ],
@@ -616,7 +610,12 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                             )
                           : const Center(child: CircularProgressIndicator())
                       : (url != null
-                          ? Image.network(url, fit: BoxFit.cover)
+                          ? AppNetworkImage(
+                              imageUrl: url,
+                              fit: BoxFit.cover,
+                              height: 180,
+                              width: double.infinity,
+                            )
                           : Image.memory(base64Decode(base64!),
                               fit: BoxFit.cover)),
                 ),
@@ -672,12 +671,14 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
       });
 
       // Show preview in modal
-      _showImagePreview(bytes, imageFile.name);
+      if (mounted) _showImagePreview(bytes, imageFile.name);
     } catch (e) {
       debugPrint("Error processing image: $e");
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: ${e.toString()}")),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Error: ${e.toString()}")),
+        );
+      }
     }
   }
 
@@ -1671,9 +1672,11 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
     setState(() => isSaving = false);
 
     if (success) {
-      Navigator.pop(context, true);
+      if (!mounted) return;
       TopAlert.show(context, "Lead Updated Successfully", isSuccess: true);
+      Navigator.pop(context, true);
     } else {
+      if (!mounted) return;
       TopAlert.show(context, "Lead Update Failed!", isError: true);
     }
   }

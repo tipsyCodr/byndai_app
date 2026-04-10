@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "649165501928-fp1hl7hluuc76s3g2o21lsd5u38b2805.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pathidea.byndai",
+            "certificate_hash": "94f74885294477020011a1b92de493bfaa1d7da4"
+          }
+        },
+        {
           "client_id": "649165501928-mf1bknc75dot2o799hlgn4eav73q13s6.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

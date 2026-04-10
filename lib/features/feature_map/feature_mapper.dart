@@ -7,6 +7,7 @@ class FeatureMapper {
     'ai_generated_feedback': 6,
     'create-flyer': 7,
     'mini-website': 8,
+    'product_short_videos': 9,
   };
 
   /// 🔥 Get feature_id by key

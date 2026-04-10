@@ -7,7 +7,8 @@ import 'package:gridcard/widgets/top_alert.dart';
 
 class KeywordsTab extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
-  const KeywordsTab({super.key, this.userDetails});
+  final VoidCallback? onSaved;
+  const KeywordsTab({super.key, this.userDetails, this.onSaved});
 
   @override
   State<KeywordsTab> createState() => _KeywordsTabState();
@@ -19,6 +20,16 @@ class _KeywordsTabState extends State<KeywordsTab> {
   bool isLoading = false;
 
   List<Map<String, dynamic>> keywords = [];
+
+  // Static cache for keywords
+  static List<Map<String, dynamic>> _cachedKeywords = [];
+  static int? _cachedUserId;
+  static DateTime? _lastFetchTime;
+
+  bool get _shouldRefresh {
+    if (_cachedKeywords.isEmpty || _lastFetchTime == null) return true;
+    return DateTime.now().difference(_lastFetchTime!) > const Duration(minutes: 60);
+  }
 
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {
@@ -32,18 +43,23 @@ class _KeywordsTabState extends State<KeywordsTab> {
 
   // ================= GET KEYWORDS =================
   Future<void> fetchKeywords() async {
+    final userIdId = await UserStorageService().getUserId();
+    if (userIdId == null) {
+      TopAlert.show(context, "User not found. Please login again.",
+          isError: true);
+      return;
+    }
+
+    if (!_shouldRefresh && _cachedKeywords.isNotEmpty && _cachedUserId == userIdId) {
+      if (mounted) setState(() => keywords = List.from(_cachedKeywords));
+      return;
+    }
+
     try {
       setState(() => isLoading = true);
 
       final headers = await _getHeaders();
-
-      final userId = await UserStorageService().getUserId();
-      if (userId == null) {
-        setState(() => isLoading = false);
-        TopAlert.show(context, "User not found. Please login again.",
-            isError: true);
-        return;
-      }
+      final userId = userIdId;
 
       final url = Uri.parse("$_baseUrl/user-keywords/$userId");
       final response = await http.get(url, headers: headers);
@@ -60,6 +76,8 @@ class _KeywordsTabState extends State<KeywordsTab> {
                     "keywords": e["keywords"],
                   })
               .toList();
+          _cachedKeywords = List.from(keywords);
+          _cachedUserId = userIdId;
         });
       } else {
         final msg = data["message"] ?? "Failed to fetch keywords";
@@ -68,7 +86,10 @@ class _KeywordsTabState extends State<KeywordsTab> {
     } catch (e) {
       TopAlert.show(context, "Error: $e", isError: true);
     } finally {
-      setState(() => isLoading = false);
+      setState(() {
+        isLoading = false;
+        _lastFetchTime = DateTime.now();
+      });
     }
   }
 
@@ -91,7 +112,9 @@ class _KeywordsTabState extends State<KeywordsTab> {
         TopAlert.show(context, msg, isSuccess: true);
 
         // refresh list
+        _lastFetchTime = null;
         await fetchKeywords();
+        widget.onSaved?.call();
       } else {
         final msg = data["message"] ?? "Something went wrong";
         TopAlert.show(context, msg, isError: true);
@@ -123,7 +146,9 @@ class _KeywordsTabState extends State<KeywordsTab> {
 
         TopAlert.show(context, msg, isSuccess: true);
 
+        _lastFetchTime = null;
         await fetchKeywords();
+        widget.onSaved?.call();
       } else {
         final msg = data["message"] ?? "Update failed";
         TopAlert.show(context, msg, isError: true);
@@ -150,7 +175,9 @@ class _KeywordsTabState extends State<KeywordsTab> {
         // remove instantly from UI
         setState(() {
           keywords.removeWhere((item) => item["id"] == id);
+          _cachedKeywords = List.from(keywords);
         });
+        widget.onSaved?.call();
       } else {
         final msg = data["message"] ?? "Delete failed";
         TopAlert.show(context, msg, isError: true);

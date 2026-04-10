@@ -23,6 +23,8 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isAuthenticated = false;
   bool _forceNewUser = false;
+  int _profileUpdateCounter = 0;
+  int get profileUpdateCounter => _profileUpdateCounter;
 
   final _storageService = UserStorageService();
 
@@ -62,6 +64,7 @@ class AuthProvider extends ChangeNotifier {
       final user = UserModel.fromJson(userDetails);
       _user = user;
       _storageService.updateUser(user); // update stored user
+      _profileUpdateCounter++;
       notifyListeners();
       debugPrint("AuthProvider: User updated from profile details");
     } catch (e) {
@@ -351,18 +354,45 @@ class AuthProvider extends ChangeNotifier {
   }
 
   bool canUseFeature(String feature) {
-    final features = _subscriptionDetails?['features'] as List?;
+    // ignore: avoid_print
+    print("🔐 AuthProvider: Checking feature slug='$feature'");
+    
+    final features = _subscriptionDetails?['features'];
+    if (features == null || features is! List) {
+      // ignore: avoid_print
+      print("🔐 AuthProvider: subscriptionDetails['features'] is NULL or not a list");
+      return false;
+    }
 
-    if (features == null) return false;
+    try {
+      final f = features.firstWhere(
+        (entry) =>
+            entry is Map &&
+            (entry['feature']?.toString().toLowerCase() ==
+                    feature.toLowerCase() ||
+                entry['name']?.toString().toLowerCase() ==
+                    feature.toLowerCase()),
+      );
 
-    final f = features.firstWhere(
-      (e) => e['feature'] == feature,
-      orElse: () => null,
-    );
+      // ignore: avoid_print
+      print("🔐 AuthProvider: Found matching feature entry: $f");
 
-    if (f == null) return false;
+      final usedRaw = f['used_value'] ?? f['used'];
+      final limitRaw = f['limit_value'] ?? f['limit'];
 
-    return (f['used'] ?? 0) < (f['limit'] ?? 0);
+      final int used = int.tryParse(usedRaw.toString()) ?? 0;
+      final int limit = int.tryParse(limitRaw.toString()) ?? 0;
+
+      // ignore: avoid_print
+      print("🔐 AuthProvider: used=$used, limit=$limit");
+
+      if (limit == -1) return true; // unlimited
+      return used < limit;
+    } catch (e) {
+      // ignore: avoid_print
+      print("🔐 AuthProvider: Feature slug '$feature' NOT FOUND in features list.");
+      return false;
+    }
   }
 
   Future<void> _fetchSubscriptionDetails() async {
@@ -497,30 +527,54 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Initialize & authenticate with Google Sign-In v7
-      final googleSignIn = GoogleSignIn.instance;
-      await googleSignIn.initialize();
-
+      // 1. Initialize & authenticate with standard Google Sign-In
+      final googleSignIn = GoogleSignIn();
+      
       GoogleSignInAccount? googleUser;
       try {
-        googleUser = await googleSignIn.authenticate();
-      } on GoogleSignInException catch (e) {
-        debugPrint('Google Sign-In cancelled or failed: ${e.code}');
+        googleUser = await googleSignIn.signIn();
+        if (googleUser == null) {
+          debugPrint('Google Sign-In cancelled by user');
+          _isLoading = false;
+          notifyListeners();
+          return GoogleSignInResult.failed;
+        }
+      } catch (e) {
+        debugPrint('Google Sign-In Error: $e');
+        String errorMsg = 'Google Sign-In failed';
+        if (e.toString().contains('ApiException: 10')) {
+          errorMsg = 'Developer error (10): Likely SHA-1 mismatch in Firebase Console.';
+        } else if (e.toString().contains('ApiException: 7')) {
+          errorMsg = 'Network error (7). Check your connection.';
+        } else if (e.toString().contains('ApiException: 12500')) {
+          errorMsg = 'Sign-in failed (12500). Please update Play Services.';
+        }
+        Fluttertoast.showToast(msg: errorMsg);
+        
         _isLoading = false;
         notifyListeners();
         return GoogleSignInResult.failed;
       }
 
       // 2. Get the ID token from Google Sign-In authentication
-      final googleIdToken = googleUser.authentication.idToken;
+      final authentication = await googleUser.authentication;
+      final googleIdToken = authentication.idToken;
+
+      if (googleIdToken == null) {
+        debugPrint('Error: googleIdToken is null');
+        Fluttertoast.showToast(msg: 'Failed to retrieve ID token');
+        _isLoading = false;
+        notifyListeners();
+        return GoogleSignInResult.failed;
+      }
 
       // 3. Sign in to Firebase using the Google credential
       final credential = firebase_auth.GoogleAuthProvider.credential(
         idToken: googleIdToken,
       );
-      final firebaseUser = await firebase_auth.FirebaseAuth.instance
+      final firebaseUserResult = await firebase_auth.FirebaseAuth.instance
           .signInWithCredential(credential);
-      final firebaseIdToken = await firebaseUser.user?.getIdToken();
+      final firebaseIdToken = await firebaseUserResult.user?.getIdToken();
 
       if (firebaseIdToken == null) {
         Fluttertoast.showToast(msg: 'Failed to get authentication token');

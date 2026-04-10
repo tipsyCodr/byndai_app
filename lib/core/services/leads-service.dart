@@ -1,26 +1,17 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:gridcard/core/services/api_header_service.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/models/lead_model.dart';
 import 'package:http/http.dart' as http;
 
 class LeadServices {
-  static const String _baseUrl = AppConfig.apiBaseUrl2;
-
-  static Future<Map<String, String>> _getHeaders() async {
-    final token = await UserStorageService().getToken();
-    return {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      if (token != null) 'Authorization': 'Bearer $token',
-    };
-  }
+  static const String _baseUrl = AppConfig.apiBaseUrl;
 
   static Future<List<LeadModel>?> fetchLeads() async {
     final url = Uri.parse('$_baseUrl/leads');
     try {
-      final response = await http.get(url, headers: await _getHeaders());
+      final response = await http.get(url, headers: await ApiHeaderService.getHeaders());
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -42,7 +33,7 @@ class LeadServices {
     try {
       final response = await http.post(
         url,
-        headers: await _getHeaders(),
+        headers: await ApiHeaderService.getHeaders(),
         body: jsonEncode(lead.toJson()),
       );
 
@@ -117,7 +108,7 @@ class LeadServices {
 
       final response = await http.put(
         url,
-        headers: await _getHeaders(),
+        headers: await ApiHeaderService.getHeaders(),
         body: jsonEncode(updateData),
       );
 
@@ -187,7 +178,7 @@ class LeadServices {
 
       final response = await http.post(
         url,
-        headers: await _getHeaders(),
+        headers: await ApiHeaderService.getHeaders(),
         body: jsonEncode(apiData),
       );
 
@@ -232,7 +223,7 @@ class LeadServices {
     debugPrint("📡 FETCH LEADS URL => $uri");
 
     try {
-      final response = await http.get(uri, headers: await _getHeaders());
+      final response = await http.get(uri, headers: await ApiHeaderService.getHeaders());
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -263,7 +254,7 @@ class LeadServices {
     try {
       final response = await http.delete(
         url,
-        headers: await _getHeaders(),
+        headers: await ApiHeaderService.getHeaders(),
       );
 
       debugPrint("🗑 DELETE RESPONSE => ${response.body}");
@@ -294,7 +285,7 @@ class LeadServices {
         .replace(queryParameters: queryParams);
 
     try {
-      final response = await http.get(uri, headers: await _getHeaders());
+      final response = await http.get(uri, headers: await ApiHeaderService.getHeaders());
 
       debugPrint('📡 Fetch leads URL: $uri');
 
