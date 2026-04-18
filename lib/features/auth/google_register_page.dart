@@ -143,6 +143,18 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
     _showLoaderDialog();
 
     final auth = context.read<AuthProvider>();
+
+    // 1. Check if mobile is already registered
+    final isRegistered = await auth.isRegistered(mobile);
+    if (!mounted) return;
+
+    if (isRegistered) {
+      Navigator.pop(context); // Dismiss loader
+      _showTopRightMessage("Mobile number already registered", isError: true);
+      return;
+    }
+
+    // 2. If not registered, send OTP
     final success = await auth.getOTP(mobile, isNewUser: true);
 
     if (!mounted) return;
@@ -152,12 +164,13 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
       _showTopRightMessage("OTP sent successfully");
       await _promptOtpEntry(mobile);
     } else {
-      _showTopRightMessage("Failed to send OTP", isError: true);
+      final errorMsg = AuthService.lastError ?? "Failed to send OTP";
+      _showTopRightMessage(errorMsg, isError: true);
     }
   }
 
   Future<void> _promptOtpEntry(String mobile) async {
-    await showDialog(
+    final success = await showDialog<bool>(
       context: context,
       builder: (_) => SecureInputDialog(
         type: SecureInputType.otp,
@@ -166,6 +179,10 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
         onSubmit: (otp) => _verifyOtpAndRegister(mobile, otp),
       ),
     );
+
+    if (success == true && mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, RouteNames.home, (_) => false);
+    }
   }
 
   Future<bool> _verifyOtpAndRegister(String mobile, String otp) async {
@@ -209,11 +226,8 @@ class _GoogleRegisterPageState extends State<GoogleRegisterPage> {
     if (registerSuccess) {
       _showTopRightMessage("Registration successful!", isSuccess: true);
 
-      // Navigate to home after a brief delay
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (!mounted) return true;
-
-      Navigator.pushNamedAndRemoveUntil(context, RouteNames.home, (_) => false);
+      // We return true here, and _promptOtpEntry will handle navigation
+      // to avoid 'Navigator.pop' assertion errors while the dialog is active.
       return true;
     } else {
       final errorMsg = AuthService.lastError ?? 'Registration failed';

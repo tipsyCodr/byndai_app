@@ -116,8 +116,9 @@ class AuthProvider extends ChangeNotifier {
   /// Handles the response from an OTP request.
   Future<bool> _handleOtpResponse(
       Map<String, dynamic>? responseData, String mobile) async {
-    if (responseData == null) {
-      Fluttertoast.showToast(msg: "Failed to send OTP");
+    if (responseData == null || (responseData['status'] == false && responseData['success'] != true)) {
+      final msg = responseData?['message']?.toString() ?? "Failed to send OTP";
+      Fluttertoast.showToast(msg: msg);
       return false;
     }
 
@@ -528,7 +529,9 @@ class AuthProvider extends ChangeNotifier {
 
     try {
       // 1. Initialize & authenticate with standard Google Sign-In
-      final googleSignIn = GoogleSignIn();
+      final googleSignIn = GoogleSignIn(
+        serverClientId: '649165501928-3n4dm4ceh2ttbplq14i9jmne0s4upema.apps.googleusercontent.com',
+      );
       
       GoogleSignInAccount? googleUser;
       try {

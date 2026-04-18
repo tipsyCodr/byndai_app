@@ -31,7 +31,21 @@ class AppNetworkImage extends StatelessWidget {
 
     // 🔥 Centralized Laravel URL Rewriter
     String? finalUrl = AppConfig.getFullUrl(imageUrl);
-    if (finalUrl == null) return _buildPlaceholder(context);
+    if (finalUrl == null) {
+      debugPrint(
+          '🖼 AppNetworkImage: getFullUrl returned null for "$imageUrl"');
+      return _buildPlaceholder(context);
+    }
+
+    // Validate it's a proper URL
+    final uri = Uri.tryParse(finalUrl);
+    if (uri == null || !uri.hasScheme) {
+      debugPrint(
+          '🖼 AppNetworkImage: Invalid URL constructed: "$finalUrl" from "$imageUrl"');
+      return _buildPlaceholder(context);
+    }
+
+    debugPrint('🖼 AppNetworkImage: Loading "$finalUrl"');
 
     // ✅ Apply Cache Buster if key provided
     if (cacheKey != null && cacheKey!.isNotEmpty) {
@@ -47,9 +61,10 @@ class AppNetworkImage extends StatelessWidget {
       memCacheWidth: 600, // Optimize memory
       fadeInDuration: const Duration(milliseconds: 400),
       httpHeaders: headers,
-      placeholder: (context, url) => _buildPlaceholder(context, isLoading: true),
+      placeholder: (context, url) =>
+          _buildPlaceholder(context, isLoading: true),
       errorWidget: (context, url, error) {
-        debugPrint("🖼 Image Error: $error");
+        debugPrint("🖼 AppNetworkImage Error for $url: $error");
         return _buildPlaceholder(context, isError: true);
       },
     );
@@ -64,9 +79,10 @@ class AppNetworkImage extends StatelessWidget {
     return imageWidget;
   }
 
-  Widget _buildPlaceholder(BuildContext context, {bool isLoading = false, bool isError = false}) {
+  Widget _buildPlaceholder(BuildContext context,
+      {bool isLoading = false, bool isError = false}) {
     final colorScheme = Theme.of(context).colorScheme;
-    
+
     return Container(
       width: width,
       height: height,
@@ -82,7 +98,9 @@ class AppNetworkImage extends StatelessWidget {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : Icon(
-                isError ? Icons.image_not_supported_outlined : Icons.image_outlined,
+                isError
+                    ? Icons.image_not_supported_outlined
+                    : Icons.image_outlined,
                 color: colorScheme.onSurfaceVariant.withOpacity(0.5),
                 size: (height != null && height! < 30) ? 14 : 24,
               ),

@@ -19,6 +19,7 @@ import '../qr_scan/profile_qr_code.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/nfc_service.dart';
 import 'package:gridcard/widgets/app_network_image.dart';
+import 'package:gridcard/models/user_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -500,15 +501,25 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  String? _resolveProfileImageUrl(dynamic user) {
+  String? _resolveProfileImageUrl(UserModel? user) {
+    // 1. Try masterUser.profilePic
     final raw = user?.masterUser?.profilePic?.toString();
     if (raw != null && raw.trim().isNotEmpty) {
       return AppConfig.getFullUrl(raw);
     }
-    final alt = user?.profilePic?.toString();
-    if (alt != null && alt.trim().isNotEmpty) {
-      return AppConfig.getFullUrl(alt);
+
+    // 2. Try user.profilePic (for new accounts/different API structures)
+    final rootPic = user?.profilePic?.toString();
+    if (rootPic != null && rootPic.trim().isNotEmpty) {
+      return AppConfig.getFullUrl(rootPic);
     }
+
+    // 3. Try user.profileLogo (as a fallback)
+    final logo = user?.profileLogo?.toString();
+    if (logo != null && logo.trim().isNotEmpty) {
+      return AppConfig.getFullUrl(logo);
+    }
+
     return null;
   }
 }

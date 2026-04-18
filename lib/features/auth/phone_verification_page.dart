@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:gridcard/routes/route_names.dart';
+import 'package:gridcard/core/services/auth_service.dart';
 import 'package:gridcard/widgets/secure_input_dialog.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:provider/provider.dart';
@@ -51,17 +52,17 @@ class _PhoneVerificationPageState extends State<PhoneVerificationPage> {
     Navigator.pop(context); // Dismiss loader
 
     if (isRegistered) {
-      debugPrint("🔑 Existing user detected, proceeding to PIN login.");
+      debugPrint("Existing user detected, proceeding to PIN login.");
       await _promptPinLogin(mobile);
     } else {
-      debugPrint("🆕 New user detected, sending OTP for verification.");
+      debugPrint("New user detected, sending OTP for verification.");
       final success = await auth.getOTP(mobile, isNewUser: true);
-      // if (success) {
-      //   await _promptOtpEntry(mobile);
-      // }
       if (success) {
-        _showTopRightMessage("OTP sent successfully"); // 🟠 orange
+        _showTopRightMessage("OTP sent successfully");
         await _promptOtpEntry(mobile);
+      } else {
+        final errorMsg = AuthService.lastError ?? "Failed to send OTP";
+        _showTopRightMessage(errorMsg, isError: true);
       }
     }
   }

@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:gridcard/core/services/profile_service.dart';
+import 'package:gridcard/widgets/app_network_image.dart';
 import './crop_screen.dart';
 
 class ProfileTab extends StatefulWidget {
@@ -662,10 +663,27 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Future<void> _init() async {
-    await _fetchStates();
-    await _fetchDistricts();
-    await _fetchIdCards();
+    // Load initial data immediately if available
     _loadUserData();
+    
+    // Fetch dependencies in parallel
+    await Future.wait([
+      _fetchStates(),
+      _fetchDistricts(),
+      _fetchIdCards(),
+    ]);
+    
+    // Refresh user data again after locations are loaded (to map IDs to names)
+    if (mounted) _loadUserData();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfileTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.userDetails != oldWidget.userDetails) {
+      debugPrint("ProfileTab: userDetails updated, reloading...");
+      _loadUserData();
+    }
   }
 
   Future<void> _fetchIdCards() async {
@@ -904,7 +922,10 @@ class _ProfileTabState extends State<ProfileTab> {
     final masterUser = userData['master_user'] ?? {};
     final userSub = userData['user'] ?? {};
     final val = userData[key] ?? masterUser[key] ?? userSub[key];
-    return val?.toString();
+    
+    if (val == null) return null;
+    final str = val.toString();
+    return str.isEmpty || str == 'null' ? null : str;
   }
 
   @override
@@ -1102,7 +1123,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
           // ✅ GENDER DROPDOWN – Only Male & Female
           DropdownButtonFormField<String>(
-            initialValue: _selectedGender,
+            value: _selectedGender,
             decoration: InputDecoration(
               labelText: 'Gender',
               labelStyle: TextStyle(color: colorScheme.onSurfaceVariant),
@@ -1329,7 +1350,11 @@ class _ProfileTabState extends State<ProfileTab> {
 
           // State Dropdown
           DropdownButtonFormField<int>(
-            initialValue: _selectedStateId,
+            // Guard: only set value if the loaded items actually contain it
+            value: (!_isLoadingStates && _states.isNotEmpty &&
+                    _states.any((s) => s['id'] == _selectedStateId))
+                ? _selectedStateId
+                : null,
             isExpanded: true,
             dropdownColor: isDark ? colorScheme.surfaceContainerHighest : null,
             style: TextStyle(color: colorScheme.onSurface, fontSize: 14),
@@ -1372,14 +1397,18 @@ class _ProfileTabState extends State<ProfileTab> {
                           child: Text('No states available'),
                         )
                       ]
-                    : _states.map((state) {
-                        return DropdownMenuItem<int>(
-                          value: state['id'],
-                          child: Text(
-                            state['state_name'],
-                          ),
-                        );
-                      }).toList(),
+                    : () {
+                        // Deduplicate by id to prevent Flutter assertion crash
+                        final seen = <int>{};
+                        return _states
+                            .where((s) => s['id'] != null && seen.add(s['id'] as int))
+                            .map((state) {
+                              return DropdownMenuItem<int>(
+                                value: state['id'],
+                                child: Text(state['state_name']),
+                              );
+                            }).toList();
+                      }(),
             onChanged: (value) {
               if (value == null) return;
 
@@ -1408,8 +1437,7 @@ class _ProfileTabState extends State<ProfileTab> {
 
           // District Dropdown
           DropdownButtonFormField<int>(
-            // value: _selectedDistrictId,
-            initialValue:
+            value:
                 _filteredDistricts.any((d) => d['id'] == _selectedDistrictId)
                     ? _selectedDistrictId
                     : null,
@@ -1594,14 +1622,16 @@ class _ProfileTabState extends State<ProfileTab> {
       ];
     }
 
-    return _filteredDistricts.map((district) {
-      return DropdownMenuItem<int>(
-        value: district['id'],
-        child: Text(
-          district['district_name'],
-        ),
-      );
-    }).toList();
+    // Deduplicate by id to prevent Flutter assertion crash
+    final seen = <int>{};
+    return _filteredDistricts
+        .where((d) => d['id'] != null && seen.add(d['id'] as int))
+        .map((district) {
+          return DropdownMenuItem<int>(
+            value: district['id'],
+            child: Text(district['district_name']),
+          );
+        }).toList();
   }
 
   void _addEmailField() {
@@ -1692,16 +1722,18 @@ class MediaUploadCard extends StatelessWidget {
           ),
 
           // 1. Background Media/Placeholder
-          IgnorePointer(
-            child: Positioned.fill(
+          Positioned.fill(
+            child: IgnorePointer(
               child: Container(
                 color: colorScheme.surfaceContainerHighest,
                 child: showPreview
-                    ? _buildPreview(hasNewFile, hasExistingFile)
-                    : Icon(
-                        isVideo ? Icons.videocam : Icons.image,
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.5),
-                        size: 40,
+                    ? _buildPreview(hasNewFile, hasExistingFile, colorScheme)
+                    : Center(
+                        child: Icon(
+                          isVideo ? Icons.videocam : Icons.image,
+                          color: colorScheme.onSurfaceVariant.withOpacity(0.3),
+                          size: 48,
+                        ),
                       ),
               ),
             ),
@@ -1839,7 +1871,7 @@ class MediaUploadCard extends StatelessWidget {
     );
   }
 
-  Widget _buildPreview(bool hasNewFile, bool hasExistingFile) {
+  Widget _buildPreview(bool hasNewFile, bool hasExistingFile, ColorScheme colorScheme) {
     // Priority 1: Cropped bytes
     if (croppedBytes != null) {
       return Image.memory(
@@ -1867,25 +1899,10 @@ class MediaUploadCard extends StatelessWidget {
       if (isVideo) {
         return _buildVideoPlaceholder();
       } else {
-        String validUrl = AppConfig.getFullUrl(existingFile) ?? existingFile!;
-        return Image.network(
-          validUrl,
+        return AppNetworkImage(
+          imageUrl: existingFile,
           fit: BoxFit.cover,
-          loadingBuilder: (context, child, loadingProgress) {
-            if (loadingProgress == null) return child;
-            return const Center(
-                child: CircularProgressIndicator(strokeWidth: 2));
-          },
-          errorBuilder: (context, error, stackTrace) {
-            if (!validUrl.startsWith('http')) {
-              return Image.network(
-                '$baseUrl/$existingFile',
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _buildErrorPlaceholder(validUrl),
-              );
-            }
-            return _buildErrorPlaceholder(validUrl);
-          },
+          borderRadius: BorderRadius.circular(16),
         );
       }
     }
@@ -1906,41 +1923,28 @@ class MediaUploadCard extends StatelessWidget {
     );
   }
 
-  Widget _buildErrorPlaceholder(String url) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(Icons.broken_image, color: Colors.red, size: 24),
-            const SizedBox(height: 4),
-            Text(
-              url,
-              style: const TextStyle(fontSize: 8, color: Colors.red),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildFallbackIcon() {
     return Builder(
       builder: (context) {
         final colorScheme = Theme.of(context).colorScheme;
-        return Container(
-          decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Icon(
-            Icons.broken_image,
-            color: colorScheme.onSurfaceVariant,
-            size: 24,
+        return Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.image_not_supported_outlined,
+                color: colorScheme.onSurfaceVariant.withOpacity(0.3),
+                size: 32,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Invalid file',
+                style: TextStyle(
+                  color: colorScheme.onSurfaceVariant.withOpacity(0.5),
+                  fontSize: 10,
+                ),
+              ),
+            ],
           ),
         );
       },

@@ -59,3 +59,49 @@
 # Desugaring
 -keep class j$.** { *; }
 -dontwarn j$.**
+
+# ─── OkHttp3 (used by cached_network_image and http package internally) ───────
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-keep class okio.** { *; }
+-dontwarn javax.annotation.**
+-keepnames class okhttp3.internal.publicsuffix.PublicSuffixDatabase
+
+# ─── Cached Network Image / Flutter Cache Manager ─────────────────────────────
+-keep class com.baseflow.** { *; }
+-keep class flutter_cache_manager.** { *; }
+-dontwarn com.baseflow.**
+
+# ─── Keep all model classes from being stripped (JSON parsing) ─────────────────
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+
+# ─── Dart/Flutter AOT: Keep reflection-heavy annotations ──────────────────────
+-keepattributes InnerClasses
+-keepattributes SourceFile
+-keepattributes LineNumberTable
+
+# ─── Razorpay ──────────────────────────────────────────────────────────────────
+-keep class com.razorpay.** { *; }
+-dontwarn com.razorpay.**
+
+# ─── File Picker ───────────────────────────────────────────────────────────────
+-keep class com.mr.flutter.plugin.filepicker.** { *; }
+
+# ─── NFC Manager ───────────────────────────────────────────────────────────────
+-keep class io.github.okmnkn.nfcmanager.** { *; }
+
+# ─── Network Info Plus ─────────────────────────────────────────────────────────
+-keep class dev.fluttercommunity.plus.network_info.** { *; }
+
+# ─── Package Info Plus ─────────────────────────────────────────────────────────
+-keep class dev.fluttercommunity.plus.packageinfo.** { *; }
+
+# ─── Permission Handler ────────────────────────────────────────────────────────
+-keep class com.baseflow.permissionhandler.** { *; }
+
+# ─── Contacts ──────────────────────────────────────────────────────────────────
+-keep class com.github.taher.flutter_contacts.** { *; }
