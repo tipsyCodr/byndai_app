@@ -54,8 +54,14 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
         miscCategories = miscData.where((cat) => cat['type'] != 'festive').toList();
         upcomingFestivals = upcomingData;
         
-        if (upcomingData.isNotEmpty) {
-          selectedOccasion = upcomingData.first;
+        // Filter to only select the occasion that matches the current selected date
+        final selectedDateStr = DateFormat('MM-dd').format(selectedDate);
+        final currentOccasions = upcomingData.where((f) => f['date'] == selectedDateStr).toList();
+        
+        if (currentOccasions.isNotEmpty) {
+          selectedOccasion = currentOccasions.first;
+        } else {
+          selectedOccasion = null;
         }
         
         // Ensure we select the first non-festive category
@@ -79,7 +85,12 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
       );
       setState(() {
         upcomingFestivals = data;
-        selectedOccasion = data.isNotEmpty ? data.first : null;
+        
+        // Filter to only select the occasion that matches the current selected date
+        final selectedDateStr = DateFormat('MM-dd').format(selectedDate);
+        final currentOccasions = data.where((f) => f['date'] == selectedDateStr).toList();
+        
+        selectedOccasion = currentOccasions.isNotEmpty ? currentOccasions.first : null;
         isOccasionsLoading = false;
       });
     } catch (e) {
@@ -121,7 +132,7 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
                           _buildOccasionsSection(),
                           const SizedBox(height: 32),
                           _buildMiscSection(),
-                          const SizedBox(height: 40),
+                          SizedBox(height: 40 + MediaQuery.of(context).padding.bottom),
                         ],
                       ),
                     ),
@@ -274,15 +285,20 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
   }
 
   Widget _buildOccasionsSection() {
+    final selectedDateStr = DateFormat('MM-dd').format(selectedDate);
     final filteredFestivals = upcomingFestivals.where((f) {
       final name = f['name']?.toString().toLowerCase() ?? '';
-      return name.contains(search.toLowerCase());
+      final festivalDate = f['date']?.toString() ?? '';
+      return name.contains(search.toLowerCase()) && festivalDate == selectedDateStr;
     }).toList();
+
+    final isToday = DateUtils.isSameDay(selectedDate, DateTime.now());
+    final sectionTitle = isToday ? "Today's Occasions" : "Occasions";
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader("Today's Occasions"),
+        _buildSectionHeader(sectionTitle),
         if (isOccasionsLoading)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),

@@ -12,6 +12,10 @@ class AppButton extends StatelessWidget {
   final double height;
   final EdgeInsetsGeometry? padding;
   final BorderRadiusGeometry borderRadius;
+  final Color? backgroundColor;
+  final Color? foregroundColor;
+  final double? fontSize;
+  final FontWeight? fontWeight;
 
   const AppButton({
     super.key,
@@ -24,6 +28,10 @@ class AppButton extends StatelessWidget {
     this.height = 48,
     this.padding,
     this.borderRadius = const BorderRadius.all(Radius.circular(12)),
+    this.backgroundColor,
+    this.foregroundColor,
+    this.fontSize,
+    this.fontWeight,
   });
 
   @override
@@ -50,7 +58,14 @@ class AppButton extends StatelessWidget {
                     Icon(icon, size: 18),
                     const SizedBox(width: 8),
                   ],
-                  Text(label),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontWeight: fontWeight,
+                      color: _contentColor(colorScheme),
+                    ),
+                  ),
                 ],
               ),
       ),
@@ -64,8 +79,8 @@ class AppButton extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             minimumSize: Size(0, height),
             padding: padding,
-            foregroundColor: colorScheme.primary,
-            side: BorderSide(color: colorScheme.primary),
+            foregroundColor: foregroundColor ?? colorScheme.primary,
+            side: BorderSide(color: backgroundColor ?? colorScheme.primary),
             shape: RoundedRectangleBorder(borderRadius: borderRadius),
           ),
           child: child,
@@ -77,7 +92,7 @@ class AppButton extends StatelessWidget {
           style: TextButton.styleFrom(
             minimumSize: Size(0, height),
             padding: padding,
-            foregroundColor: colorScheme.primary,
+            foregroundColor: foregroundColor ?? colorScheme.primary,
             shape: RoundedRectangleBorder(borderRadius: borderRadius),
           ),
           child: child,
@@ -89,8 +104,9 @@ class AppButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             minimumSize: Size(0, height),
             padding: padding,
-            backgroundColor: colorScheme.primary,
-            foregroundColor: colorScheme.onPrimary,
+            backgroundColor: backgroundColor ?? colorScheme.primary,
+            foregroundColor: foregroundColor ?? colorScheme.onPrimary,
+            elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: borderRadius),
           ),
           child: child,
@@ -103,6 +119,7 @@ class AppButton extends StatelessWidget {
   }
 
   Color _contentColor(ColorScheme colorScheme) {
+    if (foregroundColor != null) return foregroundColor!;
     switch (variant) {
       case AppButtonVariant.filled:
         return colorScheme.onPrimary;

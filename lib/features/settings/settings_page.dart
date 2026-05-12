@@ -2,13 +2,13 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:gridcard/core/services/theme_provider.dart';
-import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:gridcard/features/profile/edit_profile_page.dart';
-import 'package:gridcard/features/profile/profile_tab.dart';
 import 'package:gridcard/features/settings/change_pin_page.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/routes/route_names.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/features/home/SubscriptionPlans.dart';
+import 'package:gridcard/features/home/current_plan_details.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -19,6 +19,7 @@ import 'package:gridcard/widgets/top_alert.dart';
 import '../flyer module/pages/flyer_home.dart';
 
 import 'package:gridcard/widgets/glass_box.dart';
+import 'package:gridcard/widgets/core/app_button.dart';
 
 // \features\flyer module\pages\flyer_home.dart
 class SettingsPage extends StatefulWidget {
@@ -35,7 +36,13 @@ class _SettingsPageState extends State<SettingsPage> {
   @override
   void initState() {
     super.initState();
-    _fetchUserDetails(); // 👈 Yaha call hoga
+    _fetchUserDetails();
+    // Refresh subscription details to ensure we have the latest plan info
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<AuthProvider>().refreshSubscription();
+      }
+    });
   }
 
   // ================= HEADERS =================
@@ -127,6 +134,8 @@ class _SettingsPageState extends State<SettingsPage> {
   Widget build(BuildContext context) {
     final themeProvider = Provider.of<ThemeProvider>(context);
     final colorScheme = Theme.of(context).colorScheme;
+    final auth = context.watch<AuthProvider>();
+    final bool isProUser = auth.isPro;
 
     return Column(
       children: [
@@ -134,6 +143,7 @@ class _SettingsPageState extends State<SettingsPage> {
           child: ListView(
             padding: EdgeInsets.zero,
             children: [
+              _buildProfileHeader(context),
               _buildSettingsHeader(context, "Profile Management"),
               _buildSettingsTile(
                 context: context,
@@ -233,6 +243,23 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               const SizedBox(height: 16),
               _buildSettingsHeader(context, "Account"),
+              if (!isProUser)
+                _buildSettingsTile(
+                  context: context,
+                  icon: CupertinoIcons.star_fill,
+                  title: "Get Premium Membership",
+                  subtitle: "Unlock advanced features and limits",
+                  titleColor: colorScheme.secondary,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SubscriptionPlans(),
+                      ),
+                    );
+                  },
+                ),
+              // REMOVED "Plan Details" tile here as it's now in the Header
               _buildSettingsTile(
                 context: context,
                 icon: CupertinoIcons.lock_shield,
@@ -315,6 +342,112 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildProfileHeader(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.user;
+    final subscription = authProvider.subscriptionDetails;
+    
+    // ignore: avoid_print
+    print("DEBUG: Subscription data in SettingsPage: $subscription");
+
+    final int currentPlanId = int.tryParse(
+      (subscription?['plan_id'] ?? subscription?['plan']?['id'] ?? '0').toString()
+    ) ?? 0;
+
+    final rawPlanName = (subscription?['plan_name'] ?? subscription?['plan']?['name'] ?? "Free Plan").toString();
+    
+    // Pro if ID > 1 OR name doesn't contain "Free" (case insensitive)
+    final bool isPro = currentPlanId > 1 || (!rawPlanName.toLowerCase().contains("free") && currentPlanId != 0);
+    
+    final planName = isPro ? rawPlanName : "Free Plan";
+        
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    // Favor MasterUser fname, then UserModel userName, then "User"
+    final userName = user?.masterUser?.fname ?? user?.userName ?? _userDetails?['name'] ?? "User";
+    
+    // Favor MasterUser profilePic, then UserModel profilePic, then local details
+    final profilePicPath = user?.masterUser?.profilePic ?? user?.profilePic ?? _userDetails?['profile_img'] ?? _userDetails?['profile_pic'];
+    final userImageUrl = AppConfig.getFullUrl(profilePicPath);
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+      child: GlassBox(
+        padding: const EdgeInsets.all(16),
+        borderRadius: 20,
+        opacity: isDark ? 0.05 : 0.08,
+        child: Row(
+          children: [
+            // Profile Image
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: colorScheme.primary.withValues(alpha: 0.1),
+              backgroundImage: userImageUrl != null ? NetworkImage(userImageUrl) : null,
+              child: userImageUrl == null 
+                  ? Icon(CupertinoIcons.person, color: colorScheme.primary, size: 30)
+                  : null,
+            ),
+            const SizedBox(width: 16),
+            
+            // Name and Plan info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isPro ? colorScheme.secondary.withValues(alpha: 0.1) : colorScheme.onSurface.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      planName,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isPro ? colorScheme.secondary : colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // View Details Button
+            AppButton(
+              label: isPro ? "View Plan" : "Upgrade",
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => isPro ? const CurrentPlanDetails() : const SubscriptionPlans(),
+                  ),
+                );
+              },
+              backgroundColor: isPro ? colorScheme.secondary : colorScheme.primary,
+              foregroundColor: isPro ? colorScheme.onSecondary : colorScheme.onPrimary,
+              expanded: false,
+              height: 34,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              borderRadius: BorderRadius.circular(12),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ],
+        ),
+      ),
     );
   }
 

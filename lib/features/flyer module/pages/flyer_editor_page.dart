@@ -2013,50 +2013,53 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
                             }),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surfaceContainer,
-                    border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Navigation & Quick Actions
-                      Row(
-                        children: [
-                          IconButton(
-                            onPressed: _undoStack.isEmpty ? null : _undo,
-                            icon: const Icon(Icons.undo, size: 20),
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                          IconButton(
-                            onPressed: _redoStack.isEmpty ? null : _redo,
-                            icon: const Icon(Icons.redo, size: 20),
-                            color: Theme.of(context).colorScheme.onSurface,
-                          ),
-                          const Spacer(),
-                          Flexible(
-                            child: TextButton.icon(
-                              onPressed: _showExportOptionsSheet,
-                              icon: const Icon(Icons.tune, size: 16),
-                              label: Text(_exportFormat.toUpperCase(), style: const TextStyle(fontSize: 10), overflow: TextOverflow.ellipsis),
-                              style: TextButton.styleFrom(visualDensity: VisualDensity.compact, foregroundColor: Theme.of(context).colorScheme.onSurface),
+                SafeArea(
+                  top: false,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surfaceContainer,
+                      border: Border(top: BorderSide(color: Theme.of(context).dividerColor)),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Navigation & Quick Actions
+                        Row(
+                          children: [
+                            IconButton(
+                              onPressed: _undoStack.isEmpty ? null : _undo,
+                              icon: const Icon(Icons.undo, size: 20),
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Flexible(
-                            child: TextButton.icon(
-                              onPressed: _copyCaption,
-                              icon: const Icon(Icons.content_copy, size: 16),
-                              label: const Text('Caption', style: const TextStyle(fontSize: 10), overflow: TextOverflow.ellipsis),
-                              style: TextButton.styleFrom(visualDensity: VisualDensity.compact, foregroundColor: Theme.of(context).colorScheme.onSurface),
+                            IconButton(
+                              onPressed: _redoStack.isEmpty ? null : _redo,
+                              icon: const Icon(Icons.redo, size: 20),
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
-                          ),
-                        ],
-                      ),
-                      _buildModernToolbar(Provider.of<AuthProvider>(context, listen: false), Provider.of<ProfileProvider>(context, listen: false)),
-                    ],
+                            const Spacer(),
+                            Flexible(
+                              child: TextButton.icon(
+                                onPressed: _showExportOptionsSheet,
+                                icon: const Icon(Icons.tune, size: 16),
+                                label: Text(_exportFormat.toUpperCase(), style: const TextStyle(fontSize: 10), overflow: TextOverflow.ellipsis),
+                                style: TextButton.styleFrom(visualDensity: VisualDensity.compact, foregroundColor: Theme.of(context).colorScheme.onSurface),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: TextButton.icon(
+                                onPressed: _copyCaption,
+                                icon: const Icon(Icons.content_copy, size: 16),
+                                label: const Text('Caption', style: const TextStyle(fontSize: 10), overflow: TextOverflow.ellipsis),
+                                style: TextButton.styleFrom(visualDensity: VisualDensity.compact, foregroundColor: Theme.of(context).colorScheme.onSurface),
+                              ),
+                            ),
+                          ],
+                        ),
+                        _buildModernToolbar(Provider.of<AuthProvider>(context, listen: false), Provider.of<ProfileProvider>(context, listen: false)),
+                      ],
+                    ),
                   ),
                 ),
               ],

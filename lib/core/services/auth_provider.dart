@@ -18,6 +18,40 @@ enum GoogleSignInResult { loggedIn, needsRegistration, failed }
 class AuthProvider extends ChangeNotifier {
   Map<String, dynamic>? _subscriptionDetails;
   Map<String, dynamic>? get subscriptionDetails => _subscriptionDetails;
+  
+  bool get isPro {
+    if (_subscriptionDetails == null) {
+      debugPrint("🔐 [isPro Check] details are NULL");
+      return false;
+    }
+    
+    final planData = _subscriptionDetails?['plan'];
+    debugPrint("🔐 [isPro Check] Raw Data: $_subscriptionDetails");
+    
+    // 1. Check is_free flag directly if available (matching your DB column)
+    final dynamic isFreeFlag = planData?['is_free'] ?? _subscriptionDetails?['is_free'];
+    if (isFreeFlag != null) {
+      final bool isFree = isFreeFlag == 1 || isFreeFlag == true || isFreeFlag.toString() == 'true';
+      debugPrint("🔐 [isPro Check] Found is_free flag: $isFreeFlag -> interpreted as isFree=$isFree");
+      if (isFree) return false;
+      return true;
+    }
+
+    // 2. Fallback to plan ID and Name checks
+    final int planId = int.tryParse(
+      (_subscriptionDetails?['plan_id'] ?? planData?['id'] ?? '0').toString()
+    ) ?? 0;
+    
+    final String planName = (_subscriptionDetails?['plan_name'] ?? 
+                              planData?['name'] ?? "").toString().toLowerCase();
+
+    debugPrint("🔐 [isPro Check] ID: $planId, Name: '$planName'");
+
+    // A user is Pro if they have a non-free plan ID OR a plan name that doesn't say "free"
+    final bool result = planId > 1 || (planName.isNotEmpty && !planName.contains("free") && planId != 0);
+    debugPrint("🔐 [isPro Check] Final Result: $result");
+    return result;
+  }
 
   UserModel? _user;
   bool _isLoading = false;

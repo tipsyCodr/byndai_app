@@ -255,9 +255,14 @@ class _HomePageState extends State<HomePage> {
               if (isDark) _buildDarkModePattern(context),
               if (!isDark) _buildLightModePattern(context),
               // _screens()[_selectedIndex],
-              IndexedStack(
-                index: _selectedIndex,
-                children: _screens,
+              Padding(
+                padding: EdgeInsets.only(
+                  bottom: 72 + MediaQuery.of(context).padding.bottom,
+                ),
+                child: IndexedStack(
+                  index: _selectedIndex,
+                  children: _screens,
+                ),
               ),
               _buildFloatingDock(),
             ],
@@ -405,7 +410,7 @@ class _HomePageState extends State<HomePage> {
     final profilePicUrl = _resolveProfileImageUrl(user);
 
     return Positioned(
-      bottom: 12,
+      bottom: 12 + MediaQuery.of(context).padding.bottom,
       left: 16,
       right: 16,
       child: GlassBox(

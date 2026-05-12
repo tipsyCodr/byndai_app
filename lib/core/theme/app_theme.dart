@@ -77,7 +77,10 @@ class AppThemeColors extends ThemeExtension<AppThemeColors> {
 
 class AppTheme {
   static TextTheme _headlineTheme(Color textColor) {
-    return GoogleFonts.manropeTextTheme().copyWith(
+    return GoogleFonts.manropeTextTheme().apply(
+      bodyColor: textColor,
+      displayColor: textColor,
+    ).copyWith(
       displayLarge: GoogleFonts.sora(
         fontSize: 57,
         fontWeight: FontWeight.w700,
