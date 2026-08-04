@@ -108,15 +108,35 @@ class _ProfileHeaderState extends State<ProfileHeader> {
       clipBehavior: Clip.none,
       children: [
         // Cover Section
-        _buildCover(context),
+        ClipPath(
+          clipper: ConcaveClipper(),
+          child: _buildCover(context),
+        ),
 
-        // Profile Image Section
+        // Profile Image Section with Status Indicator
         Positioned(
-          bottom: -50,
+          bottom: -45,
           left: 0,
           right: 0,
           child: Center(
-            child: _buildProfileImage(context),
+            child: Stack(
+              children: [
+                _buildProfileImage(context),
+                Positioned(
+                  bottom: 5,
+                  right: 5,
+                  child: Container(
+                    width: 18,
+                    height: 18,
+                    decoration: BoxDecoration(
+                      color: Colors.green,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2.5),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -124,12 +144,12 @@ class _ProfileHeaderState extends State<ProfileHeader> {
         if (widget.onBack != null)
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
-            left: 10,
+            left: 15,
             child: CircleAvatar(
-              backgroundColor: Colors.black.withOpacity(0.3),
+              backgroundColor: Colors.white,
               child: IconButton(
                 icon: const Icon(Icons.arrow_back_ios_new,
-                    color: Colors.white, size: 20),
+                    color: Colors.black, size: 18),
                 onPressed: widget.onBack,
               ),
             ),
@@ -139,11 +159,12 @@ class _ProfileHeaderState extends State<ProfileHeader> {
         if (widget.onEdit != null)
           Positioned(
             top: MediaQuery.of(context).padding.top + 10,
-            right: 10,
+            right: 15,
             child: CircleAvatar(
-              backgroundColor: Colors.black.withOpacity(0.3),
+              backgroundColor: Colors.white,
               child: IconButton(
-                icon: const Icon(Icons.edit, color: Colors.white, size: 20),
+                icon:
+                    const Icon(Icons.more_vert, color: Colors.black, size: 22),
                 onPressed: widget.onEdit,
               ),
             ),
@@ -176,12 +197,10 @@ class _ProfileHeaderState extends State<ProfileHeader> {
         }
       },
       child: Container(
-        height: 500,
+        height: 450,
         width: double.infinity,
         decoration: BoxDecoration(
           color: Colors.grey[300],
-          borderRadius:
-              const BorderRadius.vertical(bottom: Radius.circular(20)),
         ),
         clipBehavior: Clip.antiAlias,
         child: Stack(
@@ -211,10 +230,10 @@ class _ProfileHeaderState extends State<ProfileHeader> {
 
   Widget _buildProfileImage(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final outerShadow = isDark ? Colors.black54 : Colors.black26;
+    final outerShadow = isDark ? Colors.black54 : Colors.black12;
 
     return Container(
-      padding: const EdgeInsets.all(4),
+      padding: const EdgeInsets.all(3),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
@@ -229,21 +248,17 @@ class _ProfileHeaderState extends State<ProfileHeader> {
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: outerShadow,
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-          const BoxShadow(
-            color: Color(0x66D4AF37),
             blurRadius: 10,
-            spreadRadius: 1,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Container(
-        width: 150,
-        height: 150,
+        width: 105,
+        height: 105,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
+          color: Colors.white,
         ),
         clipBehavior: Clip.antiAlias,
         child: AppNetworkImage(
@@ -255,4 +270,20 @@ class _ProfileHeaderState extends State<ProfileHeader> {
       ),
     );
   }
+}
+
+class ConcaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    Path path = Path();
+    path.lineTo(0, size.height);
+    path.quadraticBezierTo(
+        size.width / 2, size.height - 45, size.width, size.height);
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
+
+  @override
+  bool shouldReclip(CustomClipper<Path> oldClipper) => false;
 }

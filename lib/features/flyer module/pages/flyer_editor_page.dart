@@ -16,6 +16,7 @@ import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:gridcard/core/services/profile_provider.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/core/utils/error_formatter.dart';
 import 'package:universal_html/html.dart' as html;
 import 'package:http/http.dart' as http;
 import 'package:gridcard/core/services/user_storage_service.dart';
@@ -1829,7 +1830,7 @@ class _FlyerEditorPageState extends State<FlyerEditorPage> {
       await _draftService.clearDraft(widget.imageUrl);
       if (mounted) TopAlert.show(context, "✅ Saved to gallery!", isSuccess: true);
     } catch (e) {
-      if (mounted) TopAlert.show(context, "Error: $e", isError: true);
+      if (mounted) TopAlert.show(context, ErrorFormatter.format(e, defaultMsg: "Failed to save to gallery. Please try again."), isError: true);
     } finally {
       if (mounted) {
         setState(() {

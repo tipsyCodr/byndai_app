@@ -1,17 +1,19 @@
+import '../../../config/app_config.dart';
+
 final Map<String, List<String>> festivalImages = {
   "Diwali": [
-    "https://app.byndai.in/storage/profile/profile_pic_37_1772880613.jpeg",
-    "https://app.byndai.in/storage/profile/profile_pic_37_1772880613.jpeg",
+    "${AppConfig.storageBaseUrl}/profile/profile_pic_37_1772880613.jpeg",
+    "${AppConfig.storageBaseUrl}/profile/profile_pic_37_1772880613.jpeg",
     "https://picsum.photos/402/600?diwali3",
     "https://picsum.photos/403/600?diwali4",
     "https://picsum.photos/404/600?diwali5",
   ],
   "Holi": [
-    "https://app.byndai.in/storage/profile/profile_pic_37_1772880613.jpeg",
-    "https://app.byndai.in/storage/profile/profile_pic_37_1772880613.jpeg",
-    "https://app.byndai.in/storage/profile/profile_pic_37_1772880613.jpeg",
-    "https://app.byndai.in/storage/profile/profile_pic_37_1772880613.jpeg",
-    "https://app.byndai.in/storage/profile/profile_pic_37_1772880613.jpeg",
+    "${AppConfig.storageBaseUrl}/profile/profile_pic_37_1772880613.jpeg",
+    "${AppConfig.storageBaseUrl}/profile/profile_pic_37_1772880613.jpeg",
+    "${AppConfig.storageBaseUrl}/profile/profile_pic_37_1772880613.jpeg",
+    "${AppConfig.storageBaseUrl}/profile/profile_pic_37_1772880613.jpeg",
+    "${AppConfig.storageBaseUrl}/profile/profile_pic_37_1772880613.jpeg",
   ],
   "Republic Day": [
     "https://picsum.photos/410/600?rep1",

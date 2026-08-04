@@ -15,6 +15,7 @@ import 'package:gridcard/widgets/app_network_image.dart';
 import 'package:gridcard/core/services/api_header_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/core/utils/error_formatter.dart';
 
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
@@ -219,7 +220,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                                       }
                                     } catch (e) {
                                       Navigator.pop(context);
-                                      TopAlert.show(context, "Error: $e",
+                                      TopAlert.show(context, ErrorFormatter.format(e),
                                           isError: true);
                                     }
                                   },
@@ -399,6 +400,45 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
     );
   }
 
+  void _openFullScreenImage(String? url, String? base64) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          body: SafeArea(
+            child: Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    panEnabled: true,
+                    boundaryMargin: const EdgeInsets.all(20),
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: SizedBox.expand(
+                      child: url != null
+                          ? Image.network(url, fit: BoxFit.contain)
+                          : Image.memory(base64Decode(base64!), fit: BoxFit.contain),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back,
+                        color: Colors.white, size: 28),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickSelfyImage(int type) async {
     final XFile? image = await _picker.pickImage(
       source: ImageSource.gallery,
@@ -514,7 +554,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                 )
               ],
             ),
-            const SizedBox(height: 10),
+             const SizedBox(height: 10),
             if (url != null || base64 != null)
               Container(
                 height: 180,
@@ -609,15 +649,20 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                               ),
                             )
                           : const Center(child: CircularProgressIndicator())
-                      : (url != null
-                          ? AppNetworkImage(
-                              imageUrl: url,
-                              fit: BoxFit.cover,
-                              height: 180,
-                              width: double.infinity,
-                            )
-                          : Image.memory(base64Decode(base64!),
-                              fit: BoxFit.cover)),
+                      : GestureDetector(
+                          onTap: () => _openFullScreenImage(url, base64),
+                          child: url != null
+                              ? AppNetworkImage(
+                                  imageUrl: url,
+                                  fit: BoxFit.contain,
+                                  height: 180,
+                                  width: double.infinity,
+                                )
+                              : Image.memory(base64Decode(base64!),
+                                  fit: BoxFit.contain,
+                                  height: 180,
+                                  width: double.infinity),
+                        ),
                 ),
               )
             else
@@ -839,7 +884,9 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                       } else if (type == "sms") {
                         launchUrl(Uri.parse("sms:$mobile"));
                       } else if (type == "whatsapp") {
-                        launchUrl(Uri.parse("https://wa.me/$mobile"));
+                        String waNumber = mobile.replaceAll(RegExp(r'\D'), '');
+                        if (waNumber.length == 10) waNumber = '91$waNumber';
+                        launchUrl(Uri.parse("https://wa.me/$waNumber"));
                       }
                     },
                   )),

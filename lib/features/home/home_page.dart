@@ -33,6 +33,7 @@ class _HomePageState extends State<HomePage> {
 
   final GlobalKey<FeedPageState> _feedKey = GlobalKey<FeedPageState>();
   late final List<Widget> _screens;
+  late final PageController _pageController;
   NfcService? _nfcService;
 
   @override
@@ -44,6 +45,7 @@ class _HomePageState extends State<HomePage> {
       const DiscoverPage(),
       const SettingsPage(),
     ];
+    _pageController = PageController(initialPage: _selectedIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _nfcService = Provider.of<NfcService>(context, listen: false);
       _initializeNfc();
@@ -55,6 +57,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   void dispose() {
+    _pageController.dispose();
     _nfcService?.stopListening();
     super.dispose();
   }
@@ -67,7 +70,7 @@ class _HomePageState extends State<HomePage> {
     if (didPop) return;
 
     if (_selectedIndex != 0) {
-      setState(() => _selectedIndex = 0);
+      _onItemTapped(0);
       _lastBackPressed = null;
       return;
     }
@@ -102,14 +105,21 @@ class _HomePageState extends State<HomePage> {
   ];
 
   void _onItemTapped(int index) {
-    if (_selectedIndex == index && index == 0) {
-      // If already on Home, just scroll to top
-      _feedKey.currentState?.onBackToTop();
+    if (_selectedIndex == index) {
+      if (index == 0) {
+        // If already on Home, just scroll to top
+        _feedKey.currentState?.onBackToTop();
+      }
     } else {
-      setState(() => _selectedIndex = index);
+      _pageController.animateToPage(
+        index,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
 
       if (index == 0) {
-        final socialProvider = Provider.of<SocialProvider>(context, listen: false);
+        final socialProvider =
+            Provider.of<SocialProvider>(context, listen: false);
         if (socialProvider.shouldRefresh) {
           _feedKey.currentState?.refreshFeed();
         }
@@ -259,8 +269,14 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.only(
                   bottom: 72 + MediaQuery.of(context).padding.bottom,
                 ),
-                child: IndexedStack(
-                  index: _selectedIndex,
+                child: PageView(
+                  controller: _pageController,
+                  onPageChanged: (index) {
+                    setState(() {
+                      _selectedIndex = index;
+                    });
+                  },
+                  physics: const ClampingScrollPhysics(),
                   children: _screens,
                 ),
               ),

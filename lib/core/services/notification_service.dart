@@ -1,10 +1,12 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/foundation.dart';
 import 'package:gridcard/core/services/auth_service.dart';
+import 'package:gridcard/core/services/firestore_chat_service.dart';
+import 'package:gridcard/core/services/user_storage_service.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gridcard/core/services/deep_link_service.dart';
+import 'package:gridcard/features/chat/chat_screen.dart';
 import 'package:gridcard/features/chat/connections_page.dart';
 import 'package:gridcard/features/business_event/business_event_page.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
@@ -93,6 +95,19 @@ class NotificationService {
       );
       if (token != null) {
         debugPrint('🔔 FCM Token: $token');
+        // Save token to Firestore so backend/other devices can look it up
+        try {
+          final session = await UserStorageService().loadSession();
+          final userId = session.user?.id;
+          if (userId != null) {
+            await FirestoreChatService.saveUserFcmToken(
+              userId: userId,
+              token: token,
+            );
+          }
+        } catch (e) {
+          debugPrint('🔔 Failed to save FCM token to Firestore: $e');
+        }
       }
 
       _messaging.onTokenRefresh.listen((newToken) {
@@ -179,6 +194,29 @@ class NotificationService {
         .toLowerCase();
     final lowerTitle = (data['title'] ?? '').toString().toLowerCase();
     final lowerBody = (data['body'] ?? data['message'] ?? '').toString().toLowerCase();
+
+    // ─── Chat notification → open ChatScreen ───────────────────────────────
+    if (lowerType == 'chat') {
+      final chatId = int.tryParse((data['chat_id'] ?? '').toString());
+      final receiverId =
+          int.tryParse((data['sender_id'] ?? data['receiver_id'] ?? '').toString());
+      final receiverName =
+          (data['sender_name'] ?? data['receiver_name'] ?? 'Chat').toString();
+
+      if (chatId != null && receiverId != null) {
+        final navigator = DeepLinkService().navigatorKey.currentState;
+        navigator?.push(
+          MaterialPageRoute(
+            builder: (_) => ChatScreen(
+              chatId: chatId,
+              receiverId: receiverId,
+              receiverName: receiverName,
+            ),
+          ),
+        );
+        return;
+      }
+    }
 
     if (lowerType == 'custom') {
       _navigateCustomScreen(data);

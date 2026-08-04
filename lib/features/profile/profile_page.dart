@@ -617,20 +617,16 @@ class _ProfilePageState extends State<ProfilePage> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Flexible(
-                              child: SizedBox(
-                                height: 38,
-                                child: FittedBox(
-                                  fit: BoxFit.scaleDown,
-                                  child: Text(
-                                    fullName,
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(
-                                      fontSize: 26,
-                                      fontWeight: FontWeight.w800,
-                                      color: onSurface,
-                                      height: 1.1,
-                                    ),
-                                  ),
+                              child: Text(
+                                fullName,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w800,
+                                  color: onSurface,
+                                  height: 1.1,
                                 ),
                               ),
                             ),
@@ -644,65 +640,68 @@ class _ProfilePageState extends State<ProfilePage> {
                             ],
                           ],
                         ),
-                        Text(
-                          businessName,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 17,
-                            color: theme.colorScheme.primary,
-                            fontWeight: FontWeight.w700,
-                            height: 1.2,
+                        if (businessName.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            businessName,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 17,
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w700,
+                              height: 1.2,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          industryName,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isDark ? Colors.grey[400] : Colors.grey[600],
-                            letterSpacing: 1.1,
-                            height: 1.2,
+                        ],
+                        if (industryName.isNotEmpty) ...[
+                          const SizedBox(height: 2),
+                          Text(
+                            industryName,
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              letterSpacing: 1.1,
+                              height: 1.2,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: Row(
+                        ],
+                        if (location.isNotEmpty && location != 'Earth') ...[
+                          const SizedBox(height: 8),
+                          Row(
                             mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.center,
                             children: [
+                              Padding(
+                                padding: const EdgeInsets.only(top: 1),
+                                child: Icon(Icons.location_on,
+                                    size: 14, color: Colors.grey[500]),
+                              ),
+                              const SizedBox(width: 4),
                               Flexible(
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(top: 1),
-                                      child: Icon(Icons.location_on,
-                                          size: 14, color: Colors.grey[500]),
-                                    ),
-                                    const SizedBox(width: 2),
-                                    Flexible(
-                                      child: Text(
-                                        location,
-                                        textAlign: TextAlign.left,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 13,
-                                          color: Colors.grey[500],
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                child: Text(
+                                  location,
+                                  textAlign: TextAlign.left,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.grey[500],
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             ],
                           ),
-                        ),
+                        ],
                         const SizedBox(height: 24),
+
+                        // BADGES ROW
+                        _buildBadgeRow(provider, profile, isDark, isOwner),
+                        const SizedBox(height: 32),
 
                         // PROFILE ACTIONS (Connect/Chat)
                         ProfileActions(
@@ -758,13 +757,12 @@ class _ProfilePageState extends State<ProfilePage> {
                         ),
                         const SizedBox(height: 28),
 
-                        // BADGES ROW
-                        _buildBadgeRow(provider, profile, isDark, isOwner),
-                        const SizedBox(height: 32),
-
                         // ACTION GRID
                         _buildActionGrid(provider, isDark),
                         const SizedBox(height: 16),
+
+                        // BUSINESS DESCRIPTION
+                        _buildBusinessDescriptionSection(provider, isDark),
 
                         // CUSTOM ACTION BUTTONS
                         _buildCustomActionButtons(provider, isDark),
@@ -831,64 +829,122 @@ class _ProfilePageState extends State<ProfilePage> {
     final hasPro =
         provider.isProUser ?? _hasProAccess(profile, isOwner: isOwner);
 
+    Widget buildStatDivider() => Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Container(
+            width: 1,
+            height: 24,
+            color: isDark ? Colors.grey[800] : Colors.grey[300],
+          ),
+        );
+
+    Widget buildStat({
+      required Widget topWidget,
+      String? subtitle,
+    }) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          topWidget,
+          if (subtitle != null && subtitle.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12,
+                color: isDark ? Colors.grey[400] : Colors.grey[600],
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    final List<Widget> stats = [];
+
+    // Reviews Badge
+    stats.add(buildStat(
+      topWidget: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            "${provider.avgRating ?? '0.0'}",
+            style: TextStyle(
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurface),
+          ),
+          const SizedBox(width: 4),
+          const Icon(Icons.star, color: Colors.blue, size: 14),
+        ],
+      ),
+      subtitle: "${provider.totalReviewsCount ?? '0'} reviews ⓘ",
+    ));
+
+    // PRO Badge
+    if (hasPro) {
+      stats.add(buildStat(
+        topWidget: const Padding(
+          padding: EdgeInsets.only(top: 2, bottom: 2),
+          child: FaIcon(FontAwesomeIcons.crown, size: 22, color: Colors.amber),
+        ),
+        subtitle: "Premium ⓘ",
+      ));
+    }
+
+    // GST Badge
+    if (hasGST) {
+      stats.add(buildStat(
+        topWidget: const Padding(
+          padding: EdgeInsets.only(top: 2, bottom: 2),
+          child: Icon(Icons.verified_outlined, size: 20, color: Colors.blue),
+        ),
+        subtitle: "Verified ⓘ",
+      ));
+    }
+
+    // JCI Badge
+    if (hasJCI) {
+      stats.add(buildStat(
+        topWidget: Padding(
+          padding: const EdgeInsets.only(top: 2, bottom: 2),
+          child: Image.asset('assets/jci.jpeg', height: 36),
+        ),
+        subtitle: null,
+      ));
+    }
+
+    // BNI Badge
+    if (hasBNI) {
+      stats.add(buildStat(
+        topWidget: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFFbc262f),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Image.asset('assets/bni.png', height: 28),
+        ),
+        subtitle: null,
+      ));
+    }
+
+    // Insert dividers
+    final List<Widget> rowChildren = [];
+    for (int i = 0; i < stats.length; i++) {
+      rowChildren.add(stats[i]);
+      if (i < stats.length - 1) {
+        rowChildren.add(buildStatDivider());
+      }
+    }
+
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       physics: const BouncingScrollPhysics(),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Reviews Badge
-          _badgeCard(
-            icon: const Icon(Icons.star, color: Colors.amber, size: 28),
-            title: "${provider.avgRating ?? '0.0'} ★",
-            subtitle: "${provider.totalReviewsCount} Reviews",
-            titleColor: Theme.of(context).colorScheme.onSurface,
-            isDark: isDark,
-          ),
-
-          // PRO Badge
-          if (hasPro)
-            _badgeCard(
-              icon: const Icon(Icons.emoji_events,
-                  color: Color(0xFF3E2C00), size: 28),
-              title: "PRO",
-              subtitle: "User",
-              titleColor: const Color(0xFF3E2C00),
-              subtitleColor: const Color(0xFF5A4300),
-              backgroundColor: const Color(0xFFD4AF37),
-              borderColor: const Color(0xFFB8860B),
-              isPremium: true,
-              isDark: isDark,
-            ),
-
-          // JCI Badge
-          if (hasJCI)
-            _logoOnlyBadge(
-              logo: Image.asset('assets/jci.jpeg', width: 94, height: 54),
-              isDark: isDark,
-              backgroundColor: Colors.white,
-              borderColor: Colors.grey[300],
-            ),
-
-          // BNI Badge
-          if (hasBNI)
-            _logoOnlyBadge(
-              logo: Image.asset('assets/bni.png', width: 64, height: 44),
-              isDark: isDark,
-              backgroundColor: const Color(0xFFbc262f),
-              borderColor: const Color(0xFFbc262f),
-            ),
-
-          // GST Badge
-          if (hasGST)
-            _badgeCard(
-              icon: const Icon(Icons.verified, color: Colors.blue, size: 28),
-              title: "GST",
-              subtitle: "Verified business",
-              titleColor: Theme.of(context).colorScheme.onSurface,
-              isDark: isDark,
-            ),
-        ],
+        children: rowChildren,
       ),
     );
   }
@@ -1173,59 +1229,177 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildActionGrid(ProfileProvider provider, bool isDark) {
-    // Filter out custom action buttons from the icon grid
-    final links = provider.masterLinks
+    final allLinks = provider.masterLinks
         .where((l) => !(l['name']?.toString().startsWith('btn:') ?? false))
         .toList();
 
-    if (links.isEmpty) return const SizedBox.shrink();
+    if (allLinks.isEmpty) return const SizedBox.shrink();
 
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: links.length,
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 4,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+      decoration: BoxDecoration(
+        color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.grey[800]!.withOpacity(0.5) : Colors.grey[200]!),
       ),
-      itemBuilder: (context, index) {
-        final link = links[index];
-        final name = link['name'] ?? 'Link';
-        final url = link['link'] ?? '';
-        final iconData = _getIconForName(name);
-        final bgColor = _getColorForName(name);
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemWidth = constraints.maxWidth / 4;
+          return Wrap(
+            alignment: WrapAlignment.start,
+            runSpacing: 24,
+            children: allLinks.map((link) {
+              final rawName = link['name'] ?? 'Link';
+              final url = link['link'] ?? '';
+              
+              final key = rawName.toLowerCase();
+              String title = rawName;
+              IconData iconData = _getIconForName(rawName);
+              Color color = _getColorForName(rawName);
 
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => _launchURL(url),
-            borderRadius: BorderRadius.circular(18),
-            child: Container(
-              decoration: BoxDecoration(
-                color: bgColor.withOpacity(isDark ? 0.85 : 1.0),
-                borderRadius: BorderRadius.circular(18),
-                boxShadow: [
-                  BoxShadow(
-                    color: (bgColor == Colors.white ||
-                            bgColor == const Color(0xFFFFFFFF))
-                        ? Colors.black.withOpacity(0.12)
-                        : bgColor.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+              if (key.contains("whatsapp")) {
+                title = "WhatsApp";
+              } else if (key.contains("call") || key.contains("phone")) {
+                title = "Call";
+                iconData = Icons.phone_outlined;
+              } else if (key.contains("email") || key.contains("gmail")) {
+                title = "Email";
+                iconData = Icons.email_outlined;
+                color = const Color(0xFF8E24AA);
+              } else if (key.contains("web") || key.contains("site")) {
+                title = "Website";
+                iconData = Icons.language;
+                color = const Color(0xFF1F51E5);
+              } else if (key.contains("indiamart")) {
+                title = "IndiaMart";
+                iconData = FontAwesomeIcons.store;
+                color = const Color(0xFF8B0000); // Indiamart brand red
+              } else if (key.contains("twitter") || key.contains("x")) {
+                title = "Twitter";
+                color = isDark ? Colors.white : Colors.black;
+              } else if (key.contains("justdial")) {
+                title = "Justdial";
+              } else if (key.contains("google_re") || key.contains("google re") || key.contains("google")) {
+                title = "Google";
+              } else if (key.contains("facebook")) {
+                title = "Facebook";
+              } else if (key.contains("instagram")) {
+                title = "Instagram";
+              } else if (key.contains("youtube")) {
+                title = "YouTube";
+              } else if (key.contains("linkedin")) {
+                title = "LinkedIn";
+              } else {
+                if (title.isNotEmpty) {
+                  title = title[0].toUpperCase() + title.substring(1).toLowerCase();
+                }
+              }
+
+              return SizedBox(
+                width: itemWidth,
+                child: InkWell(
+                  onTap: () => _launchURL(url),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildLineIconWidget(rawName, iconData, color),
+                      const SizedBox(height: 12),
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: isDark ? Colors.white70 : const Color(0xFF1A1A24),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: _buildIconWidget(name, iconData, Colors.white),
                 ),
-              ),
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildLineIconWidget(String name, IconData iconData, Color color) {
+    final key = name.toLowerCase();
+
+    if (key.contains("justdial")) {
+      return SizedBox(
+        height: 36,
+        child: Center(
+          child: SvgPicture.asset(
+            'assets/icons/justdial.svg',
+            height: 14,
+            fit: BoxFit.contain,
+            colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+          ),
+        ),
+      );
+    }
+    
+    if (key.contains("indiamart")) {
+      return SizedBox(
+        height: 36,
+        child: Center(
+          child: Image.asset(
+            'assets/icons/indiamart.png',
+            width: 38,
+            height: 38,
+            fit: BoxFit.contain,
+          ),
+        ),
+      );
+    }
+    
+    if (iconData.fontFamily?.contains('FontAwesome') ?? false) {
+      return SizedBox(height: 36, child: Center(child: FaIcon(iconData, color: color, size: 28)));
+    }
+    return SizedBox(height: 36, child: Center(child: Icon(iconData, color: color, size: 28)));
+  }
+
+  void _openFullScreenImage(String? url) {
+    if (url == null || url.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => Scaffold(
+          backgroundColor: Colors.black,
+          body: SafeArea(
+            child: Stack(
+              children: [
+                Center(
+                  child: InteractiveViewer(
+                    panEnabled: true,
+                    boundaryMargin: const EdgeInsets.all(20),
+                    minScale: 0.5,
+                    maxScale: 4.0,
+                    child: SizedBox.expand(
+                      child: Image.network(url, fit: BoxFit.contain),
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child: IconButton(
+                    icon: const Icon(Icons.arrow_back,
+                        color: Colors.white, size: 28),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
@@ -1288,37 +1462,52 @@ class _ProfilePageState extends State<ProfilePage> {
         else
           ...products.map((p) {
             final List links = p['product_link'] ?? [];
-            final title = p['title'] ?? p['product_name'] ?? 'Product';
-            final price = p['price'] ?? p['product_price'] ?? '0';
+            final rawTitle = (p['title'] ?? p['product_name'] ?? 'Product').toString();
+            final title = rawTitle == rawTitle.toLowerCase()
+                ? rawTitle.split(' ').map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : '').join(' ')
+                : rawTitle;
+            final rawPrice = (p['price'] ?? p['product_price'] ?? '0').toString();
+            final price = _formatPrice(rawPrice);
             final desc = p['description'] ?? '';
             final imageUrl = _pImg(p);
 
             return Padding(
-              padding: const EdgeInsets.only(bottom: 24),
-              child: GlassBox(
-                borderRadius: 24,
-                padding: EdgeInsets.zero,
-                opacity: isDark ? 0.08 : 0.05,
-                border: Border.all(
-                  color: colorScheme.primary.withValues(alpha: 0.2),
-                  width: 1,
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: isDark ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3) : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: isDark ? colorScheme.primary.withValues(alpha: 0.15) : colorScheme.outlineVariant.withValues(alpha: 0.4),
+                    width: 1,
+                  ),
+                  boxShadow: isDark
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Product Image
-                    ClipRRect(
-                      borderRadius:
-                          const BorderRadius.vertical(top: Radius.circular(24)),
-                      child: AppNetworkImage(
-                        imageUrl: imageUrl,
-                        height: 220,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
+                    GestureDetector(
+                      onTap: () => _openFullScreenImage(imageUrl),
+                      child: ClipRRect(
+                        borderRadius:
+                            const BorderRadius.vertical(top: Radius.circular(19)),
+                        child: AppNetworkImage(
+                          imageUrl: imageUrl,
+                          width: double.infinity,
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(14),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -1327,29 +1516,33 @@ class _ProfilePageState extends State<ProfilePage> {
                             title,
                             style: TextStyle(
                               fontSize: 18,
-                              fontWeight: FontWeight.w800,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
                               color: onSurface,
                             ),
                           ),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 4),
                           // Price (on the left)
                           Text(
                             "₹$price",
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w900,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.2,
                               color: colorScheme.primary,
                             ),
                           ),
                           if (desc.isNotEmpty) ...[
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 10),
                             Container(
+                              width: double.infinity,
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 12),
+                                  horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
-                                color:
-                                    colorScheme.primary.withValues(alpha: 0.04),
-                                borderRadius: BorderRadius.circular(16),
+                                color: isDark
+                                    ? colorScheme.primary.withValues(alpha: 0.06)
+                                    : colorScheme.primary.withValues(alpha: 0.03),
+                                borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: colorScheme.primary
                                       .withValues(alpha: 0.08),
@@ -1359,18 +1552,18 @@ class _ProfilePageState extends State<ProfilePage> {
                               child: Text(
                                 desc,
                                 style: TextStyle(
-                                  fontSize: 14,
+                                  fontSize: 13.5,
                                   color: isDark
-                                      ? Colors.white.withValues(alpha: 0.7)
-                                      : Colors.black.withValues(alpha: 0.7),
-                                  height: 1.6,
-                                  letterSpacing: 0.2,
+                                      ? onSurface.withValues(alpha: 0.8)
+                                      : onSurface.withValues(alpha: 0.7),
+                                  height: 1.55,
+                                  letterSpacing: 0.1,
                                 ),
                               ),
                             ),
                           ],
                           if (links.isNotEmpty) ...[
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 12),
                             Wrap(
                               spacing: 8,
                               runSpacing: 8,
@@ -1394,6 +1587,39 @@ class _ProfilePageState extends State<ProfilePage> {
           }),
       ],
     );
+  }
+
+  String _formatPrice(String priceStr) {
+    try {
+      final cleanStr = priceStr.replaceAll(RegExp(r'[^\d.]'), '');
+      if (cleanStr.isEmpty) return priceStr;
+      final value = double.parse(cleanStr);
+      final isWhole = value == value.toInt();
+      final numberToFormat = isWhole ? value.toInt().toString() : value.toStringAsFixed(2);
+      final parts = numberToFormat.split('.');
+      final wholePart = parts[0];
+      final decimalPart = parts.length > 1 ? '.' + parts[1] : '';
+      if (wholePart.length <= 3) {
+        return wholePart + decimalPart;
+      }
+      final lastThree = wholePart.substring(wholePart.length - 3);
+      final other = wholePart.substring(0, wholePart.length - 3);
+      final List<String> chunks = [];
+      int i = other.length;
+      while (i > 0) {
+        if (i >= 2) {
+          chunks.add(other.substring(i - 2, i));
+          i -= 2;
+        } else {
+          chunks.add(other.substring(0, i));
+          i = 0;
+        }
+      }
+      final otherFormatted = chunks.reversed.join(',');
+      return '$otherFormatted,$lastThree$decimalPart';
+    } catch (_) {
+      return priceStr;
+    }
   }
 
   String? _pImg(Map<String, dynamic> p) {
@@ -1620,15 +1846,51 @@ class _ProfilePageState extends State<ProfilePage> {
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 12),
-          child: AppButton(
-            label: label,
-            onPressed: () => _launchURL(url),
-            variant: AppButtonVariant.filled,
-            // You can also add an icon if you want, e.g. Icons.ads_click
+          child: SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              onPressed: () => _launchURL(url),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFF1E1E2C),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                elevation: 0,
+              ),
+              child: Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
         );
       }).toList(),
     );
+  }
+
+  Widget _buildBusinessDescriptionSection(ProfileProvider provider, bool isDark) {
+    final profile = provider.profileData ?? {};
+    final userObj = profile['user'];
+    final businessInfo = profile['business_info'] ?? userObj?['business_info'];
+    
+    String description = '';
+    if (businessInfo is Map) {
+      description = businessInfo['description']?.toString().trim() ?? '';
+    } else if (businessInfo is List && businessInfo.isNotEmpty) {
+      final b0 = businessInfo[0];
+      if (b0 is Map) {
+        description = b0['description']?.toString().trim() ?? '';
+      }
+    }
+
+    if (description.isEmpty) return const SizedBox.shrink();
+
+    return _AboutSection(description: description, isDark: isDark);
   }
 
   Future<void> _submitReview() async {
@@ -1894,6 +2156,75 @@ class _ProfileCoverMediaState extends State<_ProfileCoverMedia> {
               ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _AboutSection extends StatefulWidget {
+  final String description;
+  final bool isDark;
+  const _AboutSection({Key? key, required this.description, required this.isDark}) : super(key: key);
+
+  @override
+  State<_AboutSection> createState() => _AboutSectionState();
+}
+
+class _AboutSectionState extends State<_AboutSection> {
+  bool isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final int maxLength = 120;
+    final bool isLong = widget.description.length > maxLength;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "About",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: widget.isDark ? Colors.white : const Color(0xFF1A1A24),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            isExpanded || !isLong 
+                ? widget.description 
+                : '${widget.description.substring(0, maxLength)}...',
+            style: TextStyle(
+              fontSize: 14,
+              color: widget.isDark ? Colors.white70 : const Color(0xFF4A4A5A),
+              height: 1.5,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          if (isLong)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: InkWell(
+                onTap: () {
+                  setState(() {
+                    isExpanded = !isExpanded;
+                  });
+                },
+                child: Text(
+                  isExpanded ? "Read Less" : "Read More",
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF2563EB), 
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          const SizedBox(height: 32),
+        ],
       ),
     );
   }

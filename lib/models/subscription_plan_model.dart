@@ -7,6 +7,8 @@ class SubscriptionPlanModel {
   final String? buttonText;
   final bool isPopular;
   final bool isFree;
+  final String? regularPrice;
+  final String type; // 'monthly' or 'yearly'
   final List<SubscriptionFeatureModel>? features;
 
   SubscriptionPlanModel({
@@ -18,6 +20,8 @@ class SubscriptionPlanModel {
     this.buttonText,
     this.isPopular = false,
     this.isFree = false,
+    this.regularPrice,
+    this.type = 'monthly',
     this.features,
   });
 
@@ -31,6 +35,8 @@ class SubscriptionPlanModel {
       buttonText: json['button_text'],
       isPopular: json['is_popular'] == 1 || json['is_popular'] == true,
       isFree: json['is_free'] == 1 || json['is_free'] == true,
+      regularPrice: json['regular_price']?.toString(),
+      type: json['type']?.toString() ?? 'monthly',
       features: json['features'] != null
           ? (json['features'] as List)
               .map((i) => SubscriptionFeatureModel.fromJson(i))

@@ -9,6 +9,7 @@ import 'package:gridcard/widgets/top_alert.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:gridcard/widgets/glass_box.dart';
+import 'package:gridcard/core/utils/error_formatter.dart';
 import './add_product_page.dart';
 import './product_details_page.dart';
 
@@ -95,7 +96,7 @@ class _ProductsTabState extends State<ProductsTab> {
       }
     } catch (e) {
       if (!mounted) return;
-      TopAlert.show(context, "Error: $e", isError: true);
+      TopAlert.show(context, ErrorFormatter.format(e), isError: true);
     } finally {
       if (mounted) {
         setState(() {
@@ -125,7 +126,7 @@ class _ProductsTabState extends State<ProductsTab> {
       }
     } catch (e) {
       if (!mounted) return;
-      TopAlert.show(context, "Error deleting product: $e", isError: true);
+      TopAlert.show(context, ErrorFormatter.format(e, defaultMsg: "Failed to delete product. Please try again."), isError: true);
     }
   }
 

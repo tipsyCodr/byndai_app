@@ -8,6 +8,7 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/core/utils/error_formatter.dart';
 
 class AddProductPage extends StatefulWidget {
   final Map<String, dynamic>? product; // ✅ Add/Edit ke liye
@@ -390,7 +391,7 @@ class _AddProductPageState extends State<AddProductPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      TopAlert.show(context, "Error: $e", isError: true);
+      TopAlert.show(context, ErrorFormatter.format(e), isError: true);
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

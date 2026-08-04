@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
@@ -34,9 +35,15 @@ class _RegisterPageState extends State<RegisterPage> {
   bool? _isEmailAvailable;
   String? _emailMessage;
 
+  // Timers for debouncing
+  Timer? _usernameTimer;
+  Timer? _emailTimer;
+
   @override
   void initState() {
     super.initState();
+
+    _nameController.addListener(() => setState(() {}));
 
     _usernameFocusNode.addListener(() {
       if (!_usernameFocusNode.hasFocus) {
@@ -53,6 +60,8 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   void dispose() {
+    _usernameTimer?.cancel();
+    _emailTimer?.cancel();
     _usernameFocusNode.dispose();
     _emailFocusNode.dispose();
     _nameController.dispose();
@@ -61,7 +70,26 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
+  void _onUsernameChanged(String v) {
+    _usernameTimer?.cancel();
+    _usernameTimer = Timer(const Duration(milliseconds: 500), () {
+      _checkUsername();
+    });
+    // Trigger immediate rebuild to update button state (e.g. if field cleared)
+    setState(() {});
+  }
+
+  void _onEmailChanged(String v) {
+    _emailTimer?.cancel();
+    _emailTimer = Timer(const Duration(milliseconds: 500), () {
+      _checkEmail();
+    });
+    // Trigger immediate rebuild to update button state
+    setState(() {});
+  }
+
   Future<void> _checkUsername() async {
+    _usernameTimer?.cancel();
     final username = _usernameController.text.trim();
 
     if (username.contains(' ')) {
@@ -96,6 +124,7 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   Future<void> _checkEmail() async {
+    _emailTimer?.cancel();
     final email = _emailController.text.trim();
 
     if (!email.contains('@')) {
@@ -224,6 +253,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         TextFormField(
                           controller: _usernameController,
                           focusNode: _usernameFocusNode,
+                          onChanged: _onUsernameChanged,
                           inputFormatters: [
                             FilteringTextInputFormatter.deny(RegExp(r'[\s\(\)\{\}\[\]]')),
                           ],
@@ -288,6 +318,7 @@ class _RegisterPageState extends State<RegisterPage> {
                         TextFormField(
                           controller: _emailController,
                           focusNode: _emailFocusNode,
+                          onChanged: _onEmailChanged,
                           decoration: _inputDecoration(
                             "Email",
                             Icons.email,
@@ -330,7 +361,8 @@ class _RegisterPageState extends State<RegisterPage> {
                     width: double.infinity,
                     height: 56,
                     child: FilledButton(
-                      onPressed: (_isUsernameAvailable == true &&
+                      onPressed: (_nameController.text.isNotEmpty &&
+                              _isUsernameAvailable == true &&
                               _isEmailAvailable == true)
                           ? _registerUser
                           : null,

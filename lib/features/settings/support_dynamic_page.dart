@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:gridcard/widgets/glass_box.dart';
+import 'package:gridcard/core/theme/app_theme.dart';
 
 class SupportDynamicPage extends StatelessWidget {
   final Map<String, dynamic> pageData;
@@ -12,238 +14,284 @@ class SupportDynamicPage extends StatelessWidget {
     final sections = content['sections'];
     final footer = content['footer'];
 
-    final gradient = hero['background_gradient'];
+    final colorScheme = Theme.of(context).colorScheme;
+    final palette = Theme.of(context).extension<AppThemeColors>();
 
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            /// 🔥 HERO SECTION
-            Stack(
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 80, horizontal: 20),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Color(int.parse("0xff${gradient[0].substring(1)}")),
-                        Color(int.parse("0xff${gradient[1].substring(1)}")),
-                      ],
-                    ),
-                  ),
-                  child: SafeArea(
-                    bottom: false,
-                    child: Column(
-                      children: [
-                        const SizedBox(height: 30),
-                        Text(
-                          hero['heading'],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 15),
-                        Text(
-                          hero['subheading'],
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SafeArea(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 10, top: 10),
-                    child: CircleAvatar(
-                      backgroundColor: Colors.white24,
-                      child: IconButton(
-                        icon: const Icon(Icons.arrow_back,
-                            color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            /// 🔥 CONTENT
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: sections.map<Widget>((section) {
-                  /// TEXT SECTION
-                  if (section['type'] == 'text') {
-                    return _buildCard(
-                      title: section['title'],
-                      child: Text(
-                        section['content'],
-                        style: const TextStyle(
-                          fontSize: 15,
-                          height: 1.6,
-                          color: Colors.black54,
-                        ),
-                      ),
-                    );
-                  }
-
-                  /// FAQ SECTION
-                  if (section['type'] == 'faq') {
-                    return _buildCard(
-                      title: section['title'],
-                      child: Column(
-                        children: List.generate(
-                          section['items'].length,
-                          (index) {
-                            final item = section['items'][index];
-                            return ExpansionTile(
-                              tilePadding: EdgeInsets.zero,
-                              title: Text(
-                                item['question'],
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600),
-                              ),
-                              children: [
-                                Padding(
-                                  padding:
-                                      const EdgeInsets.only(bottom: 12.0),
-                                  child: Text(
-                                    item['answer'],
-                                    style: const TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.black54,
-                                    ),
-                                  ),
-                                )
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    );
-                  }
-
-                  /// CONTACT FORM
-                  if (section['type'] == 'contact_form') {
-                    return _buildCard(
-                      title: section['title'],
+      backgroundColor: palette?.backgroundStart ?? colorScheme.surface,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              palette?.backgroundStart ?? colorScheme.surface,
+              palette?.backgroundMid ?? colorScheme.surface,
+              palette?.backgroundEnd ?? colorScheme.surface,
+            ],
+          ),
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              /// 🔥 HERO SECTION
+              Stack(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 80, horizontal: 20),
+                    child: SafeArea(
+                      bottom: false,
                       child: Column(
                         children: [
-                          TextField(
-                            decoration: _inputDecoration("Your Name"),
-                          ),
-                          const SizedBox(height: 15),
-                          TextField(
-                            decoration: _inputDecoration("Your Email"),
-                          ),
-                          const SizedBox(height: 15),
-                          TextField(
-                            maxLines: 4,
-                            decoration:
-                                _inputDecoration("Describe your issue..."),
-                          ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 14),
-                                backgroundColor:
-                                    const Color(0xff4f46e5),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius:
-                                      BorderRadius.circular(10),
-                                ),
-                              ),
-                              onPressed: () {},
-                              child: const Text("Submit Request"),
+                          const SizedBox(height: 30),
+                          Text(
+                            hero['heading'],
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: colorScheme.onSurface,
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 15),
                           Text(
-                            "Or email us at: ${section['support_email']}",
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Colors.black54,
+                            hero['subheading'],
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color:
+                                  colorScheme.onSurface.withValues(alpha: 0.7),
+                              fontSize: 16,
                             ),
-                          )
+                          ),
                         ],
                       ),
-                    );
-                  }
-
-                  return const SizedBox();
-                }).toList(),
+                    ),
+                  ),
+                  SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 10, top: 10),
+                      child: CircleAvatar(
+                        backgroundColor:
+                            colorScheme.onSurface.withValues(alpha: 0.1),
+                        child: IconButton(
+                          icon: Icon(Icons.arrow_back,
+                              color: colorScheme.onSurface),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
 
-            /// 🔥 FOOTER
-            Container(
-              width: double.infinity,
-              color: const Color(0xff111827),
-              padding: const EdgeInsets.all(25),
-              child: Center(
-                child: Text(
-                  footer['text'],
-                  style: const TextStyle(
-                      color: Colors.white70, fontSize: 14),
+              /// 🔥 CONTENT
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: sections.map<Widget>((section) {
+                    /// TEXT SECTION
+                    if (section['type'] == 'text') {
+                      return _buildCard(
+                        context,
+                        title: section['title'],
+                        child: Text(
+                          section['content'],
+                          style: TextStyle(
+                            fontSize: 15,
+                            height: 1.6,
+                            color: colorScheme.onSurface.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      );
+                    }
+
+                    /// FAQ SECTION
+                    if (section['type'] == 'faq') {
+                      return _buildCard(
+                        context,
+                        title: section['title'],
+                        child: Column(
+                          children: List.generate(
+                            section['items'].length,
+                            (index) {
+                              final item = section['items'][index];
+                              return Theme(
+                                data: Theme.of(context).copyWith(
+                                  dividerColor: Colors.transparent,
+                                ),
+                                child: ExpansionTile(
+                                  tilePadding: EdgeInsets.zero,
+                                  iconColor: colorScheme.primary,
+                                  collapsedIconColor: colorScheme.onSurface
+                                      .withValues(alpha: 0.4),
+                                  title: Text(
+                                    item['question'],
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: colorScheme.onSurface,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                                  children: [
+                                    Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 16.0),
+                                      child: Text(
+                                        item['answer'],
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          height: 1.5,
+                                          color: colorScheme.onSurface
+                                              .withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                    )
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    }
+
+                    /// CONTACT FORM
+                    if (section['type'] == 'contact_form') {
+                      return _buildCard(
+                        context,
+                        title: section['title'],
+                        child: Column(
+                          children: [
+                            TextField(
+                              style: TextStyle(color: colorScheme.onSurface),
+                              decoration:
+                                  _inputDecoration(context, "Your Name"),
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              style: TextStyle(color: colorScheme.onSurface),
+                              decoration:
+                                  _inputDecoration(context, "Your Email"),
+                            ),
+                            const SizedBox(height: 16),
+                            TextField(
+                              maxLines: 4,
+                              style: TextStyle(color: colorScheme.onSurface),
+                              decoration: _inputDecoration(
+                                  context, "Describe your issue..."),
+                            ),
+                            const SizedBox(height: 24),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 54,
+                              child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: colorScheme.onSurface,
+                                  foregroundColor: colorScheme.surface,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                onPressed: () {},
+                                child: const Text(
+                                  "Submit Request",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                              "Or email us at: ${section['support_email']}",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: colorScheme.onSurface
+                                    .withValues(alpha: 0.5),
+                              ),
+                            )
+                          ],
+                        ),
+                      );
+                    }
+
+                    return const SizedBox();
+                  }).toList(),
                 ),
               ),
+
+              /// 🔥 FOOTER
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 0, 24, 40),
+                child: Text(
+                  footer['text'],
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: colorScheme.onSurface.withValues(alpha: 0.4),
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCard(BuildContext context,
+      {required String title, required Widget child}) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 32),
+      child: GlassBox(
+        padding: const EdgeInsets.all(24),
+        borderRadius: 24,
+        opacity: isDark ? 0.05 : 0.08,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: colorScheme.primary,
+              ),
             ),
+            const SizedBox(height: 20),
+            child
           ],
         ),
       ),
     );
   }
 
-  Widget _buildCard({required String title, required Widget child}) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 25),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 12,
-            offset: Offset(0, 4),
-          )
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xff4f46e5))),
-          const SizedBox(height: 15),
-          child
-        ],
-      ),
-    );
-  }
-
-  InputDecoration _inputDecoration(String hint) {
+  InputDecoration _inputDecoration(BuildContext context, String hint) {
+    final colorScheme = Theme.of(context).colorScheme;
     return InputDecoration(
       hintText: hint,
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      hintStyle: TextStyle(color: colorScheme.onSurface.withValues(alpha: 0.3)),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      filled: true,
+      fillColor: colorScheme.onSurface.withValues(alpha: 0.05),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: colorScheme.primary.withValues(alpha: 0.3)),
       ),
     );
   }

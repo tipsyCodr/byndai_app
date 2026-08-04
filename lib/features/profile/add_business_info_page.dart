@@ -8,6 +8,7 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/core/utils/error_formatter.dart';
 
 class AddBusinessInfoPage extends StatefulWidget {
   final bool isEdit;
@@ -296,7 +297,7 @@ class _AddBusinessInfoPageState extends State<AddBusinessInfoPage> {
       }
     } catch (e) {
       if (!mounted) return;
-      TopAlert.show(context, "Error: $e", isError: true);
+      TopAlert.show(context, ErrorFormatter.format(e), isError: true);
     } finally {
       if (mounted) setState(() => isLoading = false);
     }

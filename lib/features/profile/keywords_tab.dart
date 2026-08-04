@@ -4,6 +4,7 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/core/utils/error_formatter.dart';
 
 class KeywordsTab extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
@@ -84,7 +85,7 @@ class _KeywordsTabState extends State<KeywordsTab> {
         TopAlert.show(context, msg, isError: true);
       }
     } catch (e) {
-      TopAlert.show(context, "Error: $e", isError: true);
+      TopAlert.show(context, ErrorFormatter.format(e), isError: true);
     } finally {
       setState(() {
         isLoading = false;
@@ -120,7 +121,7 @@ class _KeywordsTabState extends State<KeywordsTab> {
         TopAlert.show(context, msg, isError: true);
       }
     } catch (e) {
-      TopAlert.show(context, "Error: $e", isError: true);
+      TopAlert.show(context, ErrorFormatter.format(e), isError: true);
     }
   }
 
@@ -154,7 +155,7 @@ class _KeywordsTabState extends State<KeywordsTab> {
         TopAlert.show(context, msg, isError: true);
       }
     } catch (e) {
-      TopAlert.show(context, "Error: $e", isError: true);
+      TopAlert.show(context, ErrorFormatter.format(e), isError: true);
     }
   }
 
@@ -183,7 +184,7 @@ class _KeywordsTabState extends State<KeywordsTab> {
         TopAlert.show(context, msg, isError: true);
       }
     } catch (e) {
-      TopAlert.show(context, "Error: $e", isError: true);
+      TopAlert.show(context, ErrorFormatter.format(e), isError: true);
     }
   }
 

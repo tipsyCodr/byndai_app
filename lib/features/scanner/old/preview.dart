@@ -1,7 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:gridcard/core/services/lead_provider.dart';
-import 'package:gridcard/models/customer_master_model.dart';
+import 'package:gridcard/core/services/auth_provider.dart';
+import 'package:gridcard/core/services/leads_provider.dart';
+import 'package:gridcard/models/lead_model.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 
@@ -18,13 +19,17 @@ class Preview extends StatefulWidget {
 // ====== Text Classification Helpers ======
 
 bool isPossibleOwnerName(String text) {
-  final words = text.trim().split(RegExp(r'\s+'));
-  // if (words.length < 1 || words.length > 3) return false;
-  if (words.isEmpty) {
-    // check this code use the above one if this gives issues.
-    return false;
-  }
-  final nameRegex = RegExp(r"^[A-Z][a-z]+$");
+  final trimmed = text.trim();
+  if (trimmed.isEmpty) return false;
+  
+  // Ignore if too long
+  if (trimmed.length > 30) return false;
+
+  final words = trimmed.split(RegExp(r'\s+'));
+  if (words.length < 1 || words.length > 4) return false;
+  
+  // Common name pattern: Uppercase first letter, or all caps
+  final nameRegex = RegExp(r"^[A-Z][a-z]+$|^[A-Z]{2,}$");
   return words.every((word) => nameRegex.hasMatch(word));
 }
 
@@ -433,19 +438,27 @@ class _PreviewState extends State<Preview> {
   }
 
   Future<void> _saveLead(BuildContext context) async {
-    final lead = CustomerMasterModel(
+    final auth = context.read<AuthProvider>();
+    final userId = auth.user?.id;
+
+    if (userId == null) {
+      TopAlert.show(context, "User not authenticated. Please login again.", isError: true);
+      return;
+    }
+
+    final lead = LeadModel(
+      userId: userId,
       name: nameController.text,
-      companyName: companyController.text,
-      phoneNo: phoneController.text,
+      company_name: companyController.text,
+      mobile_no_1: phoneController.text,
       email: emailControllers.isNotEmpty ? emailControllers.first.text : null,
-      website:
-          websiteControllers.isNotEmpty ? websiteControllers.first.text : null,
-      address:
-          addressControllers.isNotEmpty ? addressControllers.first.text : null,
-      otherDetails: otherDetailControllers.map((c) => c.text).join('\n'),
+      website: websiteControllers.isNotEmpty ? websiteControllers.first.text : null,
+      address: addressControllers.isNotEmpty ? addressControllers.first.text : null,
+      // Store other details in address or other fields if available, 
+      // for now we'll concatenate to address or just lose them if not fitting
     );
 
-    final success = await context.read<LeadProvider>().addLead(lead);
+    final success = await context.read<LeadProviders>().addLead(lead);
 
     if (context.mounted) {
       if (success) {

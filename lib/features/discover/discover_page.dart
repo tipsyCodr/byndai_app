@@ -22,7 +22,7 @@ class DiscoverPage extends StatefulWidget {
   State<DiscoverPage> createState() => _DiscoverPageState();
 }
 
-class _DiscoverPageState extends State<DiscoverPage> {
+class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClientMixin {
   final TextEditingController _searchController = TextEditingController();
 
   // ================= EVENT FETCH VARIABLES (NEW) =================
@@ -209,7 +209,11 @@ class _DiscoverPageState extends State<DiscoverPage> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     return RefreshIndicator(
       onRefresh: () async {
         if (_searchQuery.isNotEmpty) {

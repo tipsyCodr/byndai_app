@@ -13,9 +13,12 @@ import 'package:gridcard/core/services/leads_provider.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:gridcard/routes/route_names.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:flutter/services.dart';
+import 'package:gridcard/features/business_card_scan/presentation/widgets/send_intro_sheet.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:gridcard/core/services/auth_provider.dart';
+import 'package:gridcard/core/utils/error_formatter.dart';
 
 
 class LeadScanner2 extends StatefulWidget {
@@ -738,7 +741,7 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
                                       }
                                     } catch (e) {
                                       Navigator.pop(context);
-                                      TopAlert.show(context, "Error: $e",
+                                      TopAlert.show(context, ErrorFormatter.format(e),
                                           isError: true);
                                     }
                                   },
@@ -1150,9 +1153,24 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
       if (success) {
         TopAlert.show(context, "✅ Lead Added Successfully", isSuccess: true);
 
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          RouteNames.home,
-          (route) => false,
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (ctx) => SendIntroSheet(
+            leadName: nameCtrl.text.trim(),
+            leadPhones: mobileCtrls.map((c) => c.text.trim()).where((t) => t.isNotEmpty).toList(),
+            leadEmail: emailCtrl.text.trim(),
+            yourName: 'Your Name',
+            yourCompany: 'Your Company',
+            onDone: () {
+              Navigator.of(ctx).pop();
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                RouteNames.home,
+                (route) => false,
+              );
+            },
+          ),
         );
       } else {
         setState(() => isSaving = false);
@@ -1254,7 +1272,6 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
           ),
           const SizedBox(height: 8),
           Container(
-            height: 150,
             width: double.infinity,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
@@ -1263,9 +1280,9 @@ class _ExtractedDataModalState extends State<ExtractedDataModal> {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(10),
               child: kIsWeb
-                  ? Image.network(widget.capturedImage.path, fit: BoxFit.cover)
+                  ? Image.network(widget.capturedImage.path, fit: BoxFit.contain)
                   : Image.file(File(widget.capturedImage.path),
-                      fit: BoxFit.cover),
+                      fit: BoxFit.contain),
             ),
           ),
         ],

@@ -77,4 +77,29 @@ class SubscriptionService {
       return null;
     }
   }
+  /// GET /api/user/queued-subscriptions
+  static Future<List<int>> fetchQueuedPlanIds() async {
+    final url = Uri.parse('$_baseUrl/user/queued-subscriptions');
+    try {
+      final response = await http.get(url, headers: await _getHeaders());
+      if (kDebugMode) {
+        debugPrint('🔹 GET $url');
+        debugPrint('🔹 Response: ${response.body}');
+      }
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['status'] == true && data['data'] != null) {
+          return (data['data'] as List)
+              .map((item) => int.tryParse(item['plan_id']?.toString() ?? item['id']?.toString() ?? '0') ?? 0)
+              .where((id) => id != 0)
+              .toList();
+        }
+      }
+      return [];
+    } catch (e) {
+      debugPrint('🚨 Error fetching queued plans: $e');
+      return [];
+    }
+  }
 }

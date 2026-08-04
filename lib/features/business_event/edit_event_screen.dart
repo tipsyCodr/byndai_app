@@ -71,7 +71,7 @@ class _EditEventScreenState extends State<EditEventScreen> {
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
   static const String _imageBaseUrl = AppConfig.imageBaseUrl;
-  static const String _storageBaseUrl = 'https://app.byndai.in/storage';
+  static const String _storageBaseUrl = AppConfig.storageBaseUrl;
 
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {

@@ -377,18 +377,6 @@ class _PostCardState extends State<PostCard> {
   //                       color: isDark
   //                           ? colorScheme.onSurface.withOpacity(0.6)
   //                           : Colors.grey.shade700,
-  //                     ),
-  //                   ),
-  //                 );
-  //               },
-  //             ),
-  //           ),
-  //         );
-  //       },
-  //     ),
-  //   );
-  // }
-
   Widget _buildImageCarousel() {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -396,53 +384,50 @@ class _PostCardState extends State<PostCard> {
     final placeholderColor =
         isDark ? colorScheme.surfaceVariant : Colors.grey[200];
 
-    return SizedBox(
-      height: 210,
-      child: PageView.builder(
-        controller: _imageController,
-        itemCount: _images.length,
-        itemBuilder: (context, index) {
-          final media = _images[index];
-          final url = _fullUrl(media["media_url"] ?? "");
+    return Column(
+      children: List.generate(_images.length, (index) {
+        final media = _images[index];
+        final url = _fullUrl(media["media_url"] ?? "");
 
-          return Padding(
-            padding: const EdgeInsets.all(4),
-            child: GestureDetector(
-              onTap: () {
-                _openFullScreenImages(index);
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: CachedNetworkImage(
-                  imageUrl: url,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  placeholder: (context, url) => Container(
-                    color: placeholderColor,
-                    child: const Center(
-                      child: CircularProgressIndicator(),
-                    ),
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: GestureDetector(
+            onTap: () {
+              _openFullScreenImages(index);
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: CachedNetworkImage(
+                imageUrl: url,
+                fit: BoxFit.fitWidth,
+                width: double.infinity,
+                placeholder: (context, url) => Container(
+                  height: 200,
+                  color: placeholderColor,
+                  child: const Center(
+                    child: CircularProgressIndicator(),
                   ),
-                  errorWidget: (context, url, error) {
-                    return Container(
-                      color: placeholderColor,
-                      alignment: Alignment.center,
-                      child: Text(
-                        "Image load failed",
-                        style: TextStyle(
-                          color: isDark
-                              ? colorScheme.onSurface.withValues(alpha: 0.6)
-                              : Colors.grey.shade700,
-                        ),
-                      ),
-                    );
-                  },
                 ),
+                errorWidget: (context, url, error) {
+                  return Container(
+                    height: 200,
+                    color: placeholderColor,
+                    alignment: Alignment.center,
+                    child: Text(
+                      "Image load failed",
+                      style: TextStyle(
+                        color: isDark
+                            ? colorScheme.onSurface.withValues(alpha: 0.6)
+                            : Colors.grey.shade700,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      }),
     );
   }
 

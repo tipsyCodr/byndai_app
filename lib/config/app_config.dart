@@ -1,9 +1,11 @@
 class AppConfig {
   static const String appName = 'ByndAI';
   static const String companyName = 'Path Idea InfoTech';
-  static const String apiBaseUrl = 'https://app.byndai.in/api';
-  static const String apiProfileImg = "https://app.byndai.in/storage";
-  static const String imageBaseUrl = "https://app.byndai.in";
+  static const String baseUrl = 'https://app.byndai.in';
+  static const String apiBaseUrl = '$baseUrl/api';
+  static const String apiProfileImg = "$baseUrl/storage";
+  static const String imageBaseUrl = baseUrl;
+  static const String storageBaseUrl = "$baseUrl/storage";
   static const double roundness = 6;
 
   /// Robust Laravel URL Rewriter

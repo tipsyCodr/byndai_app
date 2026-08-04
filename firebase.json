@@ -1,1 +1,17 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"byndai","appId":"1:649165501928:android:028403c39e9dc72977205d","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"byndai","configurations":{"android":"1:649165501928:android:028403c39e9dc72977205d","ios":"1:649165501928:ios:792c641eb818ca1d77205d","web":"1:649165501928:web:94dda1324544ed1677205d"}}}}}}
+{
+  "projects": {
+    "default": "byndai"
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log"
+      ]
+    }
+  ]
+}

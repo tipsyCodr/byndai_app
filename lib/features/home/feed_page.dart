@@ -15,7 +15,7 @@ import 'package:gridcard/widgets/top_alert.dart';
 import 'package:gridcard/features/home/widgets/performance_dashboard.dart';
 import 'package:http/http.dart' as http;
 import '../profile/edit_profile_page.dart';
-import '../leads/lead_scanner_2.dart';
+import '../business_card_scan/presentation/google_lens_scanner.dart';
 import 'package:gridcard/widgets/share_profile_widget.dart';
 import 'package:gridcard/features/business_feed/business_feed_page.dart';
 import 'package:gridcard/features/business_feed/home_post_card.dart';
@@ -28,7 +28,7 @@ class FeedPage extends StatefulWidget {
   FeedPageState createState() => FeedPageState();
 }
 
-class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
+class FeedPageState extends State<FeedPage> with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   final GlobalKey<ConnectionSuggestState> _connectionSuggestKey = GlobalKey();
 
   static const String _baseUrl = AppConfig.apiBaseUrl;
@@ -80,6 +80,9 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
     _fadeController.dispose();
     super.dispose();
   }
+
+  @override
+  bool get wantKeepAlive => true;
 
   Future<void> refreshFeed() async {
     await _handleRefresh();
@@ -296,7 +299,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
             onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
-                    builder: (_) => const LeadScanner2(autoOpenCamera: true))),
+                    builder: (_) => const GoogleLensScanner())),
           ),
         ),
         const SizedBox(width: 12),
@@ -584,24 +587,22 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
       );
     }
 
-    return SizedBox(
-      height: 496,
-      child: HomePostCard(
-        post: _latestPosts[0],
-        onPostUpdated: (postId, updatedPost) {
-          final i = _latestPosts.indexWhere((p) => p["id"] == postId);
-          if (i != -1) {
-            setState(() {
-              _latestPosts[i] = updatedPost;
-            });
-          }
-        },
-      ),
+    return HomePostCard(
+      post: _latestPosts[0],
+      onPostUpdated: (postId, updatedPost) {
+        final i = _latestPosts.indexWhere((p) => p["id"] == postId);
+        if (i != -1) {
+          setState(() {
+            _latestPosts[i] = updatedPost;
+          });
+        }
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final viewerUserId = authProvider.user?.id;
 

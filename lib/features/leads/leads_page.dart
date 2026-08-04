@@ -1,5 +1,5 @@
-import 'dart:convert';
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
@@ -15,7 +15,9 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import './manage_category_page.dart';
 import 'package:gridcard/widgets/top_alert.dart';
+import 'package:gridcard/core/utils/error_formatter.dart';
 import 'package:intl/intl.dart';
+import '../business_card_scan/presentation/google_lens_scanner.dart';
 import './widgets/lead_item_card.dart';
 import './widgets/lead_category_selector.dart';
 
@@ -26,12 +28,13 @@ class LeadsPage extends StatefulWidget {
   State<LeadsPage> createState() => _LeadsPageState();
 }
 
-class _LeadsPageState extends State<LeadsPage> {
+class _LeadsPageState extends State<LeadsPage>
+    with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollCtrl = ScrollController();
   final TextEditingController _searchCtrl = TextEditingController();
   Timer? _searchDebounce;
   static const String _baseUrl = AppConfig.apiBaseUrl;
-  
+
   List<Map<String, dynamic>> _categories = [];
   bool _isCategoryLoading = false;
   bool _isExporting = false;
@@ -63,6 +66,9 @@ class _LeadsPageState extends State<LeadsPage> {
     _searchDebounce?.cancel();
     super.dispose();
   }
+
+  @override
+  bool get wantKeepAlive => true;
 
   void _onSearchChanged(String query) {
     context.read<LeadProviders>().setSearchQuery(query);
@@ -178,7 +184,7 @@ class _LeadsPageState extends State<LeadsPage> {
                                         body: jsonEncode({
                                           "user_id": userId,
                                           "category": categoryCtrl.text.trim(),
-                                        }), 
+                                        }),
                                       );
 
                                       final data = jsonDecode(response.body);
@@ -199,7 +205,7 @@ class _LeadsPageState extends State<LeadsPage> {
                                       }
                                     } catch (e) {
                                       Navigator.pop(context);
-                                      TopAlert.show(context, "Error: $e",
+                                      TopAlert.show(context, ErrorFormatter.format(e),
                                           isError: true);
                                     }
                                   },
@@ -263,18 +269,17 @@ class _LeadsPageState extends State<LeadsPage> {
     if (_scrollCtrl.position.pixels >=
             _scrollCtrl.position.maxScrollExtent - 100 &&
         !provider.isPaginating) {
-      provider.loadNextPage(); 
+      provider.loadNextPage();
     }
   }
 
-  String _escapeExcelCell(String? value) {
-    final text = (value ?? '').trim();
-    return text
-        .replaceAll('&', '&amp;')
-        .replaceAll('<', '&lt;')
-        .replaceAll('>', '&gt;')
-        .replaceAll('"', '&quot;')
-        .replaceAll("'", '&apos;');
+  /// Escape a CSV field: wrap in quotes and escape inner quotes.
+  String _csvField(String? value) {
+    final s = (value ?? '').trim();
+    if (s.contains(',') || s.contains('"') || s.contains('\n')) {
+      return '"${s.replaceAll('"', '""')}"';
+    }
+    return s;
   }
 
   String _selectedCategoryName() {
@@ -290,7 +295,8 @@ class _LeadsPageState extends State<LeadsPage> {
     return 'Category';
   }
 
-  Future<List<LeadModel>> _fetchAllLeadsForExport(LeadProviders provider) async {
+  Future<List<LeadModel>> _fetchAllLeadsForExport(
+      LeadProviders provider) async {
     if (_currentUserId == null) return const [];
 
     final exportedLeads = <LeadModel>[];
@@ -320,65 +326,42 @@ class _LeadsPageState extends State<LeadsPage> {
     return exportedLeads;
   }
 
-  String _buildExcelXml(List<LeadModel> leads) {
+  Uint8List _buildCsvBytes(List<LeadModel> leads) {
     final now = DateTime.now();
     final categoryName = _selectedCategoryName();
-    final rows = <String>[
-      '''
-      <Row>
-        <Cell><Data ss:Type="String">ID</Data></Cell>
-        <Cell><Data ss:Type="String">Name</Data></Cell>
-        <Cell><Data ss:Type="String">Company</Data></Cell>
-        <Cell><Data ss:Type="String">Mobile 1</Data></Cell>
-        <Cell><Data ss:Type="String">Mobile 2</Data></Cell>
-        <Cell><Data ss:Type="String">Mobile 3</Data></Cell>
-        <Cell><Data ss:Type="String">Email 1</Data></Cell>
-        <Cell><Data ss:Type="String">Email 2</Data></Cell>
-        <Cell><Data ss:Type="String">Website</Data></Cell>
-        <Cell><Data ss:Type="String">Address</Data></Cell>
-      </Row>
-      ''',
-    ];
+    final buf = StringBuffer();
 
+    // Header row
+    buf.writeln(
+        'ID,Name,Company,Mobile 1,Mobile 2,Mobile 3,Email 1,Email 2,Website,Address');
+
+    // Data rows
     for (final lead in leads) {
-      rows.add('''
-      <Row>
-        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.id?.toString())}</Data></Cell>
-        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.name)}</Data></Cell>
-        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.company_name)}</Data></Cell>
-        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.mobile_no_1)}</Data></Cell>
-        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.mobile_no_2)}</Data></Cell>
-        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.mobile_no_3)}</Data></Cell>
-        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.email)}</Data></Cell>
-        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.email2)}</Data></Cell>
-        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.website)}</Data></Cell>
-        <Cell><Data ss:Type="String">${_escapeExcelCell(lead.address)}</Data></Cell>
-      </Row>
-      ''');
+      buf.writeln([
+        _csvField(lead.id?.toString()),
+        _csvField(lead.name),
+        _csvField(lead.company_name),
+        _csvField(lead.mobile_no_1),
+        _csvField(lead.mobile_no_2),
+        _csvField(lead.mobile_no_3),
+        _csvField(lead.email),
+        _csvField(lead.email2),
+        _csvField(lead.website),
+        _csvField(lead.address),
+      ].join(','));
     }
 
-    return '''<?xml version="1.0"?>
-<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
- xmlns:o="urn:schemas-microsoft-com:office:office"
- xmlns:x="urn:schemas-microsoft-com:office:excel"
- xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
- <DocumentProperties xmlns="urn:schemas-microsoft-com:office:office">
-  <Author>GridCard</Author>
-  <Created>${now.toUtc().toIso8601String()}</Created>
- </DocumentProperties>
- <Worksheet ss:Name="Leads">
-  <Table>
-   ${rows.join('\n')}
-  </Table>
- </Worksheet>
- <Worksheet ss:Name="Summary">
-  <Table>
-   <Row><Cell><Data ss:Type="String">Exported At</Data></Cell><Cell><Data ss:Type="String">${_escapeExcelCell(DateFormat('dd MMM yyyy, hh:mm a').format(now))}</Data></Cell></Row>
-   <Row><Cell><Data ss:Type="String">Category</Data></Cell><Cell><Data ss:Type="String">${_escapeExcelCell(categoryName)}</Data></Cell></Row>
-   <Row><Cell><Data ss:Type="String">Lead Count</Data></Cell><Cell><Data ss:Type="String">${leads.length}</Data></Cell></Row>
-  </Table>
- </Worksheet>
-</Workbook>''';
+    // Trailing summary
+    buf.writeln();
+    buf.writeln(
+        'Exported At,${_csvField(DateFormat('dd MMM yyyy, hh:mm a').format(now))}');
+    buf.writeln('Category,${_csvField(categoryName)}');
+    buf.writeln('Lead Count,${leads.length}');
+
+    // BOM so Excel/Numbers auto-detects UTF-8
+    final bom = [0xEF, 0xBB, 0xBF];
+    final content = utf8.encode(buf.toString());
+    return Uint8List.fromList([...bom, ...content]);
   }
 
   Future<void> _exportLeadsToExcel(LeadProviders provider) async {
@@ -399,20 +382,19 @@ class _LeadsPageState extends State<LeadsPage> {
         return;
       }
 
-      final xml = _buildExcelXml(leads);
-      final bytes = Uint8List.fromList(utf8.encode(xml));
+      final bytes = _buildCsvBytes(leads);
       final fileName =
-          'leads_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xls';
+          'leads_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.csv';
 
       await exportFileBytes(
         bytes: bytes,
         fileName: fileName,
-        mimeType: 'application/vnd.ms-excel',
+        mimeType: 'text/csv',
         shareText: 'Leads export',
       );
 
       if (!mounted) return;
-      TopAlert.show(context, 'Excel exported successfully', isSuccess: true);
+      TopAlert.show(context, 'CSV exported successfully', isSuccess: true);
     } catch (e) {
       if (!mounted) return;
       TopAlert.show(context, 'Export failed: $e', isError: true);
@@ -473,28 +455,43 @@ class _LeadsPageState extends State<LeadsPage> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     final isDesktop = MediaQuery.of(context).size.width > 900;
 
     return Consumer<LeadProviders>(
       builder: (context, provider, _) {
-        return RefreshIndicator(
-          onRefresh: _onRefresh,
-          color: Theme.of(context).colorScheme.primary,
-          child: Column(
-            children: [
-              _buildTopBar(provider),
-              _buildCategoryRow(),
-              Expanded(
-                child: isDesktop
-                    ? _buildDesktopTable(provider)
-                    : _buildMobileCards(provider),
-              ),
-              if (provider.isPaginating)
-                const Padding(
-                  padding: EdgeInsets.all(8),
-                  child: CircularProgressIndicator(),
+        return Scaffold(
+          backgroundColor: Colors.transparent,
+          floatingActionButton: FloatingActionButton.extended(
+            heroTag: 'lens_scanner_fab',
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const GoogleLensScanner()),
+            ),
+            icon: const Icon(Icons.document_scanner_outlined),
+            label: const Text('Scan Card'),
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+          ),
+          body: RefreshIndicator(
+            onRefresh: _onRefresh,
+            color: Theme.of(context).colorScheme.primary,
+            child: Column(
+              children: [
+                _buildTopBar(provider),
+                _buildCategoryRow(),
+                Expanded(
+                  child: isDesktop
+                      ? _buildDesktopTable(provider)
+                      : _buildMobileCards(provider),
                 ),
-            ],
+                if (provider.isPaginating)
+                  const Padding(
+                    padding: EdgeInsets.all(8),
+                    child: CircularProgressIndicator(),
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -509,11 +506,11 @@ class _LeadsPageState extends State<LeadsPage> {
         onChanged: _onSearchChanged,
         decoration: InputDecoration(
           prefixIcon: Icon(CupertinoIcons.search,
-              size: 18,
-              color: Theme.of(context).colorScheme.onSurfaceVariant),
+              size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
           suffixIcon: _searchCtrl.text.isNotEmpty
               ? IconButton(
-                  icon: const Icon(CupertinoIcons.clear_circled_solid, size: 18),
+                  icon:
+                      const Icon(CupertinoIcons.clear_circled_solid, size: 18),
                   onPressed: () {
                     _searchCtrl.clear();
                     _onSearchChanged("");
@@ -565,7 +562,25 @@ class _LeadsPageState extends State<LeadsPage> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.table_view_outlined, size: 18),
-        label: const Text('Export Excel'),
+        label: const Text('Export CSV'),
+      ),
+    );
+
+    final scanButton = SizedBox(
+      height: 48,
+      child: FilledButton.icon(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          foregroundColor: Theme.of(context).colorScheme.onPrimary,
+        ),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const GoogleLensScanner()),
+        ),
+        icon: const Icon(Icons.qr_code_scanner, size: 18),
+        label: const Text('Scan Card'),
       ),
     );
 
@@ -573,13 +588,19 @@ class _LeadsPageState extends State<LeadsPage> {
       padding: const EdgeInsets.all(12),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          if (constraints.maxWidth < 560) {
+          if (constraints.maxWidth < 650) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 searchField,
                 const SizedBox(height: 10),
-                exportButton,
+                Row(
+                  children: [
+                    Expanded(child: scanButton),
+                    const SizedBox(width: 8),
+                    Expanded(child: exportButton),
+                  ],
+                ),
               ],
             );
           }
@@ -587,6 +608,8 @@ class _LeadsPageState extends State<LeadsPage> {
           return Row(
             children: [
               Expanded(child: searchField),
+              const SizedBox(width: 12),
+              scanButton,
               const SizedBox(width: 12),
               exportButton,
             ],
@@ -610,7 +633,8 @@ class _LeadsPageState extends State<LeadsPage> {
           Selector<LeadProviders, String?>(
             selector: (_, p) => p.selectedCategory,
             builder: (context, selectedCategory, _) {
-              final isAll = selectedCategory == null || selectedCategory == "All";
+              final isAll =
+                  selectedCategory == null || selectedCategory == "All";
               return GestureDetector(
                 onTap: () {
                   if (_currentUserId != null) {
@@ -621,7 +645,8 @@ class _LeadsPageState extends State<LeadsPage> {
                   }
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
                     color: isAll
                         ? Theme.of(context).colorScheme.primary

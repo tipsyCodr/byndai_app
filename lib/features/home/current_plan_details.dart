@@ -12,7 +12,9 @@ class CurrentPlanDetails extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final subscription = context.watch<AuthProvider>().subscriptionDetails;
+    final auth = context.watch<AuthProvider>();
+    final subscription = auth.subscriptionDetails;
+    final isPro = auth.isPro;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
     final palette = Theme.of(context).extension<AppThemeColors>();
@@ -43,16 +45,13 @@ class CurrentPlanDetails extends StatelessWidget {
       );
     }
 
-    final planName = subscription['plan_name'] ?? subscription['plan']?['name'] ?? 'Premium';
+    final planName = subscription['plan_name'] ?? subscription['plan']?['name'] ?? 'Free';
     
     // Look for expires_at, end_date (from is-pro API), or fallback
     final rawExpiry = subscription['expires_at'] ?? subscription['end_date'] ?? subscription['active_subscription']?['end_date'];
     final expiresAt = rawExpiry != null 
         ? DateTime.tryParse(rawExpiry.toString())
         : null;
-        
-    final daysLeft = subscription['days_left'] ?? 
-        (expiresAt != null ? expiresAt.difference(DateTime.now()).inDays : 0);
 
     return Scaffold(
       backgroundColor: palette?.backgroundStart ?? colorScheme.surface,
@@ -91,13 +90,13 @@ class CurrentPlanDetails extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: colorScheme.secondary,
+                      color: isPro ? colorScheme.secondary : colorScheme.onSurface.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      "PRO MEMBER",
+                      isPro ? "PRO MEMBER" : "FREE MEMBER",
                       style: TextStyle(
-                        color: colorScheme.onSecondary,
+                        color: isPro ? colorScheme.onSecondary : colorScheme.onSurface.withValues(alpha: 0.7),
                         fontWeight: FontWeight.bold,
                         fontSize: 12,
                         letterSpacing: 1,
@@ -120,44 +119,69 @@ class CurrentPlanDetails extends StatelessWidget {
                       color: colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ),
-                  const Divider(height: 40),
-                  _buildDetailRow(
-                    context, 
-                    CupertinoIcons.calendar, 
-                    "Expires On", 
-                    expiresAt != null ? DateFormat('MMM dd, yyyy').format(expiresAt) : "N/A"
-                  ),
-                  const SizedBox(height: 20),
-                  _buildDetailRow(
-                    context, 
-                    CupertinoIcons.time, 
-                    "Days Remaining", 
-                    "$daysLeft Days"
-                  ),
                 ],
               ),
             ),
             const SizedBox(height: 30),
             
-            // Manage Button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SubscriptionPlans()),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primary,
-                  foregroundColor: colorScheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: const Text("View All Plans / Upgrade"),
+            // Available Plans Carousel
+            const SubscriptionPlans(isEmbedded: true),
+
+            // Coming Next Section (Queued Plan)
+            if (subscription['upcoming'] != null && subscription['upcoming']['has_upcoming'] == true) ...[
+              const SizedBox(height: 40),
+              Row(
+                children: [
+                  Text(
+                    "Coming Next",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      "QUEUED",
+                      style: TextStyle(
+                        color: Colors.orange,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 16),
+              GlassBox(
+                borderRadius: 20,
+                padding: const EdgeInsets.all(20),
+                opacity: isDark ? 0.05 : 0.08,
+                child: Column(
+                  children: [
+                    _buildDetailRow(
+                      context,
+                      CupertinoIcons.arrow_right_circle,
+                      "Next Plan",
+                      subscription['upcoming']['next_plan']['name'] ?? "Premium"
+                    ),
+                    const SizedBox(height: 16),
+                    _buildDetailRow(
+                      context,
+                      CupertinoIcons.calendar_badge_plus,
+                      "Starts After",
+                      expiresAt != null ? DateFormat('MMM dd, yyyy').format(expiresAt) : "Expiry"
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

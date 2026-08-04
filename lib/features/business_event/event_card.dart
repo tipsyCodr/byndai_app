@@ -33,7 +33,7 @@ class EventCard extends StatefulWidget {
 class _EventCardState extends State<EventCard> {
   bool _showFullDescription = false;
   static const String _baseUrl = AppConfig.apiBaseUrl;
-  static const String _storageBaseUrl = 'https://app.byndai.in/storage';
+  static const String _storageBaseUrl = AppConfig.storageBaseUrl;
 
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {
@@ -80,10 +80,13 @@ class _EventCardState extends State<EventCard> {
       builder: (context) {
         final colorScheme = Theme.of(context).colorScheme;
         final isDark = Theme.of(context).brightness == Brightness.dark;
-        
+
         return AlertDialog(
-          backgroundColor: isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: isDark
+              ? colorScheme.surfaceContainerHighest
+              : colorScheme.surface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             "Confirm Delete",
             style: TextStyle(color: colorScheme.onSurface),
@@ -103,7 +106,8 @@ class _EventCardState extends State<EventCard> {
             TextButton(
               onPressed: () => Navigator.pop(context, true),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: colorScheme.error,
                   borderRadius: BorderRadius.circular(8),
@@ -217,7 +221,8 @@ class _EventCardState extends State<EventCard> {
               if (resolvedPath != null && resolvedPath.trim().isNotEmpty) {
                 return resolvedPath.trim().replaceAll(' ', '%20');
               }
-              String cleanPath = path.startsWith('/') ? path.substring(1) : path;
+              String cleanPath =
+                  path.startsWith('/') ? path.substring(1) : path;
               cleanPath = cleanPath.replaceAll(' ', '%20');
               return '${widget.baseImageUrl}/$cleanPath';
             }
@@ -249,12 +254,11 @@ class _EventCardState extends State<EventCard> {
 
     // Build standard URL: /storage/event/{event_name}/{filename}
     final filename = path.split('/').last;
-    final eventName = (widget.event['event_name'] ??
-            widget.event['title'] ??
-            'event')
-        .toString()
-        .trim()
-        .replaceAll(RegExp(r'\s+'), '_');
+    final eventName =
+        (widget.event['event_name'] ?? widget.event['title'] ?? 'event')
+            .toString()
+            .trim()
+            .replaceAll(RegExp(r'\s+'), '_');
     return '$_storageBaseUrl/event/$eventName/$filename'.replaceAll(' ', '%20');
   }
 
@@ -332,7 +336,8 @@ class _EventCardState extends State<EventCard> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
-                        color: colorScheme.primary.withOpacity(0.1), width: 1.5),
+                        color: colorScheme.primary.withOpacity(0.1),
+                        width: 1.5),
                   ),
                   child: CircleAvatar(
                     radius: 24,
@@ -364,7 +369,9 @@ class _EventCardState extends State<EventCard> {
                       Text(
                         userName,
                         style: TextStyle(
-                          color: isDark ? colorScheme.onSurface : colorScheme.primary,
+                          color: isDark
+                              ? colorScheme.onSurface
+                              : colorScheme.primary,
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
                           letterSpacing: 0.3,
@@ -419,7 +426,9 @@ class _EventCardState extends State<EventCard> {
                         size: 20,
                       ),
                     ),
-                    color: isDark ? colorScheme.surfaceContainerHighest : colorScheme.surface,
+                    color: isDark
+                        ? colorScheme.surfaceContainerHighest
+                        : colorScheme.surface,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                       side: BorderSide(
@@ -439,7 +448,8 @@ class _EventCardState extends State<EventCard> {
                         value: "edit",
                         child: Row(
                           children: [
-                            Icon(Icons.edit, color: colorScheme.primary, size: 20),
+                            Icon(Icons.edit,
+                                color: colorScheme.primary, size: 20),
                             const SizedBox(width: 12),
                             Text(
                               "Edit Event",
@@ -516,22 +526,23 @@ class _EventCardState extends State<EventCard> {
             ),
             const SizedBox(height: 12),
             // Event Images (Full Width)
-            if (eventImages.isNotEmpty) ...[
-              SizedBox(
-                width: double.infinity,
-                height: 220,
-                child: PageView.builder(
-                  itemCount: eventImages.length,
-                  itemBuilder: (context, index) {
-                    return GestureDetector(
-                      onTap: () => _openImageViewer(eventImages, index),
+            if (eventImages.isNotEmpty)
+              Column(
+                children: List.generate(eventImages.length, (index) {
+                  return GestureDetector(
+                    onTap: () => _openImageViewer(eventImages, index),
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
                         child: CachedNetworkImage(
                           imageUrl: eventImages[index],
-                          fit: BoxFit.cover,
+                          fit: BoxFit.fitWidth,
+                          width: double.infinity,
                           placeholder: (context, url) => Container(
-                            color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                            height: 200,
+                            color: colorScheme.surfaceContainerHighest
+                                .withOpacity(0.3),
                             child: Center(
                               child: CircularProgressIndicator(
                                 color: colorScheme.primary,
@@ -540,21 +551,25 @@ class _EventCardState extends State<EventCard> {
                             ),
                           ),
                           errorWidget: (context, url, error) => Container(
-                            color: colorScheme.surfaceContainerHighest.withOpacity(0.3),
+                            height: 200,
+                            color: colorScheme.surfaceContainerHighest
+                                .withOpacity(0.3),
                             child: Center(
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Icon(
                                     Icons.broken_image,
-                                    color: colorScheme.onSurface.withOpacity(0.3),
+                                    color:
+                                        colorScheme.onSurface.withOpacity(0.3),
                                     size: 48,
                                   ),
                                   const SizedBox(height: 8),
                                   Text(
                                     'Failed to load',
                                     style: TextStyle(
-                                      color: colorScheme.onSurface.withOpacity(0.3),
+                                      color: colorScheme.onSurface
+                                          .withOpacity(0.3),
                                       fontSize: 12,
                                     ),
                                   ),
@@ -564,13 +579,14 @@ class _EventCardState extends State<EventCard> {
                           ),
                         ),
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                }),
               ),
-            ],
             const SizedBox(height: 16),
-            AppButton(label: 'More Details', onPressed: () => _launchUrl(eventLink.toString())),
+            AppButton(
+                label: 'More Details',
+                onPressed: () => _launchUrl(eventLink.toString())),
             // Event details section hidden by request.
           ],
         ),

@@ -124,16 +124,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> _syncFCMToken() async {
-    try {
-      String? token = await FirebaseMessaging.instance.getToken();
-      if (token != null) {
-        AuthService.updateFCMToken(token);
-      }
-    } catch (e) {
-      debugPrint('🚨 Error getting FCM token for sync: $e');
-    }
-  }
+
 
   /// Wraps an async function with loading state management.
   Future<T?> _handleLoading<T>(Future<T?> Function() action) async {
@@ -685,5 +676,19 @@ class AuthProvider extends ChangeNotifier {
   void clearGoogleSignInData() {
     _googleSignInData = null;
     notifyListeners();
+  }
+
+  /// Sync FCM token with backend immediately after login/register.
+  /// onTokenRefresh in NotificationService also calls this for refreshed tokens.
+  Future<void> _syncFCMToken() async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null) {
+        await AuthService.updateFCMToken(token);
+        debugPrint('🔔 FCM token synced to backend after login');
+      }
+    } catch (e) {
+      debugPrint('🔔 Failed to sync FCM token: $e');
+    }
   }
 }

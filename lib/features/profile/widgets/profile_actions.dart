@@ -27,18 +27,17 @@ class ProfileActions extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final isDark = theme.brightness == Brightness.dark;
 
     if (isOwner) {
       return Row(
         children: [
           Expanded(
-            child: _buildButton(
-              context,
+            child: _buildPrimaryButton(
               label: "Share Profile",
               icon: Icons.share,
               onTap: onShare,
-              color: colorScheme.primary,
+              color: const Color(0xFF1F51E5),
             ),
           ),
         ],
@@ -48,37 +47,30 @@ class ProfileActions extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _buildConnectButton(context),
+          child: _buildConnectButton(),
         ),
-        const SizedBox(width: 10),
-        _buildCircularButton(
-          context,
+        const SizedBox(width: 8),
+        _buildSecondaryButton(
+          label: "Message",
           icon: Icons.chat_bubble_outline,
           onTap: onChat,
-          color: Colors.green, // Standard WhatsApp green
+          isDark: isDark,
         ),
-        const SizedBox(width: 10),
-        _buildCircularButton(
-          context,
-          icon: Icons.contact_phone,
-          onTap: onSaveContact,
-          color: Colors.orange,
-        ),
-        const SizedBox(width: 10),
-        _buildCircularButton(
-          context,
-          icon: Icons.share,
+        const SizedBox(width: 8),
+        _buildSecondaryButton(
+          label: "Share",
+          icon: Icons.share_outlined,
           onTap: onShare,
-          color: colorScheme.secondary,
+          isDark: isDark,
         ),
       ],
     );
   }
 
-  Widget _buildConnectButton(BuildContext context) {
+  Widget _buildConnectButton() {
     String label = "Connect";
-    Color color = Colors.blue;
-    IconData icon = Icons.person_add;
+    Color color = const Color(0xFF1F51E5); // Bright blue
+    IconData icon = Icons.person_add_alt_1;
 
     if (requestStatus == "pending") {
       label = "Pending";
@@ -87,11 +79,10 @@ class ProfileActions extends StatelessWidget {
     } else if (requestStatus == "accepted") {
       label = "Connected";
       color = Colors.green;
-      icon = Icons.check_circle;
+      icon = Icons.check_circle_outline;
     }
 
-    return _buildButton(
-      context,
+    return _buildPrimaryButton(
       label: label,
       icon: icon,
       onTap: onConnect,
@@ -100,26 +91,20 @@ class ProfileActions extends StatelessWidget {
     );
   }
 
-  Widget _buildButton(BuildContext context,
-      {required String label,
-      required IconData icon,
-      required VoidCallback onTap,
-      required Color color,
-      bool isLoading = false}) {
+  Widget _buildPrimaryButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+    required Color color,
+    bool isLoading = false,
+  }) {
     return GestureDetector(
       onTap: isLoading ? null : onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12),
+        height: 42,
         decoration: BoxDecoration(
           color: color,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
+          borderRadius: BorderRadius.circular(10),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -133,12 +118,12 @@ class ProfileActions extends StatelessWidget {
               )
             else
               Icon(icon, size: 18, color: Colors.white),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             Text(
               label,
               style: const TextStyle(
                 color: Colors.white,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
             ),
@@ -148,26 +133,39 @@ class ProfileActions extends StatelessWidget {
     );
   }
 
-  Widget _buildCircularButton(BuildContext context,
-      {required IconData icon,
-      required VoidCallback onTap,
-      required Color color}) {
+  Widget _buildSecondaryButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(12),
+        height: 42,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+          color: isDark ? const Color(0xFF2C2C2C) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isDark ? Colors.grey[700]! : Colors.grey[200]!,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 18, color: const Color(0xFF1F51E5)),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xFF1F51E5),
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
             ),
           ],
         ),
-        child: Icon(icon, size: 20, color: Colors.white),
       ),
     );
   }

@@ -1,15 +1,17 @@
 import 'dart:convert';
 import 'dart:async';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/core/services/firestore_chat_service.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
-import 'package:gridcard/core/theme/app_theme.dart'; // ✅ Added for AppThemeColors
+import 'package:gridcard/core/theme/app_theme.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:gridcard/widgets/top_alert.dart';
-import 'package:gridcard/widgets/glass_box.dart'; // ✅ GlassBox for consistent styling
+import 'package:gridcard/widgets/glass_box.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
@@ -38,8 +40,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   int? _myUserId;
 
-  // API messages list
-  List<dynamic> _messages = [];
 
   @override
   void initState() {
@@ -95,12 +95,15 @@ class _ChatScreenState extends State<ChatScreen> {
         final jsonData = jsonDecode(response.body);
 
         if (jsonData["status"] == true) {
-          final msgs = jsonData["messages"] ?? [];
+          final msgs = List<dynamic>.from(jsonData["messages"] ?? []);
 
-          setState(() {
-            _messages = msgs;
-            _isLoading = false;
-          });
+          // Seed Firestore with backend history (only if Firestore is empty)
+          await FirestoreChatService.seedMessagesIfEmpty(
+            chatId: widget.chatId,
+            messages: msgs,
+          );
+
+          setState(() => _isLoading = false);
 
           Future.delayed(const Duration(milliseconds: 200), () {
             _scrollToBottom();
@@ -110,11 +113,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
 
       debugPrint("❌ get-message failed: ${response.body}");
-
-      setState(() {
-        _messages = [];
-        _isLoading = false;
-      });
+      setState(() => _isLoading = false);
     } catch (e) {
       debugPrint("❌ _loadMessages Exception: $e");
       setState(() => _isLoading = false);
@@ -141,6 +140,9 @@ class _ChatScreenState extends State<ChatScreen> {
     if (text.isEmpty) return;
     if (_isSending) return;
 
+    // Optimistically clear input immediately
+    _msgController.clear();
+
     try {
       setState(() => _isSending = true);
 
@@ -160,12 +162,16 @@ class _ChatScreenState extends State<ChatScreen> {
 
         if (jsonData["status"] == true) {
           final newMsg = jsonData["data"];
+          final createdAt = newMsg?["created_at"]?.toString();
 
-          setState(() {
-            _messages.add(newMsg);
-          });
-
-          _msgController.clear();
+          // Sync to Firestore → triggers realtime stream on receiver's device
+          await FirestoreChatService.syncMessageToFirestore(
+            chatId: widget.chatId,
+            senderId: _myUserId ?? 0,
+            receiverId: widget.receiverId,
+            message: text,
+            createdAt: createdAt,
+          );
 
           Future.delayed(const Duration(milliseconds: 100), () {
             _scrollToBottom();
@@ -216,28 +222,6 @@ class _ChatScreenState extends State<ChatScreen> {
 
   String _formatTime(DateTime time) {
     return DateFormat("hh:mm a").format(time);
-  }
-
-  DateTime _parseMessageTime(dynamic msg) {
-    try {
-      final createdAt = msg["created_at"];
-      if (createdAt == null) return DateTime.now();
-      return DateTime.parse(createdAt).toLocal();
-    } catch (_) {
-      return DateTime.now();
-    }
-  }
-
-  bool _isMe(dynamic msg) {
-    final senderId = int.tryParse(msg["sender_id"].toString());
-    if (_myUserId == null) return true;
-    return senderId == _myUserId;
-  }
-
-  String _getMessageText(dynamic msg) {
-    final text = msg["message"];
-    if (text == null) return "";
-    return text.toString();
   }
 
   // ===========================
@@ -406,69 +390,102 @@ class _ChatScreenState extends State<ChatScreen> {
             // Optional: show chat ID if needed (currently hidden)
           ],
         ),
-        actions: [
-          IconButton(
-            onPressed: () async {
-              await _loadMessages();
-            },
-            icon: Icon(Icons.refresh, color: colorScheme.onSurface),
-          ),
-        ],
+        actions: const [],
       ),
       body: _buildBackground(
         context: context,
         child: Column(
           children: [
-            // ✅ Messages Area
+            // ✅ Messages Area – realtime via Firestore stream
             Expanded(
               child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(),
-                    )
-                  : _messages.isEmpty
-                      ? Center(
-                          child: Text(
-                            "Start chat with ${widget.receiverName}",
-                            style: TextStyle(
-                              color: colorScheme.onSurfaceVariant,
+                  ? const Center(child: CircularProgressIndicator())
+                  : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                      stream: FirestoreChatService.getMessagesStream(
+                          widget.chatId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Center(
+                              child: CircularProgressIndicator());
+                        }
+
+                        if (!snapshot.hasData ||
+                            snapshot.data!.docs.isEmpty) {
+                          return Center(
+                            child: Text(
+                              "Start chat with ${widget.receiverName}",
+                              style: TextStyle(
+                                  color: colorScheme.onSurfaceVariant),
                             ),
-                          ),
-                        )
-                      : ListView.builder(
+                          );
+                        }
+
+                        final docs = snapshot.data!.docs;
+
+                        // Auto-scroll to bottom when new message arrives
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          _scrollToBottom();
+                        });
+
+                        return ListView.builder(
                           controller: _scrollController,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 12,
                           ),
-                          itemCount: _messages.length,
+                          itemCount: docs.length,
                           itemBuilder: (context, index) {
-                            final msg = _messages[index];
-                            final msgTime = _parseMessageTime(msg);
+                            final data = docs[index].data();
+
+                            // Parse timestamp from Firestore
+                            DateTime msgTime;
+                            final ts = data['timestamp'];
+                            if (ts is Timestamp) {
+                              msgTime = ts.toDate().toLocal();
+                            } else {
+                              try {
+                                msgTime = DateTime.parse(
+                                        data['created_at']?.toString() ?? '')
+                                    .toLocal();
+                              } catch (_) {
+                                msgTime = DateTime.now();
+                              }
+                            }
+
+                            final senderId =
+                                int.tryParse(data['sender_id'].toString());
+                            final isMe = senderId == _myUserId;
+                            final text =
+                                data['message']?.toString() ?? '';
 
                             // Date separator logic
                             bool showDateSeparator = false;
-
                             if (index == 0) {
                               showDateSeparator = true;
                             } else {
-                              final prevMsg = _messages[index - 1];
-                              final prevTime = _parseMessageTime(prevMsg);
+                              final prevData = docs[index - 1].data();
+                              DateTime prevTime;
+                              final pts = prevData['timestamp'];
+                              if (pts is Timestamp) {
+                                prevTime = pts.toDate().toLocal();
+                              } else {
+                                try {
+                                  prevTime = DateTime.parse(
+                                          prevData['created_at']
+                                                  ?.toString() ??
+                                              '')
+                                      .toLocal();
+                                } catch (_) {
+                                  prevTime = DateTime.now();
+                                }
+                              }
 
                               final prevDay = DateTime(
-                                prevTime.year,
-                                prevTime.month,
-                                prevTime.day,
-                              );
-
-                              final currentDay = DateTime(
-                                msgTime.year,
-                                msgTime.month,
-                                msgTime.day,
-                              );
-
-                              if (prevDay != currentDay) {
-                                showDateSeparator = true;
-                              }
+                                  prevTime.year, prevTime.month, prevTime.day);
+                              final currDay = DateTime(
+                                  msgTime.year, msgTime.month, msgTime.day);
+                              if (prevDay != currDay) showDateSeparator = true;
                             }
 
                             return Column(
@@ -479,15 +496,15 @@ class _ChatScreenState extends State<ChatScreen> {
                                         vertical: 10),
                                     child: Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 6,
-                                      ),
+                                          horizontal: 12, vertical: 6),
                                       decoration: BoxDecoration(
-                                        color: palette?.glassTop
-                                                ?.withValues(alpha: 0.5) ??
-                                            colorScheme.surfaceContainerHighest
+                                        color: (palette?.glassTop
+                                                .withValues(alpha: 0.5)) ??
+                                            colorScheme
+                                                .surfaceContainerHighest
                                                 .withValues(alpha: 0.5),
-                                        borderRadius: BorderRadius.circular(14),
+                                        borderRadius:
+                                            BorderRadius.circular(14),
                                         border: Border.all(
                                           color: colorScheme.outlineVariant
                                               .withValues(alpha: 0.3),
@@ -496,7 +513,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                       child: Text(
                                         _getDateLabel(msgTime),
                                         style: TextStyle(
-                                          color: colorScheme.onSurfaceVariant,
+                                          color:
+                                              colorScheme.onSurfaceVariant,
                                           fontSize: 12,
                                           fontWeight: FontWeight.w500,
                                         ),
@@ -504,14 +522,16 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                   ),
                                 _MessageBubble(
-                                  text: _getMessageText(msg),
+                                  text: text,
                                   time: _formatTime(msgTime),
-                                  isMe: _isMe(msg),
+                                  isMe: isMe,
                                 ),
                               ],
                             );
                           },
-                        ),
+                        );
+                      },
+                    ),
             ),
 
             // ✅ Bottom Input Box – Glass style

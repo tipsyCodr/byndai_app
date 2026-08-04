@@ -5,6 +5,7 @@ import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:gridcard/widgets/glass_box.dart';
+import 'package:gridcard/core/utils/error_formatter.dart';
 
 class LinksTab extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
@@ -110,7 +111,7 @@ class _LinksTabState extends State<LinksTab> {
         return true;
       }
     } catch (e) {
-      TopAlert.show(context, "Error: $e", isError: true);
+      TopAlert.show(context, ErrorFormatter.format(e), isError: true);
     }
     return false;
   }
@@ -136,7 +137,7 @@ class _LinksTabState extends State<LinksTab> {
         return true;
       }
     } catch (e) {
-      TopAlert.show(context, "Error: $e", isError: true);
+      TopAlert.show(context, ErrorFormatter.format(e), isError: true);
     }
     return false;
   }
@@ -156,7 +157,7 @@ class _LinksTabState extends State<LinksTab> {
         return true;
       }
     } catch (e) {
-      TopAlert.show(context, "Error: $e", isError: true);
+      TopAlert.show(context, ErrorFormatter.format(e), isError: true);
     }
     return false;
   }

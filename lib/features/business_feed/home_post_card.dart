@@ -448,203 +448,189 @@ class _HomePostCardState extends State<HomePostCard> {
         ? colorScheme.primary
         : const Color.fromARGB(255, 45, 47, 190); // original
 
-    return SizedBox(
-      height: 640,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        child: GlassBox(
-          padding: const EdgeInsets.all(14),
-          borderRadius: 20,
-          blur: 10,
-          opacity: isDark ? 0.18 : 0.24,
-          border: Border.all(
-            color: colorScheme.primary.withValues(alpha: isDark ? 0.16 : 0.12),
-            width: 0.8,
-          ),
-          gradientColors: isDark
-              ? [
-                  const Color(0xFF1A2342).withValues(alpha: 0.9),
-                  const Color(0xFF121A34).withValues(alpha: 0.86),
-                ]
-              : [
-                  Colors.white.withValues(alpha: 0.94),
-                  const Color(0xFFEEF4FF).withValues(alpha: 0.82),
-                ],
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              /// 👇 CARD CLICK AREA
-              Expanded(
-                child: GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => BusinessFeedPage(
-                          selectedPostId: _postData["id"],
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      child: GlassBox(
+        padding: const EdgeInsets.all(14),
+        borderRadius: 20,
+        blur: 10,
+        opacity: isDark ? 0.18 : 0.24,
+        border: Border.all(
+          color: colorScheme.primary.withValues(alpha: isDark ? 0.16 : 0.12),
+          width: 0.8,
+        ),
+        gradientColors: isDark
+            ? [
+                const Color(0xFF1A2342).withValues(alpha: 0.9),
+                const Color(0xFF121A34).withValues(alpha: 0.86),
+              ]
+            : [
+                Colors.white.withValues(alpha: 0.94),
+                const Color(0xFFEEF4FF).withValues(alpha: 0.82),
+              ],
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// 👇 CARD CLICK AREA
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => BusinessFeedPage(
+                      selectedPostId: _postData["id"],
+                    ),
+                  ),
+                );
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  /// HEADER
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: isDark
+                            ? colorScheme.surfaceVariant
+                            : Colors.grey.shade200,
+                        child: ClipOval(
+                          child: (profilePicUrl != null &&
+                                  profilePicUrl.isNotEmpty)
+                              ? AppNetworkImage(
+                                  imageUrl: profilePicUrl,
+                                  width: 36,
+                                  height: 36,
+                                  fit: BoxFit.cover,
+                                )
+                              : Icon(
+                                  FontAwesomeIcons.user,
+                                  size: 16,
+                                  color: colorScheme.onSurface
+                                      .withValues(alpha: 0.6),
+                                ),
                         ),
                       ),
-                    );
-                  },
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        /// HEADER
-                        Row(
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            CircleAvatar(
-                              radius: 18,
-                              // backgroundColor: colorScheme.surfaceVariant,
-                              backgroundColor: isDark
-                                  ? colorScheme.surfaceVariant
-                                  : Colors.grey.shade200,
-                              child: ClipOval(
-                                child: (profilePicUrl != null &&
-                                        profilePicUrl.isNotEmpty)
-                                    ? AppNetworkImage(
-                                        imageUrl: profilePicUrl,
-                                        width: 36,
-                                        height: 36,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Icon(
-                                        FontAwesomeIcons.user,
-                                        size: 16,
-                                        color: colorScheme.onSurface
-                                            .withValues(alpha: 0.6),
-                                      ),
+                            Text(
+                              fname,
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: colorScheme.onSurface,
                               ),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    fname,
-                                    style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                      color: colorScheme.onSurface,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    updatedAt,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: colorScheme.onSurface
-                                          .withValues(alpha: 0.6),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            CircleAvatar(
-                              radius: 14,
-                              // backgroundColor: colorScheme.surfaceVariant,
-                              backgroundColor: isDark
-                                  ? colorScheme.surfaceVariant
-                                  : Colors.grey.shade200,
-                              child: Icon(
-                                IndustryIconMapper.getIcon(
-                                    _postData["industry_icon"]),
-                                size: 16,
-                                color: colorScheme.primary,
+                            const SizedBox(height: 2),
+                            Text(
+                              updatedAt,
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: colorScheme.onSurface
+                                    .withValues(alpha: 0.6),
                               ),
                             ),
                           ],
                         ),
+                      ),
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: isDark
+                            ? colorScheme.surfaceVariant
+                            : Colors.grey.shade200,
+                        child: Icon(
+                          IndustryIconMapper.getIcon(
+                              _postData["industry_icon"]),
+                          size: 16,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                    ],
+                  ),
 
-                        const SizedBox(height: 12),
+                  const SizedBox(height: 12),
 
-                        /// TITLE
-                        if (title.isNotEmpty)
-                          Text(
-                            title,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w800,
-                              color: colorScheme.onSurface,
-                            ),
-                          ),
+                  /// TITLE
+                  if (title.isNotEmpty)
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
 
-                        const SizedBox(height: 8),
+                  const SizedBox(height: 8),
 
-                        /// DESCRIPTION
-                        if (description.isNotEmpty)
-                          Row(
+                  /// DESCRIPTION
+                  if (description.isNotEmpty)
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(FontAwesomeIcons.star,
+                            size: 18, color: colorScheme.primary),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(FontAwesomeIcons.star,
-                                  size: 18, color: colorScheme.primary),
-                              const SizedBox(width: 6),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _getDisplayDescription(description),
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        height: 1.35,
-                                        color: colorScheme.onSurface,
-                                      ),
-                                    ),
-                                    if (_shouldShowReadMore(description))
-                                      GestureDetector(
-                                        onTap: () {
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) => BusinessFeedPage(
-                                                selectedPostId: _postData["id"],
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        child: Padding(
-                                          padding:
-                                              const EdgeInsets.only(top: 4),
-                                          child: Text(
-                                            "...Read more",
-                                            style: TextStyle(
-                                              fontSize: 13,
-                                              fontWeight: FontWeight.w700,
-                                              color: readMoreColor,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
+                              Text(
+                                _getDisplayDescription(description),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  height: 1.35,
+                                  color: colorScheme.onSurface,
                                 ),
                               ),
+                              if (_shouldShowReadMore(description))
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => BusinessFeedPage(
+                                          selectedPostId: _postData["id"],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Padding(
+                                    padding:
+                                        const EdgeInsets.only(top: 4),
+                                    child: Text(
+                                      "...Read more",
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                        color: readMoreColor,
+                                      ),
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
-
-                        /// IMAGES
-                        if (_images.isNotEmpty) ...[
-                          const SizedBox(height: 14),
-
-                          /// 👇 IMAGE CLICK DISABLED
-                          GestureDetector(
-                            onTap: () {},
-                            child: _buildImageCarousel(),
-                          ),
-                        ],
+                        ),
                       ],
                     ),
-                  ),
-                ),
+
+                  /// IMAGES
+                  if (_images.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    _buildImageCarousel(),
+                  ],
+                ],
               ),
+            ),
 
-              // const Divider(),
+            const SizedBox(height: 12),
 
-              /// FOOTER (no navigation)...
-              _buildFooter(),
-            ],
-          ),
+            /// FOOTER (no navigation)...
+            _buildFooter(),
+          ],
         ),
       ),
     );
@@ -656,50 +642,50 @@ class _HomePostCardState extends State<HomePostCard> {
 
   Widget _buildImageCarousel() {
     final colorScheme = Theme.of(context).colorScheme;
-    return SizedBox(
-      height: 264,
-      child: PageView.builder(
-        controller: _imageController,
-        itemCount: _images.length,
-        itemBuilder: (context, index) {
-          final media = _images[index];
-          final url = _fullUrl(media["media_url"] ?? "");
+    return Column(
+      children: List.generate(_images.length, (index) {
+        final media = _images[index];
+        final url = _fullUrl(media["media_url"] ?? "");
 
-          return Padding(
-            padding: const EdgeInsets.all(4),
-            child: GestureDetector(
-              onTap: () {
-                _openFullScreenImages(index);
-              },
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  color: colorScheme.surfaceVariant, // background fill
-                  child: CachedNetworkImage(
-                    imageUrl: url,
-                    fit: BoxFit.contain,
-                    width: double.infinity,
-                    height: double.infinity,
-                    placeholder: (context, url) => const Center(
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4),
+          child: GestureDetector(
+            onTap: () {
+              _openFullScreenImages(index);
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                color: colorScheme.surfaceVariant, // background fill
+                child: CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.fitWidth,
+                  width: double.infinity,
+                  placeholder: (context, url) => Container(
+                    height: 200,
+                    child: const Center(
                       child: CircularProgressIndicator(),
                     ),
-                    errorWidget: (context, url, error) {
-                      return Center(
+                  ),
+                  errorWidget: (context, url, error) {
+                    return Container(
+                      height: 200,
+                      child: Center(
                         child: Text(
                           "Image load failed",
                           style: TextStyle(
                             color: colorScheme.onSurface.withValues(alpha: 0.6),
                           ),
                         ),
-                      );
-                    },
-                  ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),
-          );
-        },
-      ),
+          ),
+        );
+      }),
     );
   }
 

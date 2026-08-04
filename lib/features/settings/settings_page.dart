@@ -29,7 +29,7 @@ class SettingsPage extends StatefulWidget {
   State<SettingsPage> createState() => _SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClientMixin {
   static const String _baseUrl = AppConfig.apiBaseUrl;
   Map<String, dynamic>? _userDetails;
 
@@ -131,7 +131,11 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   @override
+  bool get wantKeepAlive => true;
+
+  @override
   Widget build(BuildContext context) {
+    super.build(context);
     final themeProvider = Provider.of<ThemeProvider>(context);
     final colorScheme = Theme.of(context).colorScheme;
     final auth = context.watch<AuthProvider>();
@@ -412,13 +416,29 @@ class _SettingsPageState extends State<SettingsPage> {
                       color: isPro ? colorScheme.secondary.withValues(alpha: 0.1) : colorScheme.onSurface.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      planName,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: isPro ? colorScheme.secondary : colorScheme.onSurface.withValues(alpha: 0.6),
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          planName,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: isPro ? colorScheme.secondary : colorScheme.onSurface.withValues(alpha: 0.6),
+                          ),
+                        ),
+                        if (subscription?['upcoming'] != null && subscription?['upcoming']?['has_upcoming'] == true) ...[
+                          const SizedBox(width: 6),
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: const BoxDecoration(
+                              color: Colors.orange,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
                 ],

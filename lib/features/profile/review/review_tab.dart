@@ -4,6 +4,7 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/widgets/glass_box.dart';
+import 'package:gridcard/core/utils/error_formatter.dart';
 
 class ReviewTab extends StatefulWidget {
   final Map<String, dynamic>? userDetails;
@@ -84,7 +85,7 @@ class _ReviewTabState extends State<ReviewTab> {
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        SnackBar(content: Text(ErrorFormatter.format(e))),
       );
     } finally {
       if (mounted) {

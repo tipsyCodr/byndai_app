@@ -23,7 +23,7 @@ class ConnectionsPage extends StatefulWidget {
 
   const ConnectionsPage({
     super.key,
-    this.initialTabIndex = 1, // ✅ default = Pending
+    this.initialTabIndex = 0, // ✅ default = Connected
   });
 
   @override
@@ -840,84 +840,60 @@ class _ConnectionsPageState extends State<ConnectionsPage>
         // ),
 
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 10),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
           child: Row(
             children: [
               Expanded(
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: _onSearchChanged,
-                  style: TextStyle(color: colorScheme.onSurface),
-                  decoration: InputDecoration(
-                    hintText: "Search connections...",
-                    hintStyle: TextStyle(
-                      color: colorScheme.onSurface.withOpacity(0.6),
-                    ),
-                    filled: true,
-                    fillColor: colorScheme.surface, // ✅ same as business feed
-                    prefixIcon: Icon(
-                      Icons.search,
-                      color: colorScheme.onSurface.withOpacity(0.6),
-                    ),
-
-                    // ✅ clear button add (business feed jaisa)
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(
-                              Icons.close,
-                              color: colorScheme.onSurface.withOpacity(0.6),
-                            ),
-                            onPressed: () {
-                              _searchController.clear();
-                              _onSearchChanged(""); // function same rahega
-                            },
-                          )
-                        : null,
-
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
-
-                    // ✅ border same business feed
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: colorScheme.primary,
-                        width: 0.2,
+                child: Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
+                        : const Color(0xFFF6F6F6),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    style: TextStyle(color: colorScheme.onSurface, fontSize: 15),
+                    decoration: InputDecoration(
+                      hintText: "Ask Meta AI or Search",
+                      hintStyle: TextStyle(
+                        color: colorScheme.onSurface.withOpacity(0.45),
+                        fontSize: 15,
                       ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
-                        color: colorScheme.primary,
-                        width: 0.8,
+                      prefixIcon: Icon(
+                        Icons.search,
+                        size: 22,
+                        color: colorScheme.onSurface.withOpacity(0.5),
+                      ),
+                      suffixIcon: _searchController.text.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(
+                                Icons.close,
+                                size: 20,
+                                color: colorScheme.onSurface.withOpacity(0.5),
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _onSearchChanged("");
+                              },
+                            )
+                          : null,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        vertical: 10,
                       ),
                     ),
                   ),
                 ),
               ),
-
-              const SizedBox(width: 10),
-
-              // ✅ Export Button (thoda modern look)
-              Container(
-                height: 48,
-                width: 48,
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: colorScheme.primary,
-                    width: 0.2,
-                  ),
-                ),
-                child: IconButton(
-                  onPressed: _onExportClick,
-                  icon: Icon(
-                    Icons.download,
-                    color: colorScheme.onSurface,
-                  ),
+              const SizedBox(width: 8),
+              IconButton(
+                onPressed: _onExportClick,
+                icon: Icon(
+                  Icons.download_rounded,
+                  color: colorScheme.onSurface.withOpacity(0.7),
                 ),
               ),
             ],
@@ -961,224 +937,193 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                           int.tryParse(item['friend_id'].toString());
                       if (friendId == null) return const SizedBox.shrink();
 
-                      /// 🔥 Updated Card
-                      return Card(
-                        color: colorScheme.surface,
-                        elevation: 2,
-                        shadowColor: isDark
-                            ? Colors.black
-                            : Colors.grey.withOpacity(0.2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          side: BorderSide(
-                            color: colorScheme.outline.withOpacity(0.2),
-                            width: 0.5,
-                          ),
-                        ),
-                        margin: const EdgeInsets.only(bottom: 12),
-                        child: InkWell(
-                          borderRadius: BorderRadius.circular(14),
+                      /// WhatsApp-style list item
+                      final rawUnread = item['unread_count'] ??
+                          item['unread_messages_count'] ??
+                          item['unread'] ??
+                          item['unread_count_sender'] ??
+                          0;
+                      final unreadCount = int.tryParse(rawUnread.toString()) ?? 0;
+                      final hasUnread = unreadCount > 0;
+                      final timeStr = item['updated_at_formatted'] ?? item['time'] ?? "";
+                      final messageContent = (item['last_message'] ??
+                              item['message'] ??
+                              item['latest_message'] ??
+                              item['excerpt'] ??
+                              item['last_msg'] ??
+                              "")
+                          .toString()
+                          .trim();
 
-                          /// 👉 Card click = Chat
-                          onTap: () async {
-                            final receiverId = friendId;
+                      return InkWell(
+                        onTap: () async {
+                          final receiverId = friendId;
 
-                            showDialog(
-                              context: context,
-                              barrierDismissible: false,
-                              builder: (_) => const Center(
-                                  child: CircularProgressIndicator()),
-                            );
+                          showDialog(
+                            context: context,
+                            barrierDismissible: false,
+                            builder: (_) => const Center(
+                                child: CircularProgressIndicator()),
+                          );
 
-                            final chatId =
-                                await _createChatAndGetChatId(receiverId);
+                          final chatId =
+                              await _createChatAndGetChatId(receiverId);
 
-                            if (!mounted) return;
-                            Navigator.pop(context);
+                          if (!mounted) return;
+                          Navigator.pop(context);
 
-                            if (chatId == null) {
-                              TopAlert.show(
-                                context,
-                                "Chat create nahi ho paya",
-                                isError: true,
-                              );
-                              return;
-                            }
-
-                            Navigator.push(
+                          if (chatId == null) {
+                            TopAlert.show(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => ChatScreen(
-                                  chatId: chatId,
-                                  receiverId: receiverId,
-                                  receiverName: item['fname'] ?? "User",
-                                ),
-                              ),
+                              "Chat create nahi ho paya",
+                              isError: true,
                             );
-                          },
+                            return;
+                          }
 
-                          child: Padding(
-                            padding: const EdgeInsets.all(14),
-                            child: Row(
-                              children: [
-                                /// 👤 Profile Pic (click → Profile)
-                                GestureDetector(
-                                  onTap: () async {
-                                    final session = await UserStorageService()
-                                        .loadSession();
-                                    final viewerId = session.user?.id;
-                                    if (viewerId == null) return;
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ChatScreen(
+                                chatId: chatId,
+                                receiverId: receiverId,
+                                receiverName: item['fname'] ?? "User",
+                              ),
+                            ),
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              /// 👤 Avatar
+                              GestureDetector(
+                                onTap: () async {
+                                  final session = await UserStorageService()
+                                      .loadSession();
+                                  final viewerId = session.user?.id;
+                                  if (viewerId == null) return;
 
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => ProfilePage(
-                                          userId: friendId,
-                                          viewerUserId: viewerId,
-                                          isConnected: true,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                  child: CircleAvatar(
-                                    radius: 26,
-                                    backgroundColor: colorScheme.surfaceVariant,
-                                    backgroundImage: item['profile_pic'] != null
-                                        ? NetworkImage(
-                                            "${AppConfig.apiProfileImg}/${item['profile_pic']}",
-                                          )
-                                        : null,
-                                    child: item['profile_pic'] == null
-                                        ? Icon(
-                                            Icons.person,
-                                            color: colorScheme.onSurface
-                                                .withOpacity(0.6),
-                                          )
-                                        : null,
-                                  ),
-                                ),
-
-                                const SizedBox(width: 12),
-
-                                /// 🧑 Name
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        item['fname'] ?? 'User',
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: colorScheme.onSurface,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        "Tap to chat",
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: colorScheme.onSurface
-                                              .withOpacity(0.6),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
-                                /// ⋮ Menu
-                                PopupMenuButton<String>(
-                                  icon: Icon(
-                                    Icons.more_vert,
-                                    color:
-                                        colorScheme.onSurface.withOpacity(0.6),
-                                  ),
-                                  onSelected: (value) async {
-                                    if (value == 'view') {
-                                      final session = await UserStorageService()
-                                          .loadSession();
-                                      final viewerId = session.user?.id;
-                                      if (!mounted) return;
-
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => ProfilePage(
-                                            userId: friendId,
-                                            viewerUserId: viewerId,
-                                            isConnected: true,
-                                          ),
-                                        ),
-                                      );
-                                    } else if (value == 'delete') {
-                                      final session = await UserStorageService()
-                                          .loadSession();
-                                      final viewerId = session.user?.id;
-                                      if (viewerId == null) return;
-
-                                      final confirmed = await showDialog<bool>(
-                                        context: context,
-                                        builder: (ctx) => AlertDialog(
-                                          title: const Text('Remove Connection'),
-                                          content: const Text(
-                                              'Are you sure you want to remove this connection?'),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(ctx, false),
-                                              child: const Text('Cancel'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(ctx, true),
-                                              child: const Text('Remove',
-                                                  style: TextStyle(
-                                                      color: Colors.red)),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-
-                                      if (confirmed == true && mounted) {
-                                        await deleteConnectionRequest(
-                                          senderId: viewerId,
-                                          receiverId: friendId,
-                                          status: 2,
-                                          fromTab: "accepted",
-                                          index: index,
-                                        );
-                                      }
-                                    }
-                                  },
-                                  itemBuilder: (context) => const [
-                                    PopupMenuItem(
-                                      value: 'view',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.visibility),
-                                          SizedBox(width: 8),
-                                          Text('View'),
-                                        ],
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => ProfilePage(
+                                        userId: friendId,
+                                        viewerUserId: viewerId,
+                                        isConnected: true,
                                       ),
                                     ),
-                                    PopupMenuItem(
-                                      value: 'delete',
-                                      child: Row(
-                                        children: [
-                                          Icon(Icons.delete,
-                                              color: Colors.redAccent),
-                                          SizedBox(width: 8),
-                                          Text('Delete'),
-                                        ],
-                                      ),
+                                  );
+                                },
+                                child: CircleAvatar(
+                                  radius: 26,
+                                  backgroundColor: colorScheme.surfaceContainerHighest,
+                                  backgroundImage: item['profile_pic'] != null
+                                      ? NetworkImage(
+                                          "${AppConfig.apiProfileImg}/${item['profile_pic']}",
+                                        )
+                                      : null,
+                                  child: item['profile_pic'] == null
+                                      ? Icon(
+                                          Icons.person,
+                                          size: 28,
+                                          color: colorScheme.onSurface
+                                              .withOpacity(0.5),
+                                        )
+                                      : null,
+                                ),
+                              ),
+
+                              const SizedBox(width: 14),
+
+                              /// 🧑 Details (Name + Date in row 1, Message + Badge in row 2)
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            item['fname'] ?? 'User',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: colorScheme.onSurface,
+                                            ),
+                                          ),
+                                        ),
+                                        if (timeStr.isNotEmpty)
+                                          Text(
+                                            timeStr,
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: hasUnread
+                                                  ? const Color(0xFF25D366)
+                                                  : colorScheme.onSurface
+                                                      .withOpacity(0.5),
+                                              fontWeight: hasUnread
+                                                  ? FontWeight.w600
+                                                  : FontWeight.normal,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            messageContent,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              color: colorScheme.onSurface
+                                                  .withOpacity(0.6),
+                                            ),
+                                          ),
+                                        ),
+                                        if (hasUnread)
+                                          Container(
+                                            margin: const EdgeInsets.only(left: 6),
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 3,
+                                            ),
+                                            constraints: const BoxConstraints(
+                                              minWidth: 20,
+                                              minHeight: 20,
+                                            ),
+                                            decoration: const BoxDecoration(
+                                              color: Colors.redAccent,
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: Center(
+                                              child: Text(
+                                                "$unreadCount",
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       );
@@ -1863,7 +1808,6 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                               color: colorScheme.onSurface,
                                             ),
                                           ),
-                                          const SizedBox(height: 4),
                                           if (userName.isNotEmpty)
                                             Text(
                                               userName,

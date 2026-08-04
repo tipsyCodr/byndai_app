@@ -12,6 +12,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:gridcard/core/services/profile_service.dart';
 import 'package:gridcard/widgets/app_network_image.dart';
+import 'package:gridcard/core/utils/error_formatter.dart';
 import './crop_screen.dart';
 
 class ProfileTab extends StatefulWidget {
@@ -350,7 +351,7 @@ class _ProfileTabState extends State<ProfileTab> {
         _showErrorSnackBar("Failed to delete video");
       }
     } catch (e) {
-      _showErrorSnackBar("Error: $e");
+      _showErrorSnackBar(ErrorFormatter.format(e));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
@@ -810,7 +811,7 @@ class _ProfileTabState extends State<ProfileTab> {
         _showErrorSnackBar('Failed to upload ${type.toUpperCase()} ID Card');
       }
     } catch (e) {
-      _showErrorSnackBar('Error: $e');
+      _showErrorSnackBar(ErrorFormatter.format(e));
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
