@@ -17,12 +17,14 @@ class ChatScreen extends StatefulWidget {
   final int chatId;
   final int receiverId;
   final String receiverName;
+  final String? receiverPic;
 
   const ChatScreen({
     super.key,
     required this.chatId,
     required this.receiverId,
     required this.receiverName,
+    this.receiverPic,
   });
 
   @override
@@ -39,7 +41,6 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _isSending = false;
 
   int? _myUserId;
-
 
   @override
   void initState() {
@@ -173,10 +174,6 @@ class _ChatScreenState extends State<ChatScreen> {
             createdAt: createdAt,
           );
 
-          Future.delayed(const Duration(milliseconds: 100), () {
-            _scrollToBottom();
-          });
-
           return;
         }
       }
@@ -196,7 +193,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!_scrollController.hasClients) return;
 
     _scrollController.animateTo(
-      _scrollController.position.maxScrollExtent,
+      0.0,
       duration: const Duration(milliseconds: 250),
       curve: Curves.easeOut,
     );
@@ -217,7 +214,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (diff == 0) return "Today";
     if (diff == 1) return "Yesterday";
 
-    return DateFormat("dd MMM yyyy").format(date);
+    return DateFormat("dd MMMM yyyy").format(date);
   }
 
   String _formatTime(DateTime time) {
@@ -365,8 +362,9 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       backgroundColor: colorScheme.surface, // Let gradient show through
       appBar: AppBar(
-     backgroundColor: colorScheme.surface,
+        backgroundColor: colorScheme.surface,
         elevation: 0,
+        leadingWidth: 40,
         leading: IconButton(
           icon: Icon(
             CupertinoIcons.back,
@@ -375,22 +373,133 @@ class _ChatScreenState extends State<ChatScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         titleSpacing: 0,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Row(
           children: [
-            Text(
-              widget.receiverName,
-              style: TextStyle(
-                color: colorScheme.onSurface,
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+            CircleAvatar(
+              radius: 18,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              backgroundImage: widget.receiverPic != null &&
+                      widget.receiverPic!.isNotEmpty
+                  ? NetworkImage(
+                      "${AppConfig.apiProfileImg}/${widget.receiverPic}",
+                    )
+                  : null,
+              child: widget.receiverPic == null || widget.receiverPic!.isEmpty
+                  ? Icon(
+                      Icons.person,
+                      size: 20,
+                      color: colorScheme.onSurface.withValues(alpha: 0.5),
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                widget.receiverName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colorScheme.onSurface,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
-            const SizedBox(height: 2),
-            // Optional: show chat ID if needed (currently hidden)
           ],
         ),
-        actions: const [],
+        actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: colorScheme.onSurface),
+            onSelected: (value) async {
+              if (value == 'delete_chat') {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text("Delete Chat"),
+                    content: const Text(
+                        "Are you sure you want to delete this chat history?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text("Cancel"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text(
+                          "Delete",
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true && context.mounted) {
+                  await FirestoreChatService.deleteChat(widget.chatId);
+                  if (context.mounted) {
+                    TopAlert.show(context, "Chat deleted");
+                    Navigator.pop(context);
+                  }
+                }
+              } else if (value == 'block') {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text("Block User"),
+                    content: Text(
+                        "Are you sure you want to block ${widget.receiverName}?"),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text("Cancel"),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text(
+                          "Block",
+                          style: TextStyle(color: Colors.redAccent),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true && context.mounted) {
+                  TopAlert.show(context, "${widget.receiverName} blocked");
+                  Navigator.pop(context);
+                }
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'delete_chat',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                    SizedBox(width: 10),
+                    Text(
+                      'Delete Chat',
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'block',
+                child: Row(
+                  children: [
+                    Icon(Icons.block, color: Colors.redAccent, size: 20),
+                    SizedBox(width: 10),
+                    Text(
+                      'Block',
+                      style: TextStyle(color: Colors.redAccent),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
       body: _buildBackground(
         context: context,
@@ -421,15 +530,11 @@ class _ChatScreenState extends State<ChatScreen> {
                           );
                         }
 
-                        final docs = snapshot.data!.docs;
-
-                        // Auto-scroll to bottom when new message arrives
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          _scrollToBottom();
-                        });
+                        final docs = snapshot.data!.docs.reversed.toList();
 
                         return ListView.builder(
                           controller: _scrollController,
+                          reverse: true,
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 12,
@@ -455,37 +560,39 @@ class _ChatScreenState extends State<ChatScreen> {
 
                             final senderId =
                                 int.tryParse(data['sender_id'].toString());
-                            final isMe = senderId == _myUserId;
+                            final isMe = _myUserId != null &&
+                                (senderId == _myUserId ||
+                                    data['sender_id'].toString() ==
+                                        _myUserId.toString());
                             final text =
                                 data['message']?.toString() ?? '';
 
-                            // Date separator logic
+                            // Date separator logic for inverted list (index 0 is newest, last index is oldest)
                             bool showDateSeparator = false;
-                            if (index == 0) {
+                            if (index == docs.length - 1) {
                               showDateSeparator = true;
                             } else {
-                              final prevData = docs[index - 1].data();
-                              DateTime prevTime;
-                              final pts = prevData['timestamp'];
-                              if (pts is Timestamp) {
-                                prevTime = pts.toDate().toLocal();
+                              final nextData = docs[index + 1].data();
+                              DateTime nextTime;
+                              final nts = nextData['timestamp'];
+                              if (nts is Timestamp) {
+                                nextTime = nts.toDate().toLocal();
                               } else {
                                 try {
-                                  prevTime = DateTime.parse(
-                                          prevData['created_at']
-                                                  ?.toString() ??
+                                  nextTime = DateTime.parse(
+                                          nextData['created_at']?.toString() ??
                                               '')
                                       .toLocal();
                                 } catch (_) {
-                                  prevTime = DateTime.now();
+                                  nextTime = DateTime.now();
                                 }
                               }
 
-                              final prevDay = DateTime(
-                                  prevTime.year, prevTime.month, prevTime.day);
+                              final nextDay = DateTime(
+                                  nextTime.year, nextTime.month, nextTime.day);
                               final currDay = DateTime(
                                   msgTime.year, msgTime.month, msgTime.day);
-                              if (prevDay != currDay) showDateSeparator = true;
+                              if (nextDay != currDay) showDateSeparator = true;
                             }
 
                             return Column(
@@ -522,9 +629,84 @@ class _ChatScreenState extends State<ChatScreen> {
                                     ),
                                   ),
                                 _MessageBubble(
+                                  docId: docs[index].id,
                                   text: text,
                                   time: _formatTime(msgTime),
                                   isMe: isMe,
+                                  onEdit: (docId, oldText) {
+                                    final editController =
+                                        TextEditingController(text: oldText);
+                                    showDialog(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text("Edit Message"),
+                                        content: TextField(
+                                          controller: editController,
+                                          autofocus: true,
+                                          decoration: const InputDecoration(
+                                            hintText: "Enter updated message",
+                                          ),
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(ctx),
+                                            child: const Text("Cancel"),
+                                          ),
+                                          TextButton(
+                                            onPressed: () async {
+                                              final updatedText =
+                                                  editController.text.trim();
+                                              if (updatedText.isNotEmpty) {
+                                                await FirestoreChatService
+                                                    .updateMessage(
+                                                  chatId: widget.chatId,
+                                                  docId: docId,
+                                                  newMessage: updatedText,
+                                                );
+                                              }
+                                              if (ctx.mounted) {
+                                                Navigator.pop(ctx);
+                                              }
+                                            },
+                                            child: const Text("Save"),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                  onDelete: (docId) async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: const Text("Delete Message"),
+                                        content: const Text(
+                                            "Are you sure you want to delete this message?"),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, false),
+                                            child: const Text("Cancel"),
+                                          ),
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(ctx, true),
+                                            child: const Text(
+                                              "Delete",
+                                              style: TextStyle(
+                                                  color: Colors.redAccent),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirm == true) {
+                                      await FirestoreChatService.deleteMessage(
+                                        chatId: widget.chatId,
+                                        docId: docId,
+                                      );
+                                    }
+                                  },
                                 ),
                               ],
                             );
@@ -533,71 +715,73 @@ class _ChatScreenState extends State<ChatScreen> {
                       },
                     ),
             ),
-
-            // ✅ Bottom Input Box – Glass style
-            Container(
-              margin: const EdgeInsets.only(bottom: 8, left: 12, right: 12),
-              child: GlassBox(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                borderRadius: 32,
-                blur: 15,
-                opacity: isDark ? 0.2 : 0.12,
-                gradientColors: [
-                  (palette?.glassTop ?? colorScheme.surface)
-                      .withValues(alpha: isDark ? 0.7 : 0.8),
-                  (palette?.glassBottom ?? colorScheme.surface)
-                      .withValues(alpha: isDark ? 0.58 : 0.7),
-                ],
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _msgController,
-                        style: TextStyle(color: colorScheme.onSurface),
-                        maxLines: 4,
-                        minLines: 1,
-                        decoration: InputDecoration(
-                          hintText: "Type message...",
-                          hintStyle: TextStyle(
-                            color: colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.6),
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 12,
-                          ),
-                        ),
-                        onSubmitted: (_) => _sendMessage(),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      height: 46,
-                      width: 46,
-                      decoration: BoxDecoration(
-                        color: _isSending
-                            ? colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.3)
-                            : colorScheme.primary,
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: IconButton(
-                        icon: _isSending
-                            ? SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: colorScheme.onPrimary,
-                                ),
-                              )
-                            : Icon(Icons.send, color: colorScheme.onPrimary),
-                        onPressed: _isSending ? null : _sendMessage,
-                      ),
-                    ),
+            // ✅ Bottom Input Box – Glass style with SafeArea
+            SafeArea(
+              top: false,
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 8, left: 12, right: 12),
+                child: GlassBox(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  borderRadius: 32,
+                  blur: 15,
+                  opacity: isDark ? 0.2 : 0.12,
+                  gradientColors: [
+                    (palette?.glassTop ?? colorScheme.surface)
+                        .withValues(alpha: isDark ? 0.7 : 0.8),
+                    (palette?.glassBottom ?? colorScheme.surface)
+                        .withValues(alpha: isDark ? 0.58 : 0.7),
                   ],
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _msgController,
+                          style: TextStyle(color: colorScheme.onSurface),
+                          maxLines: 4,
+                          minLines: 1,
+                          decoration: InputDecoration(
+                            hintText: "Type message...",
+                            hintStyle: TextStyle(
+                              color: colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.6),
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 12,
+                            ),
+                          ),
+                          onSubmitted: (_) => _sendMessage(),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        height: 46,
+                        width: 46,
+                        decoration: BoxDecoration(
+                          color: _isSending
+                              ? colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.3)
+                              : colorScheme.primary,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: IconButton(
+                          icon: _isSending
+                              ? SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colorScheme.onPrimary,
+                                  ),
+                                )
+                              : Icon(Icons.send, color: colorScheme.onPrimary),
+                          onPressed: _isSending ? null : _sendMessage,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -642,14 +826,20 @@ class _ChatScreenState extends State<ChatScreen> {
 // Message Bubble
 // ===========================
 class _MessageBubble extends StatelessWidget {
+  final String docId;
   final String text;
   final String time;
   final bool isMe;
+  final void Function(String docId, String oldText)? onEdit;
+  final void Function(String docId)? onDelete;
 
   const _MessageBubble({
+    required this.docId,
     required this.text,
     required this.time,
     required this.isMe,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -659,42 +849,84 @@ class _MessageBubble extends StatelessWidget {
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 6),
-        padding: const EdgeInsets.fromLTRB(12, 10, 10, 6),
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.78,
-        ),
-        decoration: BoxDecoration(
-          color: isMe
-              ? colorScheme.primary
-              : isDark
-                  ? const Color(0xFF1E1E1E)
-                  : colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment:
-              isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            Text(
-              text,
-              style: TextStyle(
-                color: isMe ? colorScheme.onPrimary : colorScheme.onSurface,
-                fontSize: 15,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onLongPress: () {
+            showModalBottomSheet(
+              context: context,
+              shape: const RoundedRectangleBorder(
+                borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              time,
-              style: TextStyle(
-                color: isMe
-                    ? colorScheme.onPrimary.withValues(alpha: 0.8)
-                    : colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                fontSize: 11,
+              builder: (ctx) => SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isMe)
+                      ListTile(
+                        leading: const Icon(Icons.edit),
+                        title: const Text("Edit Message"),
+                        onTap: () {
+                          Navigator.pop(ctx);
+                          onEdit?.call(docId, text);
+                        },
+                      ),
+                    ListTile(
+                      leading:
+                          const Icon(Icons.delete, color: Colors.redAccent),
+                      title: Text(
+                        isMe ? "Delete Message" : "Delete for me",
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
+                      onTap: () {
+                        Navigator.pop(ctx);
+                        onDelete?.call(docId);
+                      },
+                    ),
+                  ],
+                ),
               ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(12, 10, 10, 6),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.78,
             ),
-          ],
+            decoration: BoxDecoration(
+              color: isMe
+                  ? colorScheme.primary
+                  : isDark
+                      ? const Color(0xFF1E1E1E)
+                      : colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Text(
+                  text,
+                  style: TextStyle(
+                    color:
+                        isMe ? colorScheme.onPrimary : colorScheme.onSurface,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  time,
+                  style: TextStyle(
+                    color: isMe
+                        ? colorScheme.onPrimary.withValues(alpha: 0.8)
+                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

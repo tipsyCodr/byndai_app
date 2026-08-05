@@ -127,4 +127,44 @@ class FirestoreChatService {
       return null;
     }
   }
+  /// Updates an existing message's text in Firestore.
+  static Future<void> updateMessage({
+    required int chatId,
+    required String docId,
+    required String newMessage,
+  }) async {
+    try {
+      await _messagesRef(chatId).doc(docId).update({
+        'message': newMessage,
+        'is_edited': true,
+      });
+    } catch (e) {
+      debugPrint('🔥 FirestoreChatService.updateMessage error: $e');
+    }
+  }
+
+  /// Deletes a message document from Firestore.
+  static Future<void> deleteMessage({
+    required int chatId,
+    required String docId,
+  }) async {
+    try {
+      await _messagesRef(chatId).doc(docId).delete();
+    } catch (e) {
+      debugPrint('🔥 FirestoreChatService.deleteMessage error: $e');
+    }
+  }
+
+  /// Deletes all messages in a chat conversation from Firestore.
+  static Future<void> deleteChat(int chatId) async {
+    try {
+      final snapshot = await _messagesRef(chatId).get();
+      for (final doc in snapshot.docs) {
+        await doc.reference.delete();
+      }
+      debugPrint('🔥 FirestoreChatService.deleteChat: cleared chat $chatId');
+    } catch (e) {
+      debugPrint('🔥 FirestoreChatService.deleteChat error: $e');
+    }
+  }
 }

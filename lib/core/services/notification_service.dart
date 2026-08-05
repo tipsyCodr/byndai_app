@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:gridcard/core/services/auth_service.dart';
@@ -17,6 +18,11 @@ class NotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+
+  static final StreamController<RemoteMessage> onNotificationReceivedController =
+      StreamController<RemoteMessage>.broadcast();
+  static Stream<RemoteMessage> get onNotificationReceived =>
+      onNotificationReceivedController.stream;
 
   static Future<void> initialize() async {
     try {
@@ -124,6 +130,7 @@ class NotificationService {
     // Foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       debugPrint('🔔 Foreground message received: ${message.notification?.title}');
+      onNotificationReceivedController.add(message);
       _showLocalNotification(message);
       _showForegroundCustomPrompt(message.data);
     });

@@ -9,6 +9,8 @@ import 'package:http/http.dart' as http;
 import 'package:gridcard/widgets/top_alert.dart';
 import './chat_screen.dart';
 
+import 'package:gridcard/core/services/notification_service.dart';
+
 import '../feature_map/feature_access_helper.dart';
 import '../feature_map/feature_mapper.dart';
 import '../home/SubscriptionPlans.dart';
@@ -62,6 +64,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
   final TextEditingController _searchController = TextEditingController();
   Timer? _debounce;
+  StreamSubscription? _notificationSubscription;
 
   final ScrollController _acceptedScrollController = ScrollController();
 
@@ -133,6 +136,30 @@ class _ConnectionsPageState extends State<ConnectionsPage>
         authProvider.refreshSubscription();
       }
     });
+
+    // 🔔 Event-driven refresh on incoming push notification
+    _notificationSubscription =
+        NotificationService.onNotificationReceived.listen((message) {
+      if (mounted) {
+        fetchAcceptedFriends(silent: true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationSubscription?.cancel();
+    _debounce?.cancel();
+    _pendingDebounce?.cancel();
+    _sentDebounce?.cancel();
+    _searchController.dispose();
+    _pendingSearchController.dispose();
+    _sentSearchController.dispose();
+    _acceptedScrollController.dispose();
+    _pendingScrollController.dispose();
+    _sentScrollController.dispose();
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<bool> _viewProfileApi(int profileId) async {
@@ -336,6 +363,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
   Future<void> fetchAcceptedFriends({
     bool reset = false,
     bool loadMore = false,
+    bool silent = false,
   }) async {
     final session = await UserStorageService().loadSession();
     final userId = session.user?.id;
@@ -350,7 +378,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     }
 
     // reset logic
-    if (reset) {
+    if (reset && !silent) {
       setState(() {
         acceptedLoading = true;
         acceptedFriends = [];
@@ -712,24 +740,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     TopAlert.show(context, "Sent export coming soon ✅");
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
 
-    _acceptedScrollController.dispose();
-    _searchController.dispose();
-    _debounce?.cancel();
-
-    _pendingScrollController.dispose();
-    _pendingSearchController.dispose();
-    _pendingDebounce?.cancel();
-
-    _sentScrollController.dispose();
-    _sentSearchController.dispose();
-    _sentDebounce?.cancel();
-
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -959,6 +970,12 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                         onTap: () async {
                           final receiverId = friendId;
 
+                          // Optimistically clear unread badge instantly
+                          setState(() {
+                            item['unread_count'] = 0;
+                            item['unread_messages_count'] = 0;
+                          });
+
                           showDialog(
                             context: context,
                             barrierDismissible: false,
@@ -981,16 +998,21 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                             return;
                           }
 
-                          Navigator.push(
+                          await Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => ChatScreen(
                                 chatId: chatId,
                                 receiverId: receiverId,
                                 receiverName: item['fname'] ?? "User",
+                                receiverPic: item['profile_pic']?.toString(),
                               ),
                             ),
                           );
+
+                          if (mounted) {
+                            fetchAcceptedFriends(silent: true);
+                          }
                         },
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
