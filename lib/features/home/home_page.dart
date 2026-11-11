@@ -7,6 +7,7 @@ import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:gridcard/features/settings/settings_page.dart';
 import 'package:gridcard/features/home/feed_page.dart';
 import 'package:gridcard/core/services/auth_provider.dart'; // ✅ Your AuthProvider
+import 'package:gridcard/features/ai_chatbot/ai_chatbot_page.dart';
 import 'package:gridcard/features/chat/connections_page.dart';
 import 'package:gridcard/core/services/social_provider.dart';
 import 'package:provider/provider.dart';
@@ -43,6 +44,7 @@ class _HomePageState extends State<HomePage> {
       FeedPage(key: _feedKey),
       const LeadsPage(),
       const DiscoverPage(),
+      const AiChatbotPage(),
       const SettingsPage(),
     ];
     _pageController = PageController(initialPage: _selectedIndex);
@@ -101,6 +103,7 @@ class _HomePageState extends State<HomePage> {
     'Home',
     'My Leads',
     'Discover',
+    'AI Assistant',
     'Settings',
   ];
 
@@ -448,7 +451,8 @@ class _HomePageState extends State<HomePage> {
               _buildDockItem(0, FontAwesomeIcons.house),
               _buildDockItem(1, FontAwesomeIcons.addressCard),
               _buildDockItem(2, FontAwesomeIcons.compass),
-              _buildDockItem(3, FontAwesomeIcons.gear, imageUrl: profilePicUrl),
+              _buildDockItem(3, FontAwesomeIcons.robot),
+              _buildDockItem(4, FontAwesomeIcons.gear, imageUrl: profilePicUrl),
             ],
           ),
         ),
@@ -489,7 +493,7 @@ class _HomePageState extends State<HomePage> {
                 : null,
           ),
           child: Center(
-            child: (index == 3 && imageUrl != null)
+            child: (index == 4 && imageUrl != null)
                 ? CircleAvatar(
                     radius: 16,
                     backgroundColor: Colors.transparent,

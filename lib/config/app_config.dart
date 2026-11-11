@@ -8,6 +8,11 @@ class AppConfig {
   static const String storageBaseUrl = "$baseUrl/storage";
   static const double roundness = 6;
 
+  // ── AI Chatbot ──────────────────────────────────────────────────────────────
+  static const String openAiApiKey = 'YOUR_OPENAI_API_KEY_HERE';
+  static const String openAiBaseUrl = 'https://api.openai.com/v1/chat/completions';
+  static const String openAiModel = 'gpt-4o-mini';
+
   /// Robust Laravel URL Rewriter
   static String? getFullUrl(String? path) {
     if (path == null || path.isEmpty) return null;
