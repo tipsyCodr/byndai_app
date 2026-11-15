@@ -220,7 +220,8 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                                       }
                                     } catch (e) {
                                       Navigator.pop(context);
-                                      TopAlert.show(context, ErrorFormatter.format(e),
+                                      TopAlert.show(
+                                          context, ErrorFormatter.format(e),
                                           isError: true);
                                     }
                                   },
@@ -418,7 +419,8 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                     child: SizedBox.expand(
                       child: url != null
                           ? Image.network(url, fit: BoxFit.contain)
-                          : Image.memory(base64Decode(base64!), fit: BoxFit.contain),
+                          : Image.memory(base64Decode(base64!),
+                              fit: BoxFit.contain),
                     ),
                   ),
                 ),
@@ -554,7 +556,7 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                 )
               ],
             ),
-             const SizedBox(height: 10),
+            const SizedBox(height: 10),
             if (url != null || base64 != null)
               Container(
                 height: 180,
@@ -863,19 +865,14 @@ class _LeadDetailsPageState extends State<LeadDetailsPage> {
                 ),
               ),
               ...mobiles.map((mobile) => ListTile(
-                    leading: Icon(
-                      type == "call"
-                          ? Icons.call
-                          : type == "sms"
-                              ? Icons.message
-                              : FontAwesomeIcons
-                                  .whatsapp, // ✅ use FontAwesomeIcons
-                      color: type == "call"
-                          ? Colors.green
-                          : type == "sms"
-                              ? Colors.orange
-                              : Colors.green,
-                    ),
+                    leading: type == "call"
+                        ? const Icon(Icons.call, color: Colors.green)
+                        : type == "sms"
+                            ? const Icon(Icons.message, color: Colors.orange)
+                            : const FaIcon(
+                                FontAwesomeIcons.whatsapp,
+                                color: Colors.green,
+                              ),
                     title: Text(mobile),
                     onTap: () {
                       Navigator.pop(context);

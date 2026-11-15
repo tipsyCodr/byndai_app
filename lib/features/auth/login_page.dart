@@ -16,7 +16,8 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
+class _LoginPageState extends State<LoginPage>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
@@ -67,7 +68,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       case GoogleSignInResult.failed:
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Google Sign-In failed. Please try again.')),
+            const SnackBar(
+                content: Text('Google Sign-In failed. Please try again.')),
           );
         }
         break;
@@ -107,7 +109,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                     // Moving Blob 1
                     Positioned(
                       top: -100 + (30 * _controller.value),
-                      left: -100 + (20 * math.sin(_controller.value * 2 * math.pi)),
+                      left: -100 +
+                          (20 * math.sin(_controller.value * 2 * math.pi)),
                       child: _buildBlob(
                         size: 300,
                         color: (palette?.heroStart ?? colorScheme.primary)
@@ -116,7 +119,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                     ),
                     // Moving Blob 2
                     Positioned(
-                      bottom: -120 + (40 * math.cos(_controller.value * 2 * math.pi)),
+                      bottom: -120 +
+                          (40 * math.cos(_controller.value * 2 * math.pi)),
                       right: -80 + (30 * _controller.value),
                       child: _buildBlob(
                         size: 350,
@@ -126,8 +130,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                     ),
                     // Moving Blob 3 (New for depth)
                     Positioned(
-                      top: MediaQuery.of(context).size.height * 0.4 + 
-                           (50 * math.sin(_controller.value * 2 * math.pi)),
+                      top: MediaQuery.of(context).size.height * 0.4 +
+                          (50 * math.sin(_controller.value * 2 * math.pi)),
                       right: -100 + (20 * _controller.value),
                       child: _buildBlob(
                         size: 200,
@@ -250,7 +254,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                               ).copyWith(
-                                overlayColor: WidgetStateProperty.all(Colors.white.withValues(alpha: 0.1)),
+                                overlayColor: WidgetStateProperty.all(
+                                    Colors.white.withValues(alpha: 0.1)),
                               ),
                               child: const Text(
                                 'Login with Mobile',
@@ -266,11 +271,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                             children: [
                               Expanded(
                                 child: Divider(
-                                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                                  color: colorScheme.outlineVariant
+                                      .withValues(alpha: 0.5),
                                 ),
                               ),
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 12),
                                 child: Text(
                                   'OR',
                                   style: TextStyle(
@@ -282,7 +289,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                               ),
                               Expanded(
                                 child: Divider(
-                                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                                  color: colorScheme.outlineVariant
+                                      .withValues(alpha: 0.5),
                                 ),
                               ),
                             ],
@@ -293,7 +301,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                             height: 60,
                             child: OutlinedButton.icon(
                               onPressed: () => _handleGoogleSignIn(context),
-                              icon: Icon(
+                              icon: FaIcon(
                                 FontAwesomeIcons.google,
                                 size: 20,
                                 color: colorScheme.primary,
@@ -307,9 +315,12 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                                 ),
                               ),
                               style: OutlinedButton.styleFrom(
-                                backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                backgroundColor: colorScheme
+                                    .surfaceContainerHighest
+                                    .withValues(alpha: 0.3),
                                 side: BorderSide(
-                                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
+                                  color: colorScheme.outlineVariant
+                                      .withValues(alpha: 0.5),
                                 ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16),
@@ -344,27 +355,31 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                         ),
                       ],
                     ),
-                    
+
                     // Debug flows for easier testing
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         TextButton.icon(
-                          onPressed: () => Navigator.pushNamed(context, RouteNames.register),
+                          onPressed: () =>
+                              Navigator.pushNamed(context, RouteNames.register),
                           icon: const Icon(Icons.bug_report, size: 14),
                           label: const Text("Dev: Register"),
                           style: TextButton.styleFrom(
-                            foregroundColor: colorScheme.error.withValues(alpha: 0.5),
+                            foregroundColor:
+                                colorScheme.error.withValues(alpha: 0.5),
                             textStyle: const TextStyle(fontSize: 12),
                           ),
                         ),
                         const SizedBox(width: 8),
                         TextButton.icon(
-                          onPressed: () => Navigator.pushNamed(context, RouteNames.googleRegister),
+                          onPressed: () => Navigator.pushNamed(
+                              context, RouteNames.googleRegister),
                           icon: const Icon(Icons.bug_report, size: 14),
                           label: const Text("Dev: G-Register"),
                           style: TextButton.styleFrom(
-                            foregroundColor: colorScheme.error.withValues(alpha: 0.5),
+                            foregroundColor:
+                                colorScheme.error.withValues(alpha: 0.5),
                             textStyle: const TextStyle(fontSize: 12),
                           ),
                         ),
@@ -399,4 +414,3 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     );
   }
 }
-

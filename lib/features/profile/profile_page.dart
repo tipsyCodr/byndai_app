@@ -25,6 +25,7 @@ import 'package:gridcard/features/feature_map/feature_access_helper.dart';
 import 'package:gridcard/features/feature_map/feature_mapper.dart';
 import 'package:gridcard/features/home/SubscriptionPlans.dart';
 import 'package:gridcard/features/profile/shorts_reel_page.dart';
+import 'package:gridcard/features/profile/user_store_page.dart';
 
 class ProfilePage extends StatefulWidget {
   final int? userId;
@@ -68,7 +69,8 @@ class _ProfilePageState extends State<ProfilePage> {
       provider.fetchProfileData(userId.toString()).then((_) {
         // Fallback: If Discover search didn't pass it and the Profile API didn't return it either,
         // we explicitly check the friends list.
-        final status = _resolveConnectionStatus(provider.profileData ?? {}, widget.isConnected);
+        final status = _resolveConnectionStatus(
+            provider.profileData ?? {}, widget.isConnected);
         if (status == 'none' && !isOwner) {
           provider.checkConnectionStatus(userId);
         }
@@ -341,11 +343,13 @@ class _ProfilePageState extends State<ProfilePage> {
       final viewerId = session.user?.id;
       if (viewerId == null) return;
 
-      final url = Uri.parse("${AppConfig.apiBaseUrl}/connection-request/delete");
+      final url =
+          Uri.parse("${AppConfig.apiBaseUrl}/connection-request/delete");
       final payload = {
         "sender_id": viewerId,
         "receiver_id": receiverId,
-        "status": 2, // Accepted connections usually have status 1, deleting them might require status 1 or 2
+        "status":
+            2, // Accepted connections usually have status 1, deleting them might require status 1 or 2
       };
 
       try {
@@ -365,11 +369,15 @@ class _ProfilePageState extends State<ProfilePage> {
           if (mounted) {
             TopAlert.show(context, "Connection removed", isSuccess: true);
             // Refresh profile data to update UI
-            context.read<ProfileProvider>().fetchProfileData(receiverId.toString());
+            context
+                .read<ProfileProvider>()
+                .fetchProfileData(receiverId.toString());
           }
         } else {
           if (mounted) {
-            TopAlert.show(context, jsonData['message'] ?? "Error removing connection", isError: true);
+            TopAlert.show(
+                context, jsonData['message'] ?? "Error removing connection",
+                isError: true);
           }
         }
       } catch (e) {
@@ -385,9 +393,11 @@ class _ProfilePageState extends State<ProfilePage> {
     final status = (profile['connection_status'] ?? profile['status'] ?? '')
         .toString()
         .toLowerCase();
-    
-    final boolIsConnected =
-        profile['is_connected'] ?? profile['isConnected'] ?? profile['connected'] ?? profile['is_friend'];
+
+    final boolIsConnected = profile['is_connected'] ??
+        profile['isConnected'] ??
+        profile['connected'] ??
+        profile['is_friend'];
 
     // If API says accepted
     if (status == 'accepted' ||
@@ -414,8 +424,13 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     // 3. Status check for "none" variations
-    if (status == 'none' || status == 'null' || status == '0' || status == 'false' || boolIsConnected == false || boolIsConnected == 0) {
-       return 'none';
+    if (status == 'none' ||
+        status == 'null' ||
+        status == '0' ||
+        status == 'false' ||
+        boolIsConnected == false ||
+        boolIsConnected == 0) {
+      return 'none';
     }
 
     // Final fallback
@@ -664,7 +679,8 @@ class _ProfilePageState extends State<ProfilePage> {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 14,
-                              color: isDark ? Colors.grey[400] : Colors.grey[600],
+                              color:
+                                  isDark ? Colors.grey[400] : Colors.grey[600],
                               letterSpacing: 1.1,
                               height: 1.2,
                             ),
@@ -706,23 +722,29 @@ class _ProfilePageState extends State<ProfilePage> {
                         // PROFILE ACTIONS (Connect/Chat)
                         ProfileActions(
                           isOwner: isOwner,
-                          requestStatus:
-                              _resolveConnectionStatus(profile, widget.isConnected),
+                          requestStatus: _resolveConnectionStatus(
+                              profile, widget.isConnected),
                           onConnect: () {
                             final receiverId =
                                 int.tryParse(pId?.toString() ?? '0') ?? 0;
                             if (receiverId == 0) return;
 
-                            final status = _resolveConnectionStatus(profile, widget.isConnected);
-                            debugPrint("🔗 Connection Button Tapped | Status: $status | WidgetFlag: ${widget.isConnected}");
-                            
+                            final status = _resolveConnectionStatus(
+                                profile, widget.isConnected);
+                            debugPrint(
+                                "🔗 Connection Button Tapped | Status: $status | WidgetFlag: ${widget.isConnected}");
+
                             if (status == 'accepted') {
                               _showRemoveConnectionDialog(receiverId);
                             } else if (status == 'none') {
-                              provider.toggleConnection(receiverId).then((success) {
+                              provider
+                                  .toggleConnection(receiverId)
+                                  .then((success) {
                                 if (success && mounted) {
-                                  provider.fetchProfileData(receiverId.toString());
-                                  TopAlert.show(context, "Connection request sent!");
+                                  provider
+                                      .fetchProfileData(receiverId.toString());
+                                  TopAlert.show(
+                                      context, "Connection request sent!");
                                 }
                               });
                             } else {
@@ -755,7 +777,11 @@ class _ProfilePageState extends State<ProfilePage> {
                               _saveToContacts(fullName, pMobile, profile),
                           isCheckingConnection: provider.isLoading,
                         ),
-                        const SizedBox(height: 28),
+                        if (provider.products.isNotEmpty) ...[
+                          const SizedBox(height: 18),
+                          _buildVisitStoreButton(provider, isDark),
+                        ],
+                        const SizedBox(height: 24),
 
                         // ACTION GRID
                         _buildActionGrid(provider, isDark),
@@ -1241,7 +1267,10 @@ class _ProfilePageState extends State<ProfilePage> {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.grey[800]!.withOpacity(0.5) : Colors.grey[200]!),
+        border: Border.all(
+            color: isDark
+                ? Colors.grey[800]!.withOpacity(0.5)
+                : Colors.grey[200]!),
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -1252,24 +1281,24 @@ class _ProfilePageState extends State<ProfilePage> {
             children: allLinks.map((link) {
               final rawName = link['name'] ?? 'Link';
               final url = link['link'] ?? '';
-              
+
               final key = rawName.toLowerCase();
               String title = rawName;
-              IconData iconData = _getIconForName(rawName);
+              FaIconData iconData = _getIconForName(rawName);
               Color color = _getColorForName(rawName);
 
               if (key.contains("whatsapp")) {
                 title = "WhatsApp";
               } else if (key.contains("call") || key.contains("phone")) {
                 title = "Call";
-                iconData = Icons.phone_outlined;
+                iconData = FontAwesomeIcons.phone;
               } else if (key.contains("email") || key.contains("gmail")) {
                 title = "Email";
-                iconData = Icons.email_outlined;
+                iconData = FontAwesomeIcons.envelope;
                 color = const Color(0xFF8E24AA);
               } else if (key.contains("web") || key.contains("site")) {
                 title = "Website";
-                iconData = Icons.language;
+                iconData = FontAwesomeIcons.language;
                 color = const Color(0xFF1F51E5);
               } else if (key.contains("indiamart")) {
                 title = "IndiaMart";
@@ -1280,7 +1309,9 @@ class _ProfilePageState extends State<ProfilePage> {
                 color = isDark ? Colors.white : Colors.black;
               } else if (key.contains("justdial")) {
                 title = "Justdial";
-              } else if (key.contains("google_re") || key.contains("google re") || key.contains("google")) {
+              } else if (key.contains("google_re") ||
+                  key.contains("google re") ||
+                  key.contains("google")) {
                 title = "Google";
               } else if (key.contains("facebook")) {
                 title = "Facebook";
@@ -1292,7 +1323,8 @@ class _ProfilePageState extends State<ProfilePage> {
                 title = "LinkedIn";
               } else {
                 if (title.isNotEmpty) {
-                  title = title[0].toUpperCase() + title.substring(1).toLowerCase();
+                  title =
+                      title[0].toUpperCase() + title.substring(1).toLowerCase();
                 }
               }
 
@@ -1312,7 +1344,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: isDark ? Colors.white70 : const Color(0xFF1A1A24),
+                          color:
+                              isDark ? Colors.white70 : const Color(0xFF1A1A24),
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1328,7 +1361,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildLineIconWidget(String name, IconData iconData, Color color) {
+  Widget _buildLineIconWidget(String name, FaIconData iconData, Color color) {
     final key = name.toLowerCase();
 
     if (key.contains("justdial")) {
@@ -1344,7 +1377,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       );
     }
-    
+
     if (key.contains("indiamart")) {
       return SizedBox(
         height: 36,
@@ -1358,11 +1391,15 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       );
     }
-    
+
     if (iconData.fontFamily?.contains('FontAwesome') ?? false) {
-      return SizedBox(height: 36, child: Center(child: FaIcon(iconData, color: color, size: 28)));
+      return SizedBox(
+          height: 36,
+          child: Center(child: FaIcon(iconData, color: color, size: 28)));
     }
-    return SizedBox(height: 36, child: Center(child: Icon(iconData, color: color, size: 28)));
+    return SizedBox(
+        height: 36,
+        child: Center(child: FaIcon(iconData, color: color, size: 28)));
   }
 
   void _openFullScreenImage(String? url) {
@@ -1401,6 +1438,129 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     );
+  }
+
+  Widget _buildVisitStoreButton(ProfileProvider provider, bool isDark) {
+    final products = provider.products;
+    if (products.isEmpty) return const SizedBox.shrink();
+
+    final isOwner = widget.userId == null ||
+        widget.userId == context.read<AuthProvider>().user?.id;
+
+    return InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => UserStorePage(
+                profile: provider.profileData ?? {},
+                products: products,
+                masterLinks: provider.masterLinks,
+                isOwner: isOwner,
+              ),
+            ),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      const Color(0xFF1F2937),
+                      const Color(0xFF111827),
+                    ]
+                  : [
+                      const Color(0xFF1F51E5),
+                      const Color(0xFF3B82F6),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF1F51E5).withValues(alpha: 0.25),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Center(
+                  child: Icon(
+                    Icons.storefront_rounded,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      "Visit My Store",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      "Browse ${products.length} products & order instantly",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white70,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      "Explore",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(width: 4),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
   }
 
   Widget _buildProductsSection(ProfileProvider provider, bool isDark) {
@@ -1462,11 +1622,18 @@ class _ProfilePageState extends State<ProfilePage> {
         else
           ...products.map((p) {
             final List links = p['product_link'] ?? [];
-            final rawTitle = (p['title'] ?? p['product_name'] ?? 'Product').toString();
+            final rawTitle =
+                (p['title'] ?? p['product_name'] ?? 'Product').toString();
             final title = rawTitle == rawTitle.toLowerCase()
-                ? rawTitle.split(' ').map((word) => word.isNotEmpty ? word[0].toUpperCase() + word.substring(1) : '').join(' ')
+                ? rawTitle
+                    .split(' ')
+                    .map((word) => word.isNotEmpty
+                        ? word[0].toUpperCase() + word.substring(1)
+                        : '')
+                    .join(' ')
                 : rawTitle;
-            final rawPrice = (p['price'] ?? p['product_price'] ?? '0').toString();
+            final rawPrice =
+                (p['price'] ?? p['product_price'] ?? '0').toString();
             final price = _formatPrice(rawPrice);
             final desc = p['description'] ?? '';
             final imageUrl = _pImg(p);
@@ -1475,10 +1642,15 @@ class _ProfilePageState extends State<ProfilePage> {
               padding: const EdgeInsets.only(bottom: 16),
               child: Container(
                 decoration: BoxDecoration(
-                  color: isDark ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.3) : Colors.white,
+                  color: isDark
+                      ? colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.3)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isDark ? colorScheme.primary.withValues(alpha: 0.15) : colorScheme.outlineVariant.withValues(alpha: 0.4),
+                    color: isDark
+                        ? colorScheme.primary.withValues(alpha: 0.15)
+                        : colorScheme.outlineVariant.withValues(alpha: 0.4),
                     width: 1,
                   ),
                   boxShadow: isDark
@@ -1497,8 +1669,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     GestureDetector(
                       onTap: () => _openFullScreenImage(imageUrl),
                       child: ClipRRect(
-                        borderRadius:
-                            const BorderRadius.vertical(top: Radius.circular(19)),
+                        borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(19)),
                         child: AppNetworkImage(
                           imageUrl: imageUrl,
                           width: double.infinity,
@@ -1540,8 +1712,10 @@ class _ProfilePageState extends State<ProfilePage> {
                                   horizontal: 12, vertical: 10),
                               decoration: BoxDecoration(
                                 color: isDark
-                                    ? colorScheme.primary.withValues(alpha: 0.06)
-                                    : colorScheme.primary.withValues(alpha: 0.03),
+                                    ? colorScheme.primary
+                                        .withValues(alpha: 0.06)
+                                    : colorScheme.primary
+                                        .withValues(alpha: 0.03),
                                 borderRadius: BorderRadius.circular(12),
                                 border: Border.all(
                                   color: colorScheme.primary
@@ -1595,7 +1769,8 @@ class _ProfilePageState extends State<ProfilePage> {
       if (cleanStr.isEmpty) return priceStr;
       final value = double.parse(cleanStr);
       final isWhole = value == value.toInt();
-      final numberToFormat = isWhole ? value.toInt().toString() : value.toStringAsFixed(2);
+      final numberToFormat =
+          isWhole ? value.toInt().toString() : value.toStringAsFixed(2);
       final parts = numberToFormat.split('.');
       final wholePart = parts[0];
       final decimalPart = parts.length > 1 ? '.' + parts[1] : '';
@@ -1852,7 +2027,8 @@ class _ProfilePageState extends State<ProfilePage> {
             child: ElevatedButton(
               onPressed: () => _launchURL(url),
               style: ElevatedButton.styleFrom(
-                backgroundColor: isDark ? const Color(0xFF2C2C2C) : const Color(0xFF1E1E2C),
+                backgroundColor:
+                    isDark ? const Color(0xFF2C2C2C) : const Color(0xFF1E1E2C),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(14),
@@ -1873,11 +2049,12 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _buildBusinessDescriptionSection(ProfileProvider provider, bool isDark) {
+  Widget _buildBusinessDescriptionSection(
+      ProfileProvider provider, bool isDark) {
     final profile = provider.profileData ?? {};
     final userObj = profile['user'];
     final businessInfo = profile['business_info'] ?? userObj?['business_info'];
-    
+
     String description = '';
     if (businessInfo is Map) {
       description = businessInfo['description']?.toString().trim() ?? '';
@@ -1923,7 +2100,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  IconData _getIconForName(String name) {
+  FaIconData _getIconForName(String name) {
     final key = name.toLowerCase();
     if (key.contains("whatsapp")) return FontAwesomeIcons.whatsapp;
     if (key.contains("justdial")) return FontAwesomeIcons.magnifyingGlass;
@@ -1935,13 +2112,14 @@ class _ProfilePageState extends State<ProfilePage> {
     if (key.contains("youtube")) return FontAwesomeIcons.youtube;
     if (key.contains("twitter") || key.contains("x"))
       return FontAwesomeIcons.xTwitter;
-    if (key.contains("email") || key.contains("gmail")) return Icons.email;
+    if (key.contains("email") || key.contains("gmail"))
+      return FontAwesomeIcons.envelope;
     if (key.contains("web") || key.contains("site"))
       return FontAwesomeIcons.globe;
     if (key.contains("store") || key.contains("shop"))
       return FontAwesomeIcons.bagShopping;
     if (key.contains("google")) return FontAwesomeIcons.google;
-    return Icons.link;
+    return FontAwesomeIcons.link;
   }
 
   Color _getColorForName(String name) {
@@ -1963,7 +2141,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Colors.blueAccent;
   }
 
-  Widget _buildIconWidget(String name, IconData iconData, Color color) {
+  Widget _buildIconWidget(String name, FaIconData iconData, Color color) {
     final key = name.toLowerCase();
 
     // Check for custom SVG assets
@@ -1986,7 +2164,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (iconData.fontFamily?.contains('FontAwesome') ?? false) {
       return FaIcon(iconData, color: color, size: 26);
     }
-    return Icon(iconData, color: color, size: 26);
+    return FaIcon(iconData, color: color, size: 26);
   }
 
   /// Robustly extract reviewer name from various possible API structures
@@ -2164,7 +2342,9 @@ class _ProfileCoverMediaState extends State<_ProfileCoverMedia> {
 class _AboutSection extends StatefulWidget {
   final String description;
   final bool isDark;
-  const _AboutSection({Key? key, required this.description, required this.isDark}) : super(key: key);
+  const _AboutSection(
+      {Key? key, required this.description, required this.isDark})
+      : super(key: key);
 
   @override
   State<_AboutSection> createState() => _AboutSectionState();
@@ -2194,8 +2374,8 @@ class _AboutSectionState extends State<_AboutSection> {
           ),
           const SizedBox(height: 12),
           Text(
-            isExpanded || !isLong 
-                ? widget.description 
+            isExpanded || !isLong
+                ? widget.description
                 : '${widget.description.substring(0, maxLength)}...',
             style: TextStyle(
               fontSize: 14,
@@ -2217,7 +2397,7 @@ class _AboutSectionState extends State<_AboutSection> {
                   isExpanded ? "Read Less" : "Read More",
                   style: const TextStyle(
                     fontSize: 14,
-                    color: Color(0xFF2563EB), 
+                    color: Color(0xFF2563EB),
                     fontWeight: FontWeight.w600,
                   ),
                 ),

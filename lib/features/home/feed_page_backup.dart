@@ -376,165 +376,168 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
             Padding(
               padding: const EdgeInsets.all(20),
               child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// 🔹 HEADER
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'NETWORK IMPACT',
-                  style: TextStyle(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.94)
-                        : colorScheme.onPrimary.withValues(alpha: 0.92),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 10,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? Colors.white.withValues(alpha: 0.18)
-                        : Colors.white.withValues(alpha: 0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    "LIVE",
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                )
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            /// 🔹 LOADING
-            if (_isAnalyticsLoading)
-              Center(
-                child: CircularProgressIndicator(color: colorScheme.onPrimary),
-              )
-            else ...[
-              /// 🔢 TOTAL PROFILE VIEWS
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    _totalViewCount.toString(),
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 48,
-                      fontWeight: FontWeight.w900,
-                      height: 1.0,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        )
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    "views",
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.8),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              /// 📈 PROFILE COMPLETION
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    "Profile Progress",
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.9),
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  Text(
-                    "${_profileCompletionPercent.toInt()}%",
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-
-              /// Progress Bar
-              Stack(
-                children: [
-                  Container(
-                    height: 10,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  AnimatedContainer(
-                    duration: const Duration(seconds: 1),
-                    curve: Curves.easeOutCubic,
-                    height: 10,
-                    width: (MediaQuery.of(context).size.width - 72) *
-                        (_profileCompletionPercent / 100).clamp(0.0, 1.0),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          palette?.neonAccent ?? colorScheme.secondary,
-                          (palette?.neonAccent ?? colorScheme.secondary)
-                              .withValues(alpha: 0.9),
-                        ],
+                  /// 🔹 HEADER
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'NETWORK IMPACT',
+                        style: TextStyle(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.94)
+                              : colorScheme.onPrimary.withValues(alpha: 0.92),
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                          letterSpacing: 2.0,
+                        ),
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: colorScheme.secondary.withValues(alpha: 0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        )
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.white.withValues(alpha: 0.18)
+                              : Colors.white.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          "LIVE",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  /// 🔹 LOADING
+                  if (_isAnalyticsLoading)
+                    Center(
+                      child: CircularProgressIndicator(
+                          color: colorScheme.onPrimary),
+                    )
+                  else ...[
+                    /// 🔢 TOTAL PROFILE VIEWS
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.baseline,
+                      textBaseline: TextBaseline.alphabetic,
+                      children: [
+                        Text(
+                          _totalViewCount.toString(),
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 48,
+                            fontWeight: FontWeight.w900,
+                            height: 1.0,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              )
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          "views",
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.8),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ],
                     ),
-                  ),
+                    const SizedBox(height: 20),
+
+                    /// 📈 PROFILE COMPLETION
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          "Profile Progress",
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                        Text(
+                          "${_profileCompletionPercent.toInt()}%",
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    /// Progress Bar
+                    Stack(
+                      children: [
+                        Container(
+                          height: 10,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                        ),
+                        AnimatedContainer(
+                          duration: const Duration(seconds: 1),
+                          curve: Curves.easeOutCubic,
+                          height: 10,
+                          width: (MediaQuery.of(context).size.width - 72) *
+                              (_profileCompletionPercent / 100).clamp(0.0, 1.0),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                palette?.neonAccent ?? colorScheme.secondary,
+                                (palette?.neonAccent ?? colorScheme.secondary)
+                                    .withValues(alpha: 0.9),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: colorScheme.secondary
+                                    .withValues(alpha: 0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              )
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        _miniStatCard(
+                          icon: FontAwesomeIcons.clock,
+                          value:
+                              "${(_totalTimeSeconds / 60).toStringAsFixed(1)}m",
+                          label: "Time Spent",
+                        ),
+                        _miniStatCard(
+                          icon: FontAwesomeIcons.star,
+                          value: _averageRating.toStringAsFixed(1),
+                          label: "$_totalReviews reviews",
+                        ),
+                      ],
+                    ),
+                  ]
                 ],
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  _miniStatCard(
-                    icon: FontAwesomeIcons.clock,
-                    value: "${(_totalTimeSeconds / 60).toStringAsFixed(1)}m",
-                    label: "Time Spent",
-                  ),
-                  _miniStatCard(
-                    icon: FontAwesomeIcons.star,
-                    value: _averageRating.toStringAsFixed(1),
-                    label: "$_totalReviews reviews",
-                  ),
-                ],
-              ),
-            ]
-          ],
               ),
             ),
           ],
@@ -544,7 +547,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
   }
 
   Widget _miniStatCard({
-    required IconData icon,
+    required FaIconData icon,
     required String value,
     required String label,
   }) {
@@ -583,7 +586,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                FaIcon(
                   icon,
                   color: isDark
                       ? Colors.white.withValues(alpha: 0.94)
@@ -652,7 +655,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                   builder: (context) => const ShareProfileWidget(),
                 );
               },
-              icon: const Icon(FontAwesomeIcons.shareNodes, size: 20),
+              icon: const FaIcon(FontAwesomeIcons.shareNodes, size: 20),
               label: const Text("Share Card",
                   style: TextStyle(
                       fontWeight: FontWeight.w800,
@@ -689,7 +692,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                 Navigator.of(context).push(MaterialPageRoute(
                     builder: (context) => const LeadScanner2()));
               },
-              child: const Icon(FontAwesomeIcons.camera, size: 24),
+              child: const FaIcon(FontAwesomeIcons.camera, size: 24),
             ),
           ),
         ),
@@ -732,7 +735,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                     : colorScheme.primary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
+              child: FaIcon(
                 FontAwesomeIcons.briefcase,
                 color: isDark ? colorScheme.onSurface : colorScheme.primary,
                 size: 30,
@@ -824,7 +827,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                     : colorScheme.secondary.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(14),
               ),
-              child: Icon(
+              child: FaIcon(
                 FontAwesomeIcons.qrcode,
                 color: isDark ? shareAccent : colorScheme.secondary,
                 size: 30,
@@ -876,7 +879,7 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
                   )
                 ],
               ),
-              child: Icon(
+              child: FaIcon(
                 FontAwesomeIcons.circleChevronRight,
                 color: isDark ? shareAccent : Colors.white,
                 size: 16,
@@ -1068,5 +1071,3 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin {
         ));
   }
 }
-
-

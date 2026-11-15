@@ -46,7 +46,7 @@ class ActionDock extends StatelessWidget {
   }
 
   Widget _buildActionItem(
-      IconData icon, String label, BuildContext context, Widget page) {
+      FaIconData icon, String label, BuildContext context, Widget page) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final colorScheme = theme.colorScheme;
@@ -75,7 +75,7 @@ class ActionDock extends StatelessWidget {
                 width: 0.8,
               ),
             ),
-            child: Icon(
+            child: FaIcon(
               icon,
               size: 24,
               color: isDark ? colorScheme.onSurface : colorScheme.primary,
@@ -95,4 +95,3 @@ class ActionDock extends StatelessWidget {
     );
   }
 }
-

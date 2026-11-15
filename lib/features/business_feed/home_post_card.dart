@@ -503,7 +503,7 @@ class _HomePostCardState extends State<HomePostCard> {
                                   height: 36,
                                   fit: BoxFit.cover,
                                 )
-                              : Icon(
+                              : FaIcon(
                                   FontAwesomeIcons.user,
                                   size: 16,
                                   color: colorScheme.onSurface
@@ -541,7 +541,7 @@ class _HomePostCardState extends State<HomePostCard> {
                         backgroundColor: isDark
                             ? colorScheme.surfaceVariant
                             : Colors.grey.shade200,
-                        child: Icon(
+                        child: FaIcon(
                           IndustryIconMapper.getIcon(
                               _postData["industry_icon"]),
                           size: 16,
@@ -571,7 +571,7 @@ class _HomePostCardState extends State<HomePostCard> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(FontAwesomeIcons.star,
+                        FaIcon(FontAwesomeIcons.star,
                             size: 18, color: colorScheme.primary),
                         const SizedBox(width: 6),
                         Expanded(
@@ -599,8 +599,7 @@ class _HomePostCardState extends State<HomePostCard> {
                                     );
                                   },
                                   child: Padding(
-                                    padding:
-                                        const EdgeInsets.only(top: 4),
+                                    padding: const EdgeInsets.only(top: 4),
                                     child: Text(
                                       "...Read more",
                                       style: TextStyle(
@@ -791,7 +790,7 @@ class _HomePostCardState extends State<HomePostCard> {
   }
 
   Widget _footerBtn({
-    required IconData icon,
+    required FaIconData icon,
     required String label,
     required VoidCallback onTap,
     bool active = false,
@@ -805,7 +804,7 @@ class _HomePostCardState extends State<HomePostCard> {
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Row(
           children: [
-            Icon(
+            FaIcon(
               icon,
               size: 18,
               color: active
@@ -830,7 +829,7 @@ class _HomePostCardState extends State<HomePostCard> {
   }
 
   Widget _footerReactionBtn({
-    required IconData icon,
+    required FaIconData icon,
     required String label,
     required bool active,
     required bool isAnimating,
@@ -856,7 +855,7 @@ class _HomePostCardState extends State<HomePostCard> {
           children: [
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
-              child: Icon(
+              child: FaIcon(
                 icon,
                 key: ValueKey<bool>(active),
                 size: 21,
@@ -883,7 +882,7 @@ class _HomePostCardState extends State<HomePostCard> {
   }
 
   Widget _footerSaveBtn({
-    required IconData icon,
+    required FaIconData icon,
     required String label,
     required bool active,
     required bool isAnimating,
@@ -906,7 +905,7 @@ class _HomePostCardState extends State<HomePostCard> {
           children: [
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
-              child: Icon(
+              child: FaIcon(
                 icon,
                 key: ValueKey<bool>(active),
                 size: 21,
@@ -932,4 +931,3 @@ class _HomePostCardState extends State<HomePostCard> {
     );
   }
 }
-

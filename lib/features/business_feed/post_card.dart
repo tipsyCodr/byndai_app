@@ -516,7 +516,7 @@ class _PostCardState extends State<PostCard> {
   }
 
   Widget _footerBtn({
-    required IconData icon,
+    required FaIconData icon,
     required String label,
     required VoidCallback onTap,
     bool active = false,
@@ -536,7 +536,7 @@ class _PostCardState extends State<PostCard> {
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
         child: Row(
           children: [
-            Icon(
+            FaIcon(
               icon,
               size: 21,
               color: active ? activeColor : inactiveColor,
@@ -557,7 +557,7 @@ class _PostCardState extends State<PostCard> {
   }
 
   Widget _footerReactionBtn({
-    required IconData icon,
+    required FaIconData icon,
     required String label,
     required bool active,
     required bool isAnimating,
@@ -586,7 +586,7 @@ class _PostCardState extends State<PostCard> {
           children: [
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
-              child: Icon(
+              child: FaIcon(
                 icon,
                 key: ValueKey<bool>(active),
                 size: 21,
@@ -609,7 +609,7 @@ class _PostCardState extends State<PostCard> {
   }
 
   Widget _footerSaveBtn({
-    required IconData icon,
+    required FaIconData icon,
     required String label,
     required bool active,
     required bool isAnimating,
@@ -638,7 +638,7 @@ class _PostCardState extends State<PostCard> {
           children: [
             AnimatedSwitcher(
               duration: const Duration(milliseconds: 200),
-              child: Icon(
+              child: FaIcon(
                 icon,
                 key: ValueKey<bool>(active),
                 size: 21,
@@ -681,8 +681,9 @@ class _PostCardState extends State<PostCard> {
     final avatarBgColor =
         isDark ? colorScheme.surfaceVariant : Colors.grey.shade200;
 
-    final timeColor =
-        isDark ? colorScheme.onSurface.withValues(alpha: 0.6) : Colors.grey.shade600;
+    final timeColor = isDark
+        ? colorScheme.onSurface.withValues(alpha: 0.6)
+        : Colors.grey.shade600;
 
     final readMoreColor =
         isDark ? colorScheme.primary : const Color.fromARGB(255, 45, 47, 190);
@@ -730,7 +731,7 @@ class _PostCardState extends State<PostCard> {
                               height: 36,
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) {
-                                return Icon(
+                                return FaIcon(
                                   FontAwesomeIcons.user,
                                   size: 16,
                                   color: isDark
@@ -740,12 +741,11 @@ class _PostCardState extends State<PostCard> {
                                 );
                               },
                             )
-                          : Icon(
+                          : FaIcon(
                               FontAwesomeIcons.user,
                               size: 16,
                               color: isDark
-                                  ? colorScheme.onSurface
-                                      .withValues(alpha: 0.6)
+                                  ? colorScheme.onSurface.withValues(alpha: 0.6)
                                   : Colors.grey,
                             ),
                     ),
@@ -777,7 +777,7 @@ class _PostCardState extends State<PostCard> {
                   CircleAvatar(
                     radius: 14,
                     backgroundColor: avatarBgColor,
-                    child: Icon(
+                    child: FaIcon(
                       IndustryIconMapper.getIcon(_postData["industry_icon"]),
                       size: 16,
                       color: industryIconColor,
@@ -806,7 +806,7 @@ class _PostCardState extends State<PostCard> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
+                    FaIcon(
                       FontAwesomeIcons.star,
                       size: 18,
                       color: colorScheme.primary,

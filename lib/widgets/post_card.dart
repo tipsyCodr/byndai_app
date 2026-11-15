@@ -121,12 +121,13 @@ class _PostHeader extends StatelessWidget {
                 ),
                 child: CircleAvatar(
                   radius: 24,
-                  backgroundColor:
-                      isDark ? const Color(0xFF202A49) : const Color(0xFFEAF0FF),
+                  backgroundColor: isDark
+                      ? const Color(0xFF202A49)
+                      : const Color(0xFFEAF0FF),
                   backgroundImage:
                       avatarUrl.isNotEmpty ? NetworkImage(avatarUrl) : null,
                   child: avatarUrl.isEmpty
-                      ? Icon(
+                      ? FaIcon(
                           FontAwesomeIcons.user,
                           color: colorScheme.primary,
                           size: 18,
@@ -163,7 +164,7 @@ class _PostHeader extends StatelessWidget {
                     const SizedBox(height: 3),
                     Row(
                       children: [
-                        Icon(
+                        FaIcon(
                           FontAwesomeIcons.locationDot,
                           size: 10,
                           color: colorScheme.primary,
@@ -190,7 +191,7 @@ class _PostHeader extends StatelessWidget {
             ],
           ),
         ),
-        Icon(
+        FaIcon(
           FontAwesomeIcons.ellipsis,
           color: colorScheme.onSurface.withValues(alpha: 0.4),
           size: 16,
@@ -224,7 +225,7 @@ class _PostImage extends StatelessWidget {
                 ),
               ),
               child: const Center(
-                child: Icon(
+                child: FaIcon(
                   FontAwesomeIcons.image,
                   size: 54,
                   color: Colors.white70,
@@ -296,7 +297,7 @@ class _PostActions extends StatelessWidget {
 }
 
 class _ActionChip extends StatelessWidget {
-  final IconData icon;
+  final FaIconData icon;
   final String label;
   final VoidCallback? onTap;
 
@@ -320,7 +321,7 @@ class _ActionChip extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
+            FaIcon(
               icon,
               size: 14,
               color: colorScheme.onSurface.withValues(alpha: 0.74),
@@ -342,7 +343,7 @@ class _ActionChip extends StatelessWidget {
 }
 
 class _CircleAction extends StatelessWidget {
-  final IconData icon;
+  final FaIconData icon;
   final VoidCallback? onTap;
   final Color bgColor;
 
@@ -366,7 +367,7 @@ class _CircleAction extends StatelessWidget {
           color: bgColor,
           shape: BoxShape.circle,
         ),
-        child: Icon(
+        child: FaIcon(
           icon,
           size: 14,
           color: colorScheme.onSurface.withValues(alpha: 0.7),

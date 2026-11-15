@@ -600,7 +600,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // ================== SOCIAL ICONS HELPERS ==================
-  IconData? _getIconForName(String name) {
+  FaIconData? _getIconForName(String name) {
     final key = name.trim().toLowerCase();
 
     switch (key) {
@@ -686,7 +686,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _socialIconClickable(
-      IconData icon, Color color, String link, String name) {
+      FaIconData icon, Color color, String link, String name) {
     return InkWell(
       borderRadius: BorderRadius.circular(14),
       onTap: () {
@@ -774,7 +774,8 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  Widget _socialIconOnly(IconData icon, Color color, String link, String name) {
+  Widget _socialIconOnly(
+      FaIconData icon, Color color, String link, String name) {
     return InkWell(
       borderRadius: BorderRadius.circular(30),
       onTap: () {

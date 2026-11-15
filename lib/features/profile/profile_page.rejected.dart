@@ -861,7 +861,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
                             _buildQuickContactItem(
-                              icon: Icons.phone_outlined,
+                              icon: FontAwesomeIcons.phone,
                               label: "Call",
                               color: Colors.green,
                               onTap: () {
@@ -881,7 +881,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               },
                             ),
                             _buildQuickContactItem(
-                              icon: Icons.email_outlined,
+                              icon: FontAwesomeIcons.envelope,
                               label: "Email",
                               color: Colors.purple,
                               onTap: () {
@@ -892,7 +892,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               },
                             ),
                             _buildQuickContactItem(
-                              icon: Icons.language_outlined,
+                              icon: FontAwesomeIcons.language,
                               label: "Website",
                               color: Colors.blue,
                               onTap: () {
@@ -1340,7 +1340,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           _launchURL("https://wa.me/${pMobile}");
                         }
                       },
-                      icon: const Icon(FontAwesomeIcons.whatsapp,
+                      icon: const FaIcon(FontAwesomeIcons.whatsapp,
                           color: Colors.white, size: 18),
                       label: const Text("WhatsApp",
                           style: TextStyle(fontWeight: FontWeight.bold)),
@@ -2375,7 +2375,7 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  IconData _getIconForName(String name) {
+  FaIconData _getIconForName(String name) {
     final key = name.toLowerCase();
     if (key.contains("whatsapp")) return FontAwesomeIcons.whatsapp;
     if (key.contains("justdial")) return FontAwesomeIcons.magnifyingGlass;
@@ -2387,13 +2387,14 @@ class _ProfilePageState extends State<ProfilePage> {
     if (key.contains("youtube")) return FontAwesomeIcons.youtube;
     if (key.contains("twitter") || key.contains("x"))
       return FontAwesomeIcons.xTwitter;
-    if (key.contains("email") || key.contains("gmail")) return Icons.email;
+    if (key.contains("email") || key.contains("gmail"))
+      return FontAwesomeIcons.envelope;
     if (key.contains("web") || key.contains("site"))
       return FontAwesomeIcons.globe;
     if (key.contains("store") || key.contains("shop"))
       return FontAwesomeIcons.bagShopping;
     if (key.contains("google")) return FontAwesomeIcons.google;
-    return Icons.link;
+    return FontAwesomeIcons.link;
   }
 
   Color _getColorForName(String name) {
@@ -2415,7 +2416,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Colors.blueAccent;
   }
 
-  Widget _buildIconWidget(String name, IconData iconData, Color color) {
+  Widget _buildIconWidget(String name, FaIconData iconData, Color color) {
     final key = name.toLowerCase();
 
     // Check for custom SVG assets
@@ -2438,7 +2439,7 @@ class _ProfilePageState extends State<ProfilePage> {
     if (iconData.fontFamily?.contains('FontAwesome') ?? false) {
       return FaIcon(iconData, color: color, size: 26);
     }
-    return Icon(iconData, color: color, size: 26);
+    return FaIcon(iconData, color: color, size: 26);
   }
 
   /// Robustly extract reviewer name from various possible API structures
@@ -2521,7 +2522,7 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildQuickContactItem({
-    required IconData icon,
+    required FaIconData icon,
     required String label,
     required Color color,
     required VoidCallback onTap,
@@ -2544,7 +2545,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ],
             ),
-            child: Icon(icon, color: color, size: 20),
+            child: FaIcon(icon, color: color, size: 20),
           ),
           const SizedBox(height: 4),
           Text(

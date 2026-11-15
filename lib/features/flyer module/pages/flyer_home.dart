@@ -3,6 +3,9 @@ import 'package:intl/intl.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/flyer_service.dart';
 import 'flyer_editor_page.dart';
+import 'ai_flyer_studio_page.dart';
+import 'ai_flyer_history_page.dart';
+import 'brand_kit_page.dart';
 
 class FlyerHomePage extends StatefulWidget {
   const FlyerHomePage({super.key});
@@ -144,6 +147,7 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
   }
 
   Widget _buildHeader() {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
@@ -151,11 +155,11 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
           Expanded(
             child: Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).cardTheme.color,
+                color: theme.cardTheme.color,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Theme.of(context).shadowColor.withValues(alpha: 0.05),
+                    color: theme.shadowColor.withValues(alpha: 0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -163,15 +167,45 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
               ),
               child: TextField(
                 onChanged: (val) => setState(() => search = val),
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   hintText: "Search occasion...",
-                  prefixIcon: const Icon(Icons.search, size: 22),
+                  prefixIcon: Icon(Icons.search, size: 22),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
                   focusedBorder: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                  contentPadding: EdgeInsets.symmetric(vertical: 14),
                 ),
               ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          IconButton.filledTonal(
+            tooltip: 'Brand Kit',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const BrandKitPage()),
+              );
+            },
+            icon: const Icon(Icons.verified_user_outlined, size: 20),
+            style: IconButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.all(12),
+            ),
+          ),
+          const SizedBox(width: 6),
+          IconButton.filled(
+            tooltip: 'My AI Flyers',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AiFlyerHistoryPage()),
+              );
+            },
+            icon: const Icon(Icons.history_rounded, size: 20),
+            style: IconButton.styleFrom(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              padding: const EdgeInsets.all(12),
             ),
           ),
         ],
@@ -299,6 +333,72 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader(sectionTitle),
+        // AI Generation Banner for Today's Occasion
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                const Color(0xFF8B5CF6),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.25),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      selectedOccasion != null
+                          ? "AI Flyer: ${selectedOccasion!['name']}"
+                          : "Generate Today's AI Occasion Flyer",
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const Text(
+                      "Branded greetings with your logo & contact info",
+                      style: TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black87,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AiFlyerStudioPage(
+                        initialMode: 'occasion',
+                        initialOccasion: selectedOccasion,
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Create', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
         if (isOccasionsLoading)
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
@@ -325,6 +425,72 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildSectionHeader("Special Flyers"),
+        // AI Generation Banner for Special Flyers
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [
+                Color(0xFF0D9488),
+                Color(0xFF059669),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0D9488).withValues(alpha: 0.25),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.stars_rounded, color: Colors.white, size: 24),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      selectedMiscCategory != null
+                          ? "AI Special: ${selectedMiscCategory!['name']}"
+                          : "Generate AI Special Flyer",
+                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const Text(
+                      "Quotes, promos & custom graphics with Brand Kit",
+                      style: TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black87,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AiFlyerStudioPage(
+                        initialMode: 'special',
+                        initialCategory: selectedMiscCategory?['name'],
+                      ),
+                    ),
+                  );
+                },
+                child: const Text('Create', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ],
+          ),
+        ),
         _buildPillList(
           items: miscCategories.map((c) => c['name'].toString()).toList(),
           selectedItem: selectedMiscCategory?['name']?.toString() ?? "",

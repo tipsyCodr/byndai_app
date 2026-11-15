@@ -177,7 +177,7 @@ class FeedItemTile extends StatelessWidget {
 }
 
 class _ActionButton extends StatelessWidget {
-  final IconData icon;
+  final FaIconData icon;
   final String? label;
   final Color? color;
   final VoidCallback onTap;

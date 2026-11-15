@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/config/app_config.dart';
@@ -811,7 +812,9 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                             if (!_isPostingComment)
                               Container(
                                 decoration: BoxDecoration(
-                                  color: isDark ?colorScheme.surfaceContainerHighest : readMoreColor,
+                                  color: isDark
+                                      ? colorScheme.surfaceContainerHighest
+                                      : readMoreColor,
                                   borderRadius: BorderRadius.circular(25),
                                 ),
                                 child: IconButton(
@@ -930,7 +933,7 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                 CircleAvatar(
                   radius: 14,
                   backgroundColor: Colors.grey.shade200,
-                  child: Icon(
+                  child: FaIcon(
                     IndustryIconMapper.getIcon(_postData["industry_icon"]),
                     size: 16,
                     color: const Color.fromARGB(255, 45, 47, 190),
@@ -1319,7 +1322,9 @@ class _PostDetailsPageState extends State<PostDetailsPage> {
                 Container(
                   decoration: BoxDecoration(
                     // color: Colors.blue,
-                    color: isDark ? colorScheme.surfaceContainerHighest : readMoreColor,
+                    color: isDark
+                        ? colorScheme.surfaceContainerHighest
+                        : readMoreColor,
                     borderRadius: BorderRadius.circular(25),
                   ),
                   child: IconButton(

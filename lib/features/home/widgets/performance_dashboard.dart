@@ -120,7 +120,8 @@ class PerformanceDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context, bool isDark, ColorScheme colorScheme) {
+  Widget _buildHeader(
+      BuildContext context, bool isDark, ColorScheme colorScheme) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -183,7 +184,7 @@ class PerformanceDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildContent(BuildContext context, ColorScheme colorScheme, 
+  Widget _buildContent(BuildContext context, ColorScheme colorScheme,
       AppThemeColors? palette, bool isDark) {
     return Selector<UserStatsProvider, bool>(
       selector: (_, p) => p.isLoading,
@@ -248,7 +249,7 @@ class PerformanceDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressOrStats(BuildContext context, ColorScheme colorScheme, 
+  Widget _buildProgressOrStats(BuildContext context, ColorScheme colorScheme,
       AppThemeColors? palette, bool isDark) {
     return Selector<UserStatsProvider, double>(
       selector: (_, p) => p.profileCompletionPercent,
@@ -291,7 +292,8 @@ class PerformanceDashboard extends StatelessWidget {
                   _miniStatCard(
                     context: context,
                     icon: FontAwesomeIcons.clock,
-                    value: "${(provider.totalTimeSeconds / 60).toStringAsFixed(1)}m",
+                    value:
+                        "${(provider.totalTimeSeconds / 60).toStringAsFixed(1)}m",
                     label: "Time Spent",
                   ),
                   const SizedBox(width: 12),
@@ -310,7 +312,7 @@ class PerformanceDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressBar(BuildContext context, ColorScheme colorScheme, 
+  Widget _buildProgressBar(BuildContext context, ColorScheme colorScheme,
       AppThemeColors? palette, double percent) {
     return Stack(
       children: [
@@ -326,12 +328,14 @@ class PerformanceDashboard extends StatelessWidget {
           duration: const Duration(seconds: 1),
           curve: Curves.easeOutCubic,
           height: 10,
-          width: (MediaQuery.of(context).size.width - 72) * (percent / 100).clamp(0.0, 1.0),
+          width: (MediaQuery.of(context).size.width - 72) *
+              (percent / 100).clamp(0.0, 1.0),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [
                 palette?.neonAccent ?? colorScheme.secondary,
-                (palette?.neonAccent ?? colorScheme.secondary).withValues(alpha: 0.9),
+                (palette?.neonAccent ?? colorScheme.secondary)
+                    .withValues(alpha: 0.9),
               ],
             ),
             borderRadius: BorderRadius.circular(20),
@@ -350,7 +354,7 @@ class PerformanceDashboard extends StatelessWidget {
 
   Widget _miniStatCard({
     required BuildContext context,
-    required IconData icon,
+    required FaIconData icon,
     required String value,
     required String label,
   }) {

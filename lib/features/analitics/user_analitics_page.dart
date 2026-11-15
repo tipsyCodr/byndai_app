@@ -291,7 +291,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
   }
 
   // ================= UI HELPERS =================
-  IconData _platformIcon(String platform) {
+  FaIconData _platformIcon(String platform) {
     switch (platform.toLowerCase()) {
       case "instagram":
         return FontAwesomeIcons.instagram;
@@ -641,7 +641,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
               CircleAvatar(
                 radius: 18,
                 backgroundColor: cs.primaryContainer,
-                child: Icon(
+                child: FaIcon(
                   _platformIcon(platform),
                   size: 16,
                   color: cs.onPrimaryContainer,
@@ -841,7 +841,7 @@ class _UserAnaliticsPageState extends State<UserAnaliticsPage> {
                                     children: [
                                       Row(
                                         children: [
-                                          Icon(
+                                          FaIcon(
                                             _platformIcon(platform),
                                             size: 18,
                                             color:

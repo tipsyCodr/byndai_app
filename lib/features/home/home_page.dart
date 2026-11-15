@@ -33,20 +33,20 @@ class _HomePageState extends State<HomePage> {
   DateTime? _lastBackPressed;
 
   final GlobalKey<FeedPageState> _feedKey = GlobalKey<FeedPageState>();
-  late final List<Widget> _screens;
   late final PageController _pageController;
   NfcService? _nfcService;
+
+  List<Widget> get _screens => [
+    FeedPage(key: _feedKey),
+    const LeadsPage(),
+    const DiscoverPage(),
+    const SettingsPage(),
+    const AiChatbotPage(),
+  ];
 
   @override
   void initState() {
     super.initState();
-    _screens = [
-      FeedPage(key: _feedKey),
-      const LeadsPage(),
-      const DiscoverPage(),
-      const AiChatbotPage(),
-      const SettingsPage(),
-    ];
     _pageController = PageController(initialPage: _selectedIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _nfcService = Provider.of<NfcService>(context, listen: false);
@@ -103,8 +103,8 @@ class _HomePageState extends State<HomePage> {
     'Home',
     'My Leads',
     'Discover',
-    'AI Assistant',
     'Settings',
+    'AI Assistant',
   ];
 
   void _onItemTapped(int index) {
@@ -187,14 +187,15 @@ class _HomePageState extends State<HomePage> {
                   .withValues(alpha: 0.95),
               child: ClipOval(
                 child: logoUrl == null
-                    ? Icon(FontAwesomeIcons.user,
+                    ? FaIcon(FontAwesomeIcons.user,
                         color: colorScheme.primary, size: 18)
                     : AppNetworkImage(
                         imageUrl: logoUrl,
                         width: 56,
                         height: 56,
                         fit: BoxFit.cover,
-                        cacheKey: authProvider.profileUpdateCounter.toString(), // 👈 Refresh on update
+                        cacheKey: authProvider.profileUpdateCounter
+                            .toString(), // 👈 Refresh on update
                       ),
               ),
             ),
@@ -224,7 +225,7 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              icon: Icon(
+              icon: FaIcon(
                 FontAwesomeIcons.qrcode,
                 color: isDark ? colorScheme.primary : colorScheme.primary,
               ),
@@ -237,7 +238,7 @@ class _HomePageState extends State<HomePage> {
               },
             ),
             IconButton(
-              icon: Icon(
+              icon: FaIcon(
                 FontAwesomeIcons.commentDots,
                 color: isDark ? colorScheme.primary : colorScheme.primary,
               ),
@@ -430,40 +431,155 @@ class _HomePageState extends State<HomePage> {
 
     return Positioned(
       bottom: 12 + MediaQuery.of(context).padding.bottom,
-      left: 16,
-      right: 16,
-      child: GlassBox(
-        padding: EdgeInsets.zero,
-        borderRadius: 28,
-        blur: 15,
-        opacity: isDark ? 0.2 : 0.12,
-        gradientColors: [
-          (palette?.glassTop ?? colorScheme.surface)
-              .withValues(alpha: isDark ? 0.7 : 0.8),
-          (palette?.glassBottom ?? colorScheme.surface)
-              .withValues(alpha: isDark ? 0.58 : 0.7),
-        ],
-        child: SizedBox(
-          height: 56,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              _buildDockItem(0, FontAwesomeIcons.house),
-              _buildDockItem(1, FontAwesomeIcons.addressCard),
-              _buildDockItem(2, FontAwesomeIcons.compass),
-              _buildDockItem(3, FontAwesomeIcons.robot),
-              _buildDockItem(4, FontAwesomeIcons.gear, imageUrl: profilePicUrl),
-            ],
+      left: 14,
+      right: 14,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // ── Main Pill Navigation (4 items with labels) ───────────────
+          Expanded(
+            child: GlassBox(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              borderRadius: 32,
+              blur: 16,
+              opacity: isDark ? 0.22 : 0.12,
+              gradientColors: [
+                (palette?.glassTop ?? colorScheme.surface)
+                    .withValues(alpha: isDark ? 0.82 : 0.92),
+                (palette?.glassBottom ?? colorScheme.surface)
+                    .withValues(alpha: isDark ? 0.68 : 0.82),
+              ],
+              child: SizedBox(
+                height: 58,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildDockItem(0, FontAwesomeIcons.house),
+                    _buildDockItem(1, FontAwesomeIcons.addressCard),
+                    _buildDockItem(2, FontAwesomeIcons.compass),
+                    _buildDockItem(3, FontAwesomeIcons.gear,
+                        imageUrl: profilePicUrl),
+                  ],
+                ),
+              ),
+            ),
           ),
+
+          const SizedBox(width: 10),
+
+          // ── Standalone Circular AI Action Button ─────────────────────
+          _buildStandaloneAiButton(4, isDark, colorScheme, palette),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStandaloneAiButton(
+    int index,
+    bool isDark,
+    ColorScheme colorScheme,
+    AppThemeColors? palette,
+  ) {
+    final isSelected = _selectedIndex == index;
+
+    return GestureDetector(
+      onTap: () => _onItemTapped(index),
+      behavior: HitTestBehavior.opaque,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOut,
+        width: 58,
+        height: 58,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: isSelected
+              ? (isDark ? const Color(0xFF1E2028) : const Color(0xFF111216))
+              : (isDark ? const Color(0xFF181A20) : const Color(0xFF18191E)),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFFA855F7).withValues(alpha: 0.8)
+                : (isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : Colors.white.withValues(alpha: 0.25)),
+            width: isSelected ? 2.0 : 1.0,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isSelected
+                  ? const Color(0xFFA855F7).withValues(alpha: 0.45)
+                  : Colors.black.withValues(alpha: isDark ? 0.45 : 0.25),
+              blurRadius: isSelected ? 16 : 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Center(
+          child: _buildWaveSparkleIcon(),
         ),
       ),
     );
   }
 
-  Widget _buildDockItem(int index, IconData icon, {String? imageUrl}) {
+  /// Custom waveform + sparkles icon matching modern AI UI
+  Widget _buildWaveSparkleIcon() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // Wave bar 1
+        Container(
+          width: 2.8,
+          height: 12,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 2.8),
+        // Wave bar 2 (tall center)
+        Container(
+          width: 2.8,
+          height: 20,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 2.8),
+        // Wave bar 3
+        Container(
+          width: 2.8,
+          height: 14,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 3.5),
+        // Mini sparkle
+        const FaIcon(
+          FontAwesomeIcons.wandMagicSparkles,
+          size: 11,
+          color: Colors.white,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDockItem(
+    int index,
+    FaIconData icon, {
+    String? imageUrl,
+  }) {
     final theme = Theme.of(context);
     final palette = theme.extension<AppThemeColors>();
     final isSelected = _selectedIndex == index;
+    final isDark = theme.brightness == Brightness.dark;
+
+    final iconColor = isSelected
+        ? (isDark ? Colors.white : theme.colorScheme.primary)
+        : (palette?.dockInactive ??
+            theme.colorScheme.onSurface.withValues(alpha: 0.55));
 
     return Expanded(
       child: GestureDetector(
@@ -472,36 +588,35 @@ class _HomePageState extends State<HomePage> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 220),
           curve: Curves.easeOut,
-          height: 40,
-          margin: const EdgeInsets.symmetric(horizontal: 4),
+          height: 44,
+          margin: const EdgeInsets.symmetric(horizontal: 2),
           decoration: BoxDecoration(
             color: isSelected
                 ? (palette?.dockActive ?? theme.colorScheme.primary).withValues(
-                    alpha: theme.brightness == Brightness.dark ? 0.2 : 0.14,
+                    alpha: isDark ? 0.22 : 0.12,
                   )
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(28),
+            borderRadius: BorderRadius.circular(24),
             border: isSelected
-                ? (theme.brightness == Brightness.dark
+                ? (isDark
                     ? Border.all(color: Colors.transparent, width: 0)
                     : Border.all(
-                        color:
-                            (palette?.neonAccent ?? theme.colorScheme.secondary)
-                                .withValues(alpha: 0.45),
+                        color: (palette?.neonAccent ?? theme.colorScheme.secondary)
+                            .withValues(alpha: 0.35),
                         width: 0.8,
                       ))
                 : null,
           ),
           child: Center(
-            child: (index == 4 && imageUrl != null)
+            child: (imageUrl != null)
                 ? CircleAvatar(
-                    radius: 16,
+                    radius: 13,
                     backgroundColor: Colors.transparent,
                     child: ClipOval(
                       child: AppNetworkImage(
                         imageUrl: imageUrl,
-                        width: 32,
-                        height: 32,
+                        width: 26,
+                        height: 26,
                         fit: BoxFit.cover,
                         cacheKey: context
                             .read<AuthProvider>()
@@ -510,15 +625,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   )
-                : Icon(
+                : FaIcon(
                     icon,
-                    color: isSelected
-                        ? (theme.brightness == Brightness.dark
-                            ? Colors.white
-                            : theme.colorScheme.primary)
-                        : (palette?.dockInactive ??
-                            theme.colorScheme.onSurface.withValues(alpha: 0.6)),
-                    size: 24,
+                    color: iconColor,
+                    size: 20,
                   ),
           ),
         ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/core/services/user_storage_service.dart';
@@ -583,7 +584,7 @@ class _MyPostCardState extends State<MyPostCard> {
                     child: CircleAvatar(
                       radius: 14,
                       backgroundColor: Colors.grey.shade200,
-                      child: Icon(
+                      child: FaIcon(
                         IndustryIconMapper.getIcon(_postData["industry_icon"]),
                         size: 16,
                         color: isDark ? Colors.white : colorScheme.primary,

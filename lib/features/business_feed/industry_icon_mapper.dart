@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class IndustryIconMapper {
-  static final Map<String, IconData> _iconMap = {
+  static final Map<String, FaIconData> _iconMap = {
     "fa fa-snowflake": FontAwesomeIcons.snowflake,
     "fa fa-rocket": FontAwesomeIcons.rocket,
     "fa fa-burn": FontAwesomeIcons.fire,
@@ -111,7 +111,7 @@ class IndustryIconMapper {
     "fa fa-tree": FontAwesomeIcons.tree,
   };
 
-  static IconData getIcon(String? iconClass) {
+  static FaIconData getIcon(String? iconClass) {
     return _iconMap[iconClass] ?? FontAwesomeIcons.building;
   }
 }
