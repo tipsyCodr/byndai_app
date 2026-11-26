@@ -20,9 +20,10 @@ import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:provider/provider.dart';
 
 class ConnectionsPage extends StatefulWidget {
-  /// 0 = Connections
-  /// 1 = Pending
-  /// 2 = Sent
+  /// 0 = Chats
+  /// 1 = Connected
+  /// 2 = Pending
+  /// 3 = Sent
   final int initialTabIndex;
 
   const ConnectionsPage({
@@ -121,9 +122,9 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     super.initState();
 
     _tabController = TabController(
-      length: 3,
+      length: 4,
       vsync: this,
-      initialIndex: widget.initialTabIndex,
+      initialIndex: widget.initialTabIndex.clamp(0, 3),
     );
 
     // fetch all
@@ -922,6 +923,8 @@ class _ConnectionsPageState extends State<ConnectionsPage>
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
+    final activeChats = _getActiveChats();
+    final chatsTitle = "Chats (${activeChats.length})";
     final connectionTitle = "Connected ($_acceptedCount)";
     final pendingTitle = "Pending ($_pendingCount)";
     final sentTitle = "Sent ($_sentCount)"; // ✅
@@ -939,14 +942,17 @@ class _ConnectionsPageState extends State<ConnectionsPage>
         ),
         bottom: TabBar(
           controller: _tabController,
+          isScrollable: true,
+          tabAlignment: TabAlignment.start,
           indicator: BoxDecoration(
-            color: colorScheme.primary.withOpacity(0.2), // or any color
-            borderRadius: BorderRadius.circular(8), // optional
+            color: colorScheme.primary.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(8),
           ),
           indicatorSize: TabBarIndicatorSize.tab,
           labelColor: colorScheme.primary,
-          unselectedLabelColor: colorScheme.onSurface.withOpacity(0.6),
+          unselectedLabelColor: colorScheme.onSurface.withValues(alpha: 0.6),
           tabs: [
+            Tab(text: chatsTitle),
             Tab(text: connectionTitle),
             Tab(text: pendingTitle),
             Tab(text: sentTitle),
@@ -956,10 +962,345 @@ class _ConnectionsPageState extends State<ConnectionsPage>
       body: TabBarView(
         controller: _tabController,
         children: [
+          _buildChatsList(activeChats),
           _buildAcceptedList(),
           _buildPendingListUpdated(),
           _buildSentListUpdated(), // ✅ updated
         ],
+      ),
+    );
+  }
+
+  List<dynamic> _getActiveChats() {
+    return acceptedFriends.where((item) {
+      if (item is! Map) return false;
+      final friendId = int.tryParse(item['friend_id']?.toString() ?? '');
+      final msg = (item['last_message'] ??
+              item['message'] ??
+              item['latest_message'] ??
+              item['excerpt'] ??
+              item['last_msg'] ??
+              '')
+          .toString()
+          .trim();
+      final hasLive =
+          friendId != null && _liveChatsByFriendId.containsKey(friendId);
+      return msg.isNotEmpty || hasLive;
+    }).toList();
+  }
+
+  Future<void> _deleteChatOnly(dynamic item, int friendId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Chat'),
+        content: Text(
+            'Delete chat history with ${item['fname'] ?? 'User'}? Your connection will remain.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    final chatId = await _createChatAndGetChatId(friendId);
+    if (chatId != null) {
+      await FirestoreChatService.deleteChat(chatId);
+    }
+    if (!mounted) return;
+    setState(() {
+      _liveChatsByFriendId.remove(friendId);
+      item['last_message'] = '';
+      item['message'] = '';
+      item['latest_message'] = '';
+      item['last_msg'] = '';
+      item['_live_ms'] = 0;
+      item['unread_count'] = 0;
+      item['unread_messages_count'] = 0;
+    });
+    TopAlert.show(context, 'Chat deleted');
+  }
+
+  Widget _buildChatsList(List<dynamic> chats) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    if (acceptedLoading) {
+      return Center(
+          child: CircularProgressIndicator(color: colorScheme.primary));
+    }
+
+    if (chats.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.chat_bubble_outline_rounded,
+              size: 48,
+              color: colorScheme.onSurface.withValues(alpha: 0.35),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'No active chats yet',
+              style: TextStyle(
+                color: colorScheme.onSurface.withValues(alpha: 0.65),
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 6),
+            TextButton(
+              onPressed: () => _tabController.animateTo(1),
+              child: const Text('Message a connection'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        await fetchAcceptedFriends(reset: true);
+      },
+      color: colorScheme.primary,
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(0, 6, 0, 16),
+        itemCount: chats.length,
+        itemBuilder: (context, index) {
+          final item = chats[index];
+          final friendId = int.tryParse(item['friend_id'].toString());
+          if (friendId == null) return const SizedBox.shrink();
+
+          final rawUnread = item['unread_count'] ??
+              item['unread_messages_count'] ??
+              item['unread'] ??
+              item['unread_count_sender'] ??
+              0;
+          final unreadCount = int.tryParse(rawUnread.toString()) ?? 0;
+          final hasUnread = unreadCount > 0;
+          final timeStr =
+              item['updated_at_formatted'] ?? item['time'] ?? '';
+          final messageContent = (item['last_message'] ??
+                  item['message'] ??
+                  item['latest_message'] ??
+                  item['excerpt'] ??
+                  item['last_msg'] ??
+                  '')
+              .toString()
+              .trim();
+
+          return InkWell(
+            onLongPress: () => _deleteChatOnly(item, friendId),
+            onTap: () async {
+              setState(() {
+                item['unread_count'] = 0;
+                item['unread_messages_count'] = 0;
+              });
+
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) =>
+                    const Center(child: CircularProgressIndicator()),
+              );
+
+              final chatId = await _createChatAndGetChatId(friendId);
+              if (!mounted) return;
+              Navigator.pop(context);
+
+              if (chatId == null) {
+                TopAlert.show(context, 'Unable to open chat', isError: true);
+                return;
+              }
+
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ChatScreen(
+                    chatId: chatId,
+                    receiverId: friendId,
+                    receiverName: item['fname'] ?? 'User',
+                    receiverPic: item['profile_pic']?.toString(),
+                  ),
+                ),
+              );
+
+              if (mounted) {
+                fetchAcceptedFriends(silent: true);
+              }
+            },
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 11,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(hasUnread ? 2 : 0),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: hasUnread
+                              ? Border.all(
+                                  color: const Color(0xFF25D366),
+                                  width: 2,
+                                )
+                              : null,
+                        ),
+                        child: CircleAvatar(
+                          radius: 26,
+                          backgroundColor:
+                              colorScheme.primary.withValues(alpha: 0.12),
+                          backgroundImage: item['profile_pic'] != null
+                              ? NetworkImage(
+                                  '${AppConfig.apiProfileImg}/${item['profile_pic']}',
+                                )
+                              : null,
+                          child: item['profile_pic'] == null
+                              ? Text(
+                                  (item['fname'] ?? 'U')
+                                          .toString()
+                                          .trim()
+                                          .isNotEmpty
+                                      ? (item['fname'] ?? 'U')
+                                          .toString()
+                                          .trim()[0]
+                                          .toUpperCase()
+                                      : 'U',
+                                  style: TextStyle(
+                                    fontSize: 19,
+                                    fontWeight: FontWeight.w700,
+                                    color: colorScheme.primary,
+                                  ),
+                                )
+                              : null,
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    item['fname'] ?? 'User',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 15.5,
+                                      fontWeight: hasUnread
+                                          ? FontWeight.w700
+                                          : FontWeight.w600,
+                                      color: colorScheme.onSurface,
+                                    ),
+                                  ),
+                                ),
+                                if (timeStr.isNotEmpty) ...[
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    timeStr,
+                                    style: TextStyle(
+                                      fontSize: 11.5,
+                                      color: hasUnread
+                                          ? const Color(0xFF25D366)
+                                          : colorScheme.onSurface
+                                              .withValues(alpha: 0.48),
+                                      fontWeight: hasUnread
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    messageContent.isNotEmpty
+                                        ? messageContent
+                                        : 'Tap to chat',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 13.5,
+                                      fontWeight: hasUnread
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                      color: hasUnread
+                                          ? colorScheme.onSurface
+                                              .withValues(alpha: 0.88)
+                                          : colorScheme.onSurface
+                                              .withValues(alpha: 0.55),
+                                    ),
+                                  ),
+                                ),
+                                if (hasUnread)
+                                  Container(
+                                    margin: const EdgeInsets.only(left: 8),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 7,
+                                      vertical: 2.5,
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 22,
+                                      minHeight: 22,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF25D366),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        unreadCount > 99
+                                            ? '99+'
+                                            : '$unreadCount',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Divider(
+                  height: 1,
+                  indent: 82,
+                  endIndent: 16,
+                  color: colorScheme.outline.withValues(alpha: 0.08),
+                ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -1130,76 +1471,43 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                           int.tryParse(item['friend_id'].toString());
                       if (friendId == null) return const SizedBox.shrink();
 
-                      /// WhatsApp-style list item
-                      final rawUnread = item['unread_count'] ??
-                          item['unread_messages_count'] ??
-                          item['unread'] ??
-                          item['unread_count_sender'] ??
-                          0;
-                      final unreadCount = int.tryParse(rawUnread.toString()) ?? 0;
-                      final hasUnread = unreadCount > 0;
-                      final timeStr = item['updated_at_formatted'] ?? item['time'] ?? "";
-                      final messageContent = (item['last_message'] ??
-                              item['message'] ??
-                              item['latest_message'] ??
-                              item['excerpt'] ??
-                              item['last_msg'] ??
-                              "")
+                      final designation = (item['designation'] ??
+                              item['job_title'] ??
+                              item['role'] ??
+                              '')
                           .toString()
                           .trim();
+                      final company = (item['legal_name'] ??
+                              item['business_name'] ??
+                              item['company_name'] ??
+                              item['company'] ??
+                              '')
+                          .toString()
+                          .trim();
+                      final subtitleText = [
+                        if (designation.isNotEmpty) designation,
+                        if (company.isNotEmpty) company,
+                      ].join(' • ');
+
+                      Future<void> openProfile() async {
+                        final session =
+                            await UserStorageService().loadSession();
+                        final viewerId = session.user?.id;
+                        if (viewerId == null || !mounted) return;
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProfilePage(
+                              userId: friendId,
+                              viewerUserId: viewerId,
+                              isConnected: true,
+                            ),
+                          ),
+                        );
+                      }
 
                       return InkWell(
-                        onTap: () async {
-                          final receiverId = friendId;
-
-                          // Optimistically clear unread badge instantly
-                          setState(() {
-                            item['unread_count'] = 0;
-                            item['unread_messages_count'] = 0;
-                          });
-
-                          showDialog(
-                            context: context,
-                            barrierDismissible: false,
-                            builder: (_) => const Center(
-                                child: CircularProgressIndicator()),
-                          );
-
-                          final chatId =
-                              await _createChatAndGetChatId(receiverId);
-
-                          if (!mounted) return;
-                          Navigator.pop(context);
-
-                          if (chatId == null) {
-                            TopAlert.show(
-                              context,
-                              "Chat create nahi ho paya",
-                              isError: true,
-                            );
-                            return;
-                          }
-
-                          await Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ChatScreen(
-                                chatId: chatId,
-                                receiverId: receiverId,
-                                receiverName: item['fname'] ?? "User",
-                                receiverPic: item['profile_pic']?.toString(),
-                                initialBlockedByMe:
-                                    item['is_blocked_by_me'] == true,
-                                initialBlockedByOther:
-                                    item['is_blocked_by_other'] == true,
-                              ),
-                            ),
-                          );
-
-                          if (mounted) {
-                            fetchAcceptedFriends(silent: true);
-                          }
-                        },
+                        onTap: openProfile,
                         child: Column(
                           children: [
                             Padding(
@@ -1211,180 +1519,147 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   /// 👤 Avatar
-                                  GestureDetector(
-                                    onTap: () async {
-                                      final session = await UserStorageService()
-                                          .loadSession();
-                                      final viewerId = session.user?.id;
-                                      if (viewerId == null) return;
-
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (_) => ProfilePage(
-                                            userId: friendId,
-                                            viewerUserId: viewerId,
-                                            isConnected: true,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                    child: Container(
-                                      padding: EdgeInsets.all(hasUnread ? 2 : 0),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: hasUnread
-                                            ? Border.all(
-                                                color: const Color(0xFF25D366),
-                                                width: 2,
-                                              )
-                                            : null,
-                                      ),
-                                      child: CircleAvatar(
-                                        radius: 26,
-                                        backgroundColor: colorScheme.primary
-                                            .withValues(alpha: 0.12),
-                                        backgroundImage: item['profile_pic'] !=
-                                                null
-                                            ? NetworkImage(
-                                                "${AppConfig.apiProfileImg}/${item['profile_pic']}",
-                                              )
-                                            : null,
-                                        child: item['profile_pic'] == null
-                                            ? Text(
-                                                (item['fname'] ?? 'U')
+                                  CircleAvatar(
+                                    radius: 26,
+                                    backgroundColor: colorScheme.primary
+                                        .withValues(alpha: 0.12),
+                                    backgroundImage: item['profile_pic'] != null
+                                        ? NetworkImage(
+                                            "${AppConfig.apiProfileImg}/${item['profile_pic']}",
+                                          )
+                                        : null,
+                                    child: item['profile_pic'] == null
+                                        ? Text(
+                                            (item['fname'] ?? 'U')
                                                     .toString()
                                                     .trim()
                                                     .isNotEmpty
-                                                    ? (item['fname'] ?? 'U')
-                                                        .toString()
-                                                        .trim()[0]
-                                                        .toUpperCase()
-                                                    : 'U',
-                                                style: TextStyle(
-                                                  fontSize: 19,
-                                                  fontWeight: FontWeight.w700,
-                                                  color: colorScheme.primary,
-                                                ),
-                                              )
-                                            : null,
-                                      ),
-                                    ),
+                                                ? (item['fname'] ?? 'U')
+                                                    .toString()
+                                                    .trim()[0]
+                                                    .toUpperCase()
+                                                : 'U',
+                                            style: TextStyle(
+                                              fontSize: 19,
+                                              fontWeight: FontWeight.w700,
+                                              color: colorScheme.primary,
+                                            ),
+                                          )
+                                        : null,
                                   ),
 
                                   const SizedBox(width: 14),
 
-                                  /// 🧑 Details
+                                  /// 🧑 Name + Designation / Company
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                item['fname'] ?? 'User',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontSize: 15.5,
-                                                  fontWeight: hasUnread
-                                                      ? FontWeight.w700
-                                                      : FontWeight.w600,
-                                                  color: colorScheme.onSurface,
-                                                ),
-                                              ),
-                                            ),
-                                            if (timeStr.isNotEmpty) ...[
-                                              const SizedBox(width: 8),
-                                              Text(
-                                                timeStr,
-                                                style: TextStyle(
-                                                  fontSize: 11.5,
-                                                  color: hasUnread
-                                                      ? const Color(0xFF25D366)
-                                                      : colorScheme.onSurface
-                                                          .withValues(
-                                                              alpha: 0.48),
-                                                  fontWeight: hasUnread
-                                                      ? FontWeight.w700
-                                                      : FontWeight.w500,
-                                                ),
-                                              ),
-                                            ],
-                                          ],
+                                        Text(
+                                          item['fname'] ?? 'User',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 15.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: colorScheme.onSurface,
+                                          ),
                                         ),
-                                        const SizedBox(height: 4),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                messageContent.isNotEmpty
-                                                    ? messageContent
-                                                    : 'Tap to start a chat',
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: TextStyle(
-                                                  fontSize: 13.5,
-                                                  fontStyle:
-                                                      messageContent.isEmpty
-                                                          ? FontStyle.italic
-                                                          : FontStyle.normal,
-                                                  fontWeight: hasUnread
-                                                      ? FontWeight.w600
-                                                      : FontWeight.normal,
-                                                  color: hasUnread
-                                                      ? colorScheme.onSurface
-                                                          .withValues(
-                                                              alpha: 0.88)
-                                                      : colorScheme.onSurface
-                                                          .withValues(
-                                                              alpha: 0.55),
-                                                ),
-                                              ),
-                                            ),
-                                            if (hasUnread)
-                                              Container(
-                                                margin: const EdgeInsets.only(
-                                                    left: 8),
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                  horizontal: 7,
-                                                  vertical: 2.5,
-                                                ),
-                                                constraints:
-                                                    const BoxConstraints(
-                                                  minWidth: 22,
-                                                  minHeight: 22,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color:
-                                                      const Color(0xFF25D366),
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                                child: Center(
-                                                  child: Text(
-                                                    unreadCount > 99
-                                                        ? '99+'
-                                                        : '$unreadCount',
-                                                    style: const TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 11,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
+                                        const SizedBox(height: 3),
+                                        Text(
+                                          subtitleText.isNotEmpty
+                                              ? subtitleText
+                                              : 'Connected',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: colorScheme.onSurface
+                                                .withValues(alpha: 0.58),
+                                          ),
                                         ),
                                       ],
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 10),
+
+                                  /// Instagram-style Remove Connection button
+                                  OutlinedButton(
+                                    style: OutlinedButton.styleFrom(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 14, vertical: 6),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                      side: BorderSide(
+                                        color: colorScheme.outline
+                                            .withValues(alpha: 0.35),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: context,
+                                        builder: (ctx) => AlertDialog(
+                                          title: const Text('Remove Connection'),
+                                          content: Text(
+                                              'Remove ${item['fname'] ?? 'this user'} from your connections?'),
+                                          actions: [
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, false),
+                                              child: const Text('Cancel'),
+                                            ),
+                                            TextButton(
+                                              onPressed: () =>
+                                                  Navigator.pop(ctx, true),
+                                              child: const Text(
+                                                'Remove',
+                                                style: TextStyle(
+                                                    color: Colors.redAccent),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm != true || !mounted) return;
+
+                                      final session =
+                                          await UserStorageService()
+                                              .loadSession();
+                                      final viewerId = session.user?.id ?? 0;
+                                      final sId = int.tryParse(
+                                              (item['sender_id'] ?? viewerId)
+                                                  .toString()) ??
+                                          viewerId;
+                                      final rId = int.tryParse(
+                                              (item['receiver_id'] ?? friendId)
+                                                  .toString()) ??
+                                          friendId;
+                                      final st = int.tryParse(
+                                              (item['status'] ?? 1)
+                                                  .toString()) ??
+                                          1;
+
+                                      await deleteConnectionRequest(
+                                        senderId: sId,
+                                        receiverId: rId,
+                                        status: st,
+                                        fromTab: 'accepted',
+                                        index: index,
+                                      );
+                                    },
+                                    child: Text(
+                                      'Remove',
+                                      style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: colorScheme.onSurface,
+                                      ),
                                     ),
                                   ),
                                 ],

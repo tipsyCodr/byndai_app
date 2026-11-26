@@ -337,7 +337,7 @@ class NotificationService {
 
     navigator.push(
       MaterialPageRoute(
-        builder: (_) => const ConnectionsPage(initialTabIndex: 1),
+        builder: (_) => const ConnectionsPage(initialTabIndex: 2),
       ),
     );
   }
