@@ -319,12 +319,23 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
   }
 
   Widget _buildOccasionsSection() {
+    if (isOccasionsLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 24),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     final selectedDateStr = DateFormat('MM-dd').format(selectedDate);
     final filteredFestivals = upcomingFestivals.where((f) {
       final name = f['name']?.toString().toLowerCase() ?? '';
       final festivalDate = f['date']?.toString() ?? '';
       return name.contains(search.toLowerCase()) && festivalDate == selectedDateStr;
     }).toList();
+
+    if (filteredFestivals.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     final isToday = DateUtils.isSameDay(selectedDate, DateTime.now());
     final sectionTitle = isToday ? "Today's Occasions" : "Occasions";
@@ -399,23 +410,16 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
             ],
           ),
         ),
-        if (isOccasionsLoading)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 20),
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else ...[
-          _buildPillList(
-            items: filteredFestivals.map((f) => f['name'].toString()).toList(),
-            selectedItem: selectedOccasion?['name']?.toString() ?? "",
-            onSelected: (name) {
-              setState(() {
-                selectedOccasion = upcomingFestivals.firstWhere((f) => f['name'] == name);
-              });
-            },
-          ),
-          _buildFlyerGrid(_extractFlyerUrls(selectedOccasion)),
-        ],
+        _buildPillList(
+          items: filteredFestivals.map((f) => f['name'].toString()).toList(),
+          selectedItem: selectedOccasion?['name']?.toString() ?? "",
+          onSelected: (name) {
+            setState(() {
+              selectedOccasion = upcomingFestivals.firstWhere((f) => f['name'] == name);
+            });
+          },
+        ),
+        _buildFlyerGrid(_extractFlyerUrls(selectedOccasion)),
       ],
     );
   }

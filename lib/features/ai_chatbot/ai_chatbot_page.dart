@@ -1,9 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:gridcard/core/services/ai_chatbot_service.dart';
 import 'package:gridcard/core/theme/app_theme.dart';
+import 'package:gridcard/widgets/top_alert.dart';
 import 'package:intl/intl.dart';
 
 class AiChatbotPage extends StatefulWidget {
@@ -496,8 +498,8 @@ class _AiChatbotPageState extends State<AiChatbotPage> {
     return Column(
       children: [
         // ── Top Header Controls Bar ──────────────────────────────────────────
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
           child: Row(
             children: [
               // History Pill Button
@@ -505,27 +507,29 @@ class _AiChatbotPageState extends State<AiChatbotPage> {
                 onTap: _openHistoryModal,
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    color: (palette?.glassTop ?? colorScheme.surface)
-                        .withValues(alpha: isDark ? 0.35 : 0.6),
+                    color: (isDark ? Colors.white : colorScheme.primary)
+                        .withValues(alpha: isDark ? 0.08 : 0.06),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
-                      color: colorScheme.outline.withValues(alpha: 0.15),
+                      color: colorScheme.outline.withValues(alpha: 0.12),
                       width: 0.8,
                     ),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const FaIcon(
+                      FaIcon(
                         FontAwesomeIcons.clockRotateLeft,
-                        size: 13,
-                        color: Color(0xFFA855F7),
+                        size: 12.5,
+                        color: colorScheme.primary,
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        _conversations.isEmpty ? 'History' : 'Chats (${_conversations.length})',
+                        _conversations.isEmpty
+                            ? 'History'
+                            : 'Chats (${_conversations.length})',
                         style: TextStyle(
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
@@ -539,12 +543,12 @@ class _AiChatbotPageState extends State<AiChatbotPage> {
 
               const SizedBox(width: 8),
 
-              // Active Chat Title Pill
+              // Active Chat Title
               Expanded(
                 child: Text(
                   _currentTitle,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w600,
                     color: colorScheme.onSurfaceVariant,
                   ),
@@ -561,28 +565,26 @@ class _AiChatbotPageState extends State<AiChatbotPage> {
                 onTap: _startNewChat,
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF6366F1), Color(0xFFA855F7)],
-                    ),
+                    color: colorScheme.primary,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         CupertinoIcons.plus,
                         size: 13,
-                        color: Colors.white,
+                        color: colorScheme.onPrimary,
                       ),
-                      SizedBox(width: 4),
+                      const SizedBox(width: 4),
                       Text(
                         'New',
                         style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onPrimary,
                         ),
                       ),
                     ],
@@ -602,7 +604,7 @@ class _AiChatbotPageState extends State<AiChatbotPage> {
                   ),
                 )
               : _messages.isEmpty
-                  ? _buildEmptyState(colorScheme, palette)
+                  ? _buildEmptyState(colorScheme, palette, isDark)
                   : ListView.builder(
                       controller: _scrollController,
                       padding: const EdgeInsets.symmetric(
@@ -626,42 +628,103 @@ class _AiChatbotPageState extends State<AiChatbotPage> {
                     ),
         ),
 
-        // ── Minimal Input bar (matching Image 1) ─────────────────────────
-        SafeArea(
-          top: false,
-          child: Container(
-            margin: const EdgeInsets.only(bottom: 8, left: 14, right: 14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Quick context chip (@business) with explanation
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 6, left: 4, right: 4),
-                  child: Row(
+        // ── Minimal Unified Composer ────────────────────────────────────────
+        Container(
+          margin: const EdgeInsets.fromLTRB(14, 4, 14, 4),
+          padding: const EdgeInsets.fromLTRB(14, 10, 10, 10),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1A1D28) : Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : colorScheme.primary.withValues(alpha: 0.10),
+              width: 1.0,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.05),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: ValueListenableBuilder<TextEditingValue>(
+            valueListenable: _controller,
+            builder: (context, value, _) {
+              final hasText = value.text.trim().isNotEmpty;
+              final hasBusinessTag = value.text.contains('@business');
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _controller,
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: colorScheme.onSurface,
+                      height: 1.35,
+                    ),
+                    maxLines: 4,
+                    minLines: 1,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _sendMessage(),
+                    decoration: InputDecoration(
+                      filled: false,
+                      hintText: 'Ask anything, or use @business...',
+                      hintStyle: TextStyle(
+                        fontSize: 14.5,
+                        color: colorScheme.onSurfaceVariant
+                            .withValues(alpha: 0.55),
+                      ),
+                      border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 2,
+                        vertical: 4,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
                     children: [
                       InkWell(
                         onTap: () {
                           final current = _controller.text;
-                          if (!current.contains('@business')) {
+                          if (hasBusinessTag) {
+                            final updated = current
+                                .replaceAll('@business ', '')
+                                .replaceAll('@business', '')
+                                .trimLeft();
+                            _controller.text = updated;
+                          } else {
                             _controller.text = current.isEmpty
                                 ? '@business '
                                 : '$current @business ';
-                            _controller.selection = TextSelection.fromPosition(
-                              TextPosition(offset: _controller.text.length),
-                            );
                           }
+                          _controller.selection = TextSelection.fromPosition(
+                            TextPosition(offset: _controller.text.length),
+                          );
                         },
                         borderRadius: BorderRadius.circular(16),
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                              horizontal: 10, vertical: 5),
                           decoration: BoxDecoration(
-                            color: (isDark ? Colors.white : Colors.black)
-                                .withValues(alpha: 0.06),
+                            color: hasBusinessTag
+                                ? colorScheme.primary.withValues(alpha: 0.14)
+                                : (isDark ? Colors.white : Colors.black)
+                                    .withValues(alpha: 0.05),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(
-                              color: colorScheme.primary.withValues(alpha: 0.25),
+                              color: hasBusinessTag
+                                  ? colorScheme.primary.withValues(alpha: 0.45)
+                                  : colorScheme.outline.withValues(alpha: 0.12),
                               width: 0.8,
                             ),
                           ),
@@ -671,7 +734,9 @@ class _AiChatbotPageState extends State<AiChatbotPage> {
                               Icon(
                                 CupertinoIcons.briefcase,
                                 size: 12,
-                                color: colorScheme.primary,
+                                color: hasBusinessTag
+                                    ? colorScheme.primary
+                                    : colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 5),
                               Text(
@@ -679,146 +744,140 @@ class _AiChatbotPageState extends State<AiChatbotPage> {
                                 style: TextStyle(
                                   fontSize: 11.5,
                                   fontWeight: FontWeight.w600,
-                                  color: colorScheme.primary,
+                                  color: hasBusinessTag
+                                      ? colorScheme.primary
+                                      : colorScheme.onSurfaceVariant,
                                 ),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Tap to include your business details',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: colorScheme.onSurfaceVariant
-                                .withValues(alpha: 0.6),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Seamless Minimal Input Pill
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1C1E26) : Colors.white,
-                    borderRadius: BorderRadius.circular(28),
-                    border: Border.all(
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.10)
-                          : Colors.black.withValues(alpha: 0.08),
-                      width: 1.0,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color:
-                            Colors.black.withValues(alpha: isDark ? 0.35 : 0.05),
-                        blurRadius: 14,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _controller,
-                          style: TextStyle(
-                            fontSize: 15,
-                            color: colorScheme.onSurface,
-                          ),
-                          maxLines: 4,
-                          minLines: 1,
-                          textInputAction: TextInputAction.send,
-                          onSubmitted: (_) => _sendMessage(),
-                          decoration: InputDecoration(
-                            hintText: 'Ask anything, or use @business...',
-                            hintStyle: TextStyle(
-                              fontSize: 14.5,
-                              color: colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.55),
+                      const Spacer(),
+                      if (_isLoading)
+                        Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: colorScheme.primary,
                             ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 12,
+                          ),
+                        )
+                      else
+                        GestureDetector(
+                          onTap: hasText ? _sendMessage : null,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 180),
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: hasText
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurface
+                                      .withValues(alpha: 0.08),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              CupertinoIcons.arrow_up,
+                              size: 17,
+                              color: hasText
+                                  ? colorScheme.onPrimary
+                                  : colorScheme.onSurfaceVariant
+                                      .withValues(alpha: 0.45),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      _isLoading
-                          ? SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: colorScheme.primary,
-                              ),
-                            )
-                          : IconButton(
-                              icon: Icon(
-                                CupertinoIcons.arrow_up_circle_fill,
-                                color: colorScheme.primary,
-                                size: 30,
-                              ),
-                              padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(),
-                              onPressed: _sendMessage,
-                            ),
                     ],
                   ),
-                ),
-              ],
-            ),
+                ],
+              );
+            },
           ),
         ),
       ],
     );
   }
 
-  Widget _buildEmptyState(ColorScheme colorScheme, AppThemeColors? palette) {
+  Widget _buildEmptyState(
+      ColorScheme colorScheme, AppThemeColors? palette, bool isDark) {
+    const suggestions = [
+      'Find leads near me',
+      'Improve my profile',
+      'Draft an intro message',
+      'Networking tips',
+    ];
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-              shape: BoxShape.circle,
-            ),
-            child: SvgPicture.asset(
-              'assets/icons/b-ai.svg',
-              height: 48,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Image.asset(
+              'assets/byndAi.png',
+              height: 44,
               fit: BoxFit.contain,
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'ByndAI Assistant',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: colorScheme.onSurface,
+            const SizedBox(height: 18),
+            Text(
+              'How can I help today?',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w700,
+                color: colorScheme.onSurface,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Ask me about networking, leads,\nor anything about the app.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurfaceVariant,
+            const SizedBox(height: 6),
+            Text(
+              'Ask about leads, networking, or your business.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13.5,
+                color: colorScheme.onSurfaceVariant,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 24),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.center,
+              children: suggestions.map((text) {
+                return InkWell(
+                  onTap: () {
+                    _controller.text = text;
+                    _sendMessage();
+                  },
+                  borderRadius: BorderRadius.circular(18),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.06)
+                          : Colors.white.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: colorScheme.outline.withValues(alpha: 0.14),
+                        width: 0.9,
+                      ),
+                    ),
+                    child: Text(
+                      text,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -866,6 +925,50 @@ class _AiChatbotPageState extends State<AiChatbotPage> {
     );
   }
 
+  Widget _buildFormattedText(
+    String text,
+    TextStyle baseStyle,
+    ColorScheme colorScheme,
+  ) {
+    final normalized = text
+        .replaceAll(RegExp(r'^#{1,3}\s+', multiLine: true), '')
+        .replaceAll(RegExp(r'^[\-\*]\s+', multiLine: true), '• ');
+
+    final spans = <InlineSpan>[];
+    final pattern = RegExp(r'(\*\*[^*]+\*\*|`[^`]+`)');
+    int lastEnd = 0;
+
+    for (final match in pattern.allMatches(normalized)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(text: normalized.substring(lastEnd, match.start)));
+      }
+      final token = match.group(0)!;
+      if (token.startsWith('**') && token.endsWith('**')) {
+        spans.add(TextSpan(
+          text: token.substring(2, token.length - 2),
+          style: baseStyle.copyWith(fontWeight: FontWeight.w700),
+        ));
+      } else if (token.startsWith('`') && token.endsWith('`')) {
+        spans.add(TextSpan(
+          text: token.substring(1, token.length - 1),
+          style: baseStyle.copyWith(
+            fontFamily: 'monospace',
+            backgroundColor: colorScheme.onSurface.withValues(alpha: 0.08),
+          ),
+        ));
+      }
+      lastEnd = match.end;
+    }
+
+    if (lastEnd < normalized.length) {
+      spans.add(TextSpan(text: normalized.substring(lastEnd)));
+    }
+
+    return SelectableText.rich(
+      TextSpan(style: baseStyle, children: spans),
+    );
+  }
+
   Widget _buildBubble(
     _ChatMessage msg,
     ColorScheme colorScheme,
@@ -873,6 +976,15 @@ class _AiChatbotPageState extends State<AiChatbotPage> {
     bool isDark,
   ) {
     final isMe = msg.role == 'user';
+    final textStyle = TextStyle(
+      fontSize: 14.5,
+      color: isMe
+          ? colorScheme.onPrimary
+          : msg.isError
+              ? colorScheme.onErrorContainer
+              : colorScheme.onSurface,
+      height: 1.45,
+    );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -886,36 +998,70 @@ class _AiChatbotPageState extends State<AiChatbotPage> {
             const SizedBox(width: 8),
           ],
           Flexible(
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: isMe
-                    ? colorScheme.primary
-                    : msg.isError
-                        ? colorScheme.errorContainer
-                        : (palette?.glassTop ??
-                                colorScheme.surfaceContainerHighest)
-                            .withValues(alpha: isDark ? 0.4 : 0.6),
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isMe ? 18 : 4),
-                  bottomRight: Radius.circular(isMe ? 4 : 18),
+            child: Column(
+              crossAxisAlignment:
+                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isMe
+                        ? colorScheme.primary
+                        : msg.isError
+                            ? colorScheme.errorContainer
+                            : (palette?.glassTop ??
+                                    colorScheme.surfaceContainerHighest)
+                                .withValues(alpha: isDark ? 0.4 : 0.6),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(18),
+                      topRight: const Radius.circular(18),
+                      bottomLeft: Radius.circular(isMe ? 18 : 4),
+                      bottomRight: Radius.circular(isMe ? 4 : 18),
+                    ),
+                  ),
+                  child: isMe
+                      ? Text(msg.content, style: textStyle)
+                      : _buildFormattedText(
+                          msg.content, textStyle, colorScheme),
                 ),
-              ),
-              child: Text(
-                msg.content,
-                style: TextStyle(
-                  fontSize: 14.5,
-                  color: isMe
-                      ? colorScheme.onPrimary
-                      : msg.isError
-                          ? colorScheme.onErrorContainer
-                          : colorScheme.onSurface,
-                  height: 1.45,
-                ),
-              ),
+                if (!isMe && !msg.isStreaming && msg.content.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4, left: 4),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(10),
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: msg.content));
+                        HapticFeedback.lightImpact();
+                        TopAlert.show(context, 'Copied to clipboard');
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              CupertinoIcons.doc_on_doc,
+                              size: 12,
+                              color: colorScheme.onSurfaceVariant
+                                  .withValues(alpha: 0.7),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Copy',
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: colorScheme.onSurfaceVariant
+                                    .withValues(alpha: 0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
           if (isMe) const SizedBox(width: 8),

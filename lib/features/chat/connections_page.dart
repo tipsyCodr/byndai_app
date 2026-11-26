@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/core/services/firestore_chat_service.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:http/http.dart' as http;
@@ -101,6 +103,9 @@ class _ConnectionsPageState extends State<ConnectionsPage>
   final int _sentPerPage = 10;
   final List<int> _sentPerPageOptions = [5, 10, 15, 20];
 
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _chatsSubscription;
+  final Map<int, Map<String, dynamic>> _liveChatsByFriendId = {};
+
   // ================= HEADERS =================
   Future<Map<String, String>> _getHeaders() async {
     final token = await UserStorageService().getToken();
@@ -144,11 +149,105 @@ class _ConnectionsPageState extends State<ConnectionsPage>
         fetchAcceptedFriends(silent: true);
       }
     });
+
+    _initLiveChatsListener();
+  }
+
+  Future<void> _initLiveChatsListener() async {
+    final session = await UserStorageService().loadSession();
+    final userId = session.user?.id;
+    if (userId == null || !mounted) return;
+
+    _chatsSubscription =
+        FirestoreChatService.getUserChatsStream(userId).listen((snapshot) {
+      if (!mounted) return;
+      for (final doc in snapshot.docs) {
+        final data = doc.data();
+        final participants = (data['participants'] as List?)
+                ?.map((e) => int.tryParse(e.toString()))
+                .whereType<int>()
+                .toList() ??
+            [];
+        final otherId = participants.firstWhere(
+          (id) => id != userId,
+          orElse: () => -1,
+        );
+        if (otherId <= 0) continue;
+
+        final ts = data['last_message_at'];
+        String iso = data['last_message_iso']?.toString() ?? '';
+        String formatted = '';
+        int liveMs = 0;
+        if (ts is Timestamp) {
+          final dt = ts.toDate().toLocal();
+          liveMs = dt.millisecondsSinceEpoch;
+          iso = dt.toIso8601String();
+          final h12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+          final min = dt.minute.toString().padLeft(2, '0');
+          final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+          formatted = '${h12.toString().padLeft(2, '0')}:$min $ampm';
+        } else if (iso.isNotEmpty) {
+          final dt = DateTime.tryParse(iso)?.toLocal();
+          if (dt != null) {
+            liveMs = dt.millisecondsSinceEpoch;
+            final h12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+            final min = dt.minute.toString().padLeft(2, '0');
+            final ampm = dt.hour >= 12 ? 'PM' : 'AM';
+            formatted = '${h12.toString().padLeft(2, '0')}:$min $ampm';
+          }
+        }
+
+        _liveChatsByFriendId[otherId] = {
+          'last_message': data['last_message']?.toString() ?? '',
+          'last_message_at': iso,
+          '_live_ms': liveMs,
+          if (formatted.isNotEmpty) 'updated_at_formatted': formatted,
+          'unread_count': data['unread_$userId'] ?? 0,
+        };
+      }
+
+      if (acceptedFriends.isNotEmpty) {
+        setState(() {
+          _mergeLiveChatsIntoAccepted();
+          _sortAcceptedByLatest();
+        });
+      }
+    });
+  }
+
+  void _mergeLiveChatsIntoAccepted() {
+    if (_liveChatsByFriendId.isEmpty) return;
+    for (final item in acceptedFriends) {
+      if (item is! Map) continue;
+      final friendId = int.tryParse(item['friend_id']?.toString() ?? '');
+      if (friendId == null) continue;
+      final live = _liveChatsByFriendId[friendId];
+      if (live == null) continue;
+      final liveMsg = live['last_message']?.toString() ?? '';
+      if (liveMsg.isNotEmpty) {
+        item['last_message'] = liveMsg;
+      }
+      final liveAt = live['last_message_at']?.toString() ?? '';
+      if (liveAt.isNotEmpty) {
+        item['last_message_at'] = liveAt;
+      }
+      if (live['_live_ms'] != null) {
+        item['_live_ms'] = live['_live_ms'];
+      }
+      final liveFormatted = live['updated_at_formatted']?.toString() ?? '';
+      if (liveFormatted.isNotEmpty) {
+        item['updated_at_formatted'] = liveFormatted;
+      }
+      if (live.containsKey('unread_count')) {
+        item['unread_count'] = live['unread_count'];
+      }
+    }
   }
 
   @override
   void dispose() {
     _notificationSubscription?.cancel();
+    _chatsSubscription?.cancel();
     _debounce?.cancel();
     _pendingDebounce?.cancel();
     _sentDebounce?.cancel();
@@ -360,6 +459,80 @@ class _ConnectionsPageState extends State<ConnectionsPage>
   }
 
   // ================= FETCH ACCEPTED (UPDATED WITH SEARCH/SORT/PAGINATION) =================
+  DateTime? _parseFriendTimestamp(dynamic item) {
+    if (item is! Map) return null;
+    for (final key in [
+      'last_message_at',
+      'last_message_time',
+      'updated_at',
+      'created_at',
+    ]) {
+      final raw = item[key]?.toString();
+      if (raw != null && raw.trim().isNotEmpty) {
+        final dt = DateTime.tryParse(raw.trim());
+        if (dt != null) return dt;
+      }
+    }
+    return null;
+  }
+
+  void _sortAcceptedByLatest() {
+    acceptedFriends.sort((a, b) {
+      final aLiveMs = (a['_live_ms'] as int?) ?? 0;
+      final bLiveMs = (b['_live_ms'] as int?) ?? 0;
+      if (aLiveMs > 0 || bLiveMs > 0) {
+        if (aLiveMs != bLiveMs) return bLiveMs.compareTo(aLiveMs);
+      }
+
+      final aUnread = int.tryParse((a['unread_count'] ??
+                      a['unread_messages_count'] ??
+                      a['unread'] ??
+                      a['unread_count_sender'] ??
+                      0)
+                  .toString()) ??
+              0;
+      final bUnread = int.tryParse((b['unread_count'] ??
+                      b['unread_messages_count'] ??
+                      b['unread'] ??
+                      b['unread_count_sender'] ??
+                      0)
+                  .toString()) ??
+              0;
+      if ((aUnread > 0) != (bUnread > 0)) {
+        return bUnread > 0 ? 1 : -1;
+      }
+
+      final aHasMsg = (a['last_message'] ??
+              a['message'] ??
+              a['latest_message'] ??
+              a['last_msg'] ??
+              '')
+          .toString()
+          .trim()
+          .isNotEmpty;
+      final bHasMsg = (b['last_message'] ??
+              b['message'] ??
+              b['latest_message'] ??
+              b['last_msg'] ??
+              '')
+          .toString()
+          .trim()
+          .isNotEmpty;
+      if (aHasMsg != bHasMsg) return bHasMsg ? 1 : -1;
+
+      final aDt = _parseFriendTimestamp(a);
+      final bDt = _parseFriendTimestamp(b);
+      if (aDt != null && bDt != null) return bDt.compareTo(aDt);
+      if (bDt != null) return 1;
+      if (aDt != null) return -1;
+      return 0;
+    });
+    for (final item in acceptedFriends.take(5)) {
+      debugPrint(
+          '📋 SORTED: ${item['fname']} | liveMs=${item['_live_ms']} | unread=${item['unread_count'] ?? item['unread_messages_count'] ?? item['unread'] ?? item['unread_count_sender']} | updated_at=${item['updated_at']} | last_msg_at=${item['last_message_at']}');
+    }
+  }
+
   Future<void> fetchAcceptedFriends({
     bool reset = false,
     bool loadMore = false,
@@ -404,8 +577,8 @@ class _ConnectionsPageState extends State<ConnectionsPage>
       "per_page": _perPage.toString(),
       "page": _acceptedCurrentPage.toString(),
       if (_searchQuery.trim().isNotEmpty) "search": _searchQuery.trim(),
-      "sort_by": "fname",
-      "order": "asc",
+      "sort_by": "updated_at",
+      "order": "desc",
     };
 
     final uri = Uri.parse("$_baseUrl/friends/$userId").replace(
@@ -435,6 +608,9 @@ class _ConnectionsPageState extends State<ConnectionsPage>
           } else {
             acceptedFriends = data;
           }
+
+          _mergeLiveChatsIntoAccepted();
+          _sortAcceptedByLatest();
 
           _acceptedHasMore = _acceptedCurrentPage < _acceptedLastPage;
         });
@@ -859,31 +1035,35 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                   height: 44,
                   decoration: BoxDecoration(
                     color: isDark
-                        ? colorScheme.surfaceContainerHighest.withOpacity(0.5)
-                        : const Color(0xFFF6F6F6),
+                        ? colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: colorScheme.outline.withValues(alpha: 0.14),
+                    ),
                   ),
                   child: TextField(
                     controller: _searchController,
                     onChanged: _onSearchChanged,
                     style: TextStyle(color: colorScheme.onSurface, fontSize: 15),
                     decoration: InputDecoration(
-                      hintText: "Ask Meta AI or Search",
+                      filled: false,
+                      hintText: "Search connections...",
                       hintStyle: TextStyle(
-                        color: colorScheme.onSurface.withOpacity(0.45),
-                        fontSize: 15,
+                        color: colorScheme.onSurface.withValues(alpha: 0.45),
+                        fontSize: 14.5,
                       ),
                       prefixIcon: Icon(
                         Icons.search,
-                        size: 22,
-                        color: colorScheme.onSurface.withOpacity(0.5),
+                        size: 20,
+                        color: colorScheme.onSurface.withValues(alpha: 0.5),
                       ),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
                               icon: Icon(
                                 Icons.close,
                                 size: 20,
-                                color: colorScheme.onSurface.withOpacity(0.5),
+                                color: colorScheme.onSurface.withValues(alpha: 0.5),
                               ),
                               onPressed: () {
                                 _searchController.clear();
@@ -892,8 +1072,10 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                             )
                           : null,
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
                       contentPadding: const EdgeInsets.symmetric(
-                        vertical: 10,
+                        vertical: 11,
                       ),
                     ),
                   ),
@@ -929,7 +1111,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                   child: ListView.builder(
                     controller: _acceptedScrollController,
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: const EdgeInsets.fromLTRB(0, 4, 0, 16),
                     itemCount: acceptedFriends.length +
                         (_acceptedIsPaginating ? 1 : 0),
                     itemBuilder: (context, index) {
@@ -1006,6 +1188,10 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                                 receiverId: receiverId,
                                 receiverName: item['fname'] ?? "User",
                                 receiverPic: item['profile_pic']?.toString(),
+                                initialBlockedByMe:
+                                    item['is_blocked_by_me'] == true,
+                                initialBlockedByOther:
+                                    item['is_blocked_by_other'] == true,
                               ),
                             ),
                           );
@@ -1014,139 +1200,204 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                             fetchAcceptedFriends(silent: true);
                           }
                         },
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              /// 👤 Avatar
-                              GestureDetector(
-                                onTap: () async {
-                                  final session = await UserStorageService()
-                                      .loadSession();
-                                  final viewerId = session.user?.id;
-                                  if (viewerId == null) return;
+                        child: Column(
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 11,
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  /// 👤 Avatar
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final session = await UserStorageService()
+                                          .loadSession();
+                                      final viewerId = session.user?.id;
+                                      if (viewerId == null) return;
 
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (_) => ProfilePage(
-                                        userId: friendId,
-                                        viewerUserId: viewerId,
-                                        isConnected: true,
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => ProfilePage(
+                                            userId: friendId,
+                                            viewerUserId: viewerId,
+                                            isConnected: true,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                    child: Container(
+                                      padding: EdgeInsets.all(hasUnread ? 2 : 0),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: hasUnread
+                                            ? Border.all(
+                                                color: const Color(0xFF25D366),
+                                                width: 2,
+                                              )
+                                            : null,
+                                      ),
+                                      child: CircleAvatar(
+                                        radius: 26,
+                                        backgroundColor: colorScheme.primary
+                                            .withValues(alpha: 0.12),
+                                        backgroundImage: item['profile_pic'] !=
+                                                null
+                                            ? NetworkImage(
+                                                "${AppConfig.apiProfileImg}/${item['profile_pic']}",
+                                              )
+                                            : null,
+                                        child: item['profile_pic'] == null
+                                            ? Text(
+                                                (item['fname'] ?? 'U')
+                                                    .toString()
+                                                    .trim()
+                                                    .isNotEmpty
+                                                    ? (item['fname'] ?? 'U')
+                                                        .toString()
+                                                        .trim()[0]
+                                                        .toUpperCase()
+                                                    : 'U',
+                                                style: TextStyle(
+                                                  fontSize: 19,
+                                                  fontWeight: FontWeight.w700,
+                                                  color: colorScheme.primary,
+                                                ),
+                                              )
+                                            : null,
                                       ),
                                     ),
-                                  );
-                                },
-                                child: CircleAvatar(
-                                  radius: 26,
-                                  backgroundColor: colorScheme.surfaceContainerHighest,
-                                  backgroundImage: item['profile_pic'] != null
-                                      ? NetworkImage(
-                                          "${AppConfig.apiProfileImg}/${item['profile_pic']}",
-                                        )
-                                      : null,
-                                  child: item['profile_pic'] == null
-                                      ? Icon(
-                                          Icons.person,
-                                          size: 28,
-                                          color: colorScheme.onSurface
-                                              .withOpacity(0.5),
-                                        )
-                                      : null,
-                                ),
-                              ),
+                                  ),
 
-                              const SizedBox(width: 14),
+                                  const SizedBox(width: 14),
 
-                              /// 🧑 Details (Name + Date in row 1, Message + Badge in row 2)
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  /// 🧑 Details
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Expanded(
-                                          child: Text(
-                                            item['fname'] ?? 'User',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w600,
-                                              color: colorScheme.onSurface,
-                                            ),
-                                          ),
-                                        ),
-                                        if (timeStr.isNotEmpty)
-                                          Text(
-                                            timeStr,
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: hasUnread
-                                                  ? const Color(0xFF25D366)
-                                                  : colorScheme.onSurface
-                                                      .withOpacity(0.5),
-                                              fontWeight: hasUnread
-                                                  ? FontWeight.w600
-                                                  : FontWeight.normal,
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 3),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            messageContent,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 14,
-                                              color: colorScheme.onSurface
-                                                  .withOpacity(0.6),
-                                            ),
-                                          ),
-                                        ),
-                                        if (hasUnread)
-                                          Container(
-                                            margin: const EdgeInsets.only(left: 6),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 3,
-                                            ),
-                                            constraints: const BoxConstraints(
-                                              minWidth: 20,
-                                              minHeight: 20,
-                                            ),
-                                            decoration: const BoxDecoration(
-                                              color: Colors.redAccent,
-                                              shape: BoxShape.circle,
-                                            ),
-                                            child: Center(
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
                                               child: Text(
-                                                "$unreadCount",
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.bold,
+                                                item['fname'] ?? 'User',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 15.5,
+                                                  fontWeight: hasUnread
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w600,
+                                                  color: colorScheme.onSurface,
                                                 ),
                                               ),
                                             ),
-                                          ),
+                                            if (timeStr.isNotEmpty) ...[
+                                              const SizedBox(width: 8),
+                                              Text(
+                                                timeStr,
+                                                style: TextStyle(
+                                                  fontSize: 11.5,
+                                                  color: hasUnread
+                                                      ? const Color(0xFF25D366)
+                                                      : colorScheme.onSurface
+                                                          .withValues(
+                                                              alpha: 0.48),
+                                                  fontWeight: hasUnread
+                                                      ? FontWeight.w700
+                                                      : FontWeight.w500,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                messageContent.isNotEmpty
+                                                    ? messageContent
+                                                    : 'Tap to start a chat',
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: TextStyle(
+                                                  fontSize: 13.5,
+                                                  fontStyle:
+                                                      messageContent.isEmpty
+                                                          ? FontStyle.italic
+                                                          : FontStyle.normal,
+                                                  fontWeight: hasUnread
+                                                      ? FontWeight.w600
+                                                      : FontWeight.normal,
+                                                  color: hasUnread
+                                                      ? colorScheme.onSurface
+                                                          .withValues(
+                                                              alpha: 0.88)
+                                                      : colorScheme.onSurface
+                                                          .withValues(
+                                                              alpha: 0.55),
+                                                ),
+                                              ),
+                                            ),
+                                            if (hasUnread)
+                                              Container(
+                                                margin: const EdgeInsets.only(
+                                                    left: 8),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                  horizontal: 7,
+                                                  vertical: 2.5,
+                                                ),
+                                                constraints:
+                                                    const BoxConstraints(
+                                                  minWidth: 22,
+                                                  minHeight: 22,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color:
+                                                      const Color(0xFF25D366),
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Center(
+                                                  child: Text(
+                                                    unreadCount > 99
+                                                        ? '99+'
+                                                        : '$unreadCount',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 11,
+                                                      fontWeight:
+                                                          FontWeight.w700,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                          ],
+                                        ),
                                       ],
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
+                            ),
+                            Divider(
+                              height: 1,
+                              indent: 82,
+                              endIndent: 16,
+                              color:
+                                  colorScheme.outline.withValues(alpha: 0.08),
+                            ),
+                          ],
                         ),
                       );
                     },

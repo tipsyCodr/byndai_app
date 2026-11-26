@@ -11,13 +11,14 @@ import 'package:gridcard/core/theme/app_theme.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:gridcard/widgets/top_alert.dart';
-import 'package:gridcard/widgets/glass_box.dart';
 
 class ChatScreen extends StatefulWidget {
   final int chatId;
   final int receiverId;
   final String receiverName;
   final String? receiverPic;
+  final bool initialBlockedByMe;
+  final bool initialBlockedByOther;
 
   const ChatScreen({
     super.key,
@@ -25,6 +26,8 @@ class ChatScreen extends StatefulWidget {
     required this.receiverId,
     required this.receiverName,
     this.receiverPic,
+    this.initialBlockedByMe = false,
+    this.initialBlockedByOther = false,
   });
 
   @override
@@ -39,17 +42,23 @@ class _ChatScreenState extends State<ChatScreen> {
 
   bool _isLoading = true;
   bool _isSending = false;
+  bool _blockedByMe = false;
+  bool _blockedByOther = false;
 
   int? _myUserId;
+  StreamSubscription<DocumentSnapshot<Map<String, dynamic>>>? _chatDocSub;
 
   @override
   void initState() {
     super.initState();
+    _blockedByMe = widget.initialBlockedByMe;
+    _blockedByOther = widget.initialBlockedByOther;
     _initChat();
   }
 
   @override
   void dispose() {
+    _chatDocSub?.cancel();
     _msgController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -75,6 +84,26 @@ class _ChatScreenState extends State<ChatScreen> {
 
       await _loadMessages();
       await _markAsRead();
+      if (_myUserId != null) {
+        _chatDocSub =
+            FirestoreChatService.getChatDocStream(widget.chatId).listen((doc) {
+          if (!mounted) return;
+          if (doc.data()?.containsKey('blocked_by') != true) return;
+          final blockedBy = (doc.data()?['blocked_by'] as List?)
+                  ?.map((e) => int.tryParse(e.toString()))
+                  .whereType<int>()
+                  .toList() ??
+              [];
+          setState(() {
+            _blockedByMe = blockedBy.contains(_myUserId);
+            _blockedByOther = blockedBy.contains(widget.receiverId);
+          });
+        });
+        await FirestoreChatService.markChatRead(
+          chatId: widget.chatId,
+          userId: _myUserId!,
+        );
+      }
       _scrollToBottom();
     } catch (e) {
       debugPrint("❌ _initChat error: $e");
@@ -136,7 +165,40 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Future<bool> _setBlockStatus(bool willBlock) async {
+    if (_myUserId == null) return false;
+    try {
+      final endpoint = willBlock ? 'block' : 'unblock';
+      final uri = Uri.parse("$_baseUrl/chat/$endpoint");
+      final headers = await _getHeaders();
+      headers["Content-Type"] = "application/json";
+
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: jsonEncode({"blocked_id": widget.receiverId}),
+      );
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        if (jsonData["status"] == true) {
+          await FirestoreChatService.setChatBlocked(
+            chatId: widget.chatId,
+            userId: _myUserId!,
+            isBlocked: willBlock,
+          );
+          return true;
+        }
+      }
+      debugPrint("❌ $endpoint failed: ${response.statusCode} ${response.body}");
+    } catch (e) {
+      debugPrint("❌ _setBlockStatus Exception: $e");
+    }
+    return false;
+  }
+
   Future<void> _sendMessage() async {
+    if (_blockedByMe || _blockedByOther) return;
     final text = _msgController.text.trim();
     if (text.isEmpty) return;
     if (_isSending) return;
@@ -181,7 +243,18 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint("❌ send-message failed: $responseBody");
 
       if (!mounted) return;
-      TopAlert.show(context, "Message send nahi hua", isError: true);
+      if (streamed.statusCode == 403) {
+        String msg = "Cannot send message. User is blocked.";
+        try {
+          final decoded = jsonDecode(responseBody);
+          if (decoded["message"] != null) {
+            msg = decoded["message"].toString();
+          }
+        } catch (_) {}
+        TopAlert.show(context, msg, isError: true);
+      } else {
+        TopAlert.show(context, "Message send nahi hua", isError: true);
+      }
     } catch (e) {
       debugPrint("❌ _sendMessage Exception: $e");
     } finally {
@@ -442,12 +515,14 @@ class _ChatScreenState extends State<ChatScreen> {
                   }
                 }
               } else if (value == 'block') {
+                final willBlock = !_blockedByMe;
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (ctx) => AlertDialog(
-                    title: const Text("Block User"),
-                    content: Text(
-                        "Are you sure you want to block ${widget.receiverName}?"),
+                    title: Text(willBlock ? "Block User" : "Unblock User"),
+                    content: Text(willBlock
+                        ? "Are you sure you want to block ${widget.receiverName}?"
+                        : "Unblock ${widget.receiverName} to resume messaging?"),
                     actions: [
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, false),
@@ -455,18 +530,37 @@ class _ChatScreenState extends State<ChatScreen> {
                       ),
                       TextButton(
                         onPressed: () => Navigator.pop(ctx, true),
-                        child: const Text(
-                          "Block",
-                          style: TextStyle(color: Colors.redAccent),
+                        child: Text(
+                          willBlock ? "Block" : "Unblock",
+                          style: TextStyle(
+                            color: willBlock
+                                ? Colors.redAccent
+                                : colorScheme.primary,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 );
 
-                if (confirm == true && context.mounted) {
-                  TopAlert.show(context, "${widget.receiverName} blocked");
-                  Navigator.pop(context);
+                if (confirm == true && _myUserId != null && context.mounted) {
+                  final ok = await _setBlockStatus(willBlock);
+                  if (!context.mounted) return;
+                  if (ok) {
+                    setState(() => _blockedByMe = willBlock);
+                    TopAlert.show(
+                      context,
+                      willBlock
+                          ? "${widget.receiverName} blocked"
+                          : "${widget.receiverName} unblocked",
+                    );
+                  } else {
+                    TopAlert.show(
+                      context,
+                      "Failed to update block status",
+                      isError: true,
+                    );
+                  }
                 }
               }
             },
@@ -484,15 +578,24 @@ class _ChatScreenState extends State<ChatScreen> {
                   ],
                 ),
               ),
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'block',
                 child: Row(
                   children: [
-                    Icon(Icons.block, color: Colors.redAccent, size: 20),
-                    SizedBox(width: 10),
+                    Icon(
+                      _blockedByMe ? Icons.lock_open_rounded : Icons.block,
+                      color:
+                          _blockedByMe ? colorScheme.primary : Colors.redAccent,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
                     Text(
-                      'Block',
-                      style: TextStyle(color: Colors.redAccent),
+                      _blockedByMe ? 'Unblock' : 'Block',
+                      style: TextStyle(
+                        color: _blockedByMe
+                            ? colorScheme.primary
+                            : Colors.redAccent,
+                      ),
                     ),
                   ],
                 ),
@@ -715,73 +818,139 @@ class _ChatScreenState extends State<ChatScreen> {
                       },
                     ),
             ),
-            // ✅ Bottom Input Box – Glass style with SafeArea
+            // ✅ Bottom Input Box – Clean Minimal Composer or Blocked Banner
             SafeArea(
               top: false,
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 8, left: 12, right: 12),
-                child: GlassBox(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  borderRadius: 32,
-                  blur: 15,
-                  opacity: isDark ? 0.2 : 0.12,
-                  gradientColors: [
-                    (palette?.glassTop ?? colorScheme.surface)
-                        .withValues(alpha: isDark ? 0.7 : 0.8),
-                    (palette?.glassBottom ?? colorScheme.surface)
-                        .withValues(alpha: isDark ? 0.58 : 0.7),
-                  ],
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _msgController,
-                          style: TextStyle(color: colorScheme.onSurface),
-                          maxLines: 4,
-                          minLines: 1,
-                          decoration: InputDecoration(
-                            hintText: "Type message...",
-                            hintStyle: TextStyle(
-                              color: colorScheme.onSurfaceVariant
-                                  .withValues(alpha: 0.6),
-                            ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 12,
-                            ),
-                          ),
-                          onSubmitted: (_) => _sendMessage(),
+              child: (_blockedByMe || _blockedByOther)
+                  ? Container(
+                      margin: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color:
+                            isDark ? const Color(0xFF1A1D28) : Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: colorScheme.outline.withValues(alpha: 0.14),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Container(
-                        height: 46,
-                        width: 46,
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.block,
+                            size: 18,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              _blockedByMe
+                                  ? 'You blocked ${widget.receiverName}'
+                                  : 'You cannot reply to this conversation',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ),
+                          if (_blockedByMe && _myUserId != null)
+                            TextButton(
+                              onPressed: () async {
+                                final ok = await _setBlockStatus(false);
+                                if (ok && mounted) {
+                                  setState(() => _blockedByMe = false);
+                                }
+                              },
+                              child: const Text('Unblock'),
+                            ),
+                        ],
+                      ),
+                    )
+                  : Container(
+                      margin: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+                padding: const EdgeInsets.fromLTRB(16, 4, 6, 4),
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF1A1D28) : Colors.white,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.10)
+                        : colorScheme.primary.withValues(alpha: 0.10),
+                    width: 1.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          Colors.black.withValues(alpha: isDark ? 0.30 : 0.05),
+                      blurRadius: 14,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _msgController,
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontSize: 15,
+                        ),
+                        maxLines: 4,
+                        minLines: 1,
+                        textInputAction: TextInputAction.send,
+                        decoration: InputDecoration(
+                          filled: false,
+                          hintText: "Message...",
+                          hintStyle: TextStyle(
+                            color: colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.55),
+                            fontSize: 14.5,
+                          ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                          ),
+                        ),
+                        onSubmitted: (_) => _sendMessage(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: _isSending ? null : _sendMessage,
+                      child: Container(
+                        height: 38,
+                        width: 38,
                         decoration: BoxDecoration(
                           color: _isSending
                               ? colorScheme.onSurfaceVariant
                                   .withValues(alpha: 0.3)
                               : colorScheme.primary,
-                          borderRadius: BorderRadius.circular(30),
+                          shape: BoxShape.circle,
                         ),
-                        child: IconButton(
-                          icon: _isSending
+                        child: Center(
+                          child: _isSending
                               ? SizedBox(
-                                  height: 20,
-                                  width: 20,
+                                  height: 18,
+                                  width: 18,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
                                     color: colorScheme.onPrimary,
                                   ),
                                 )
-                              : Icon(Icons.send, color: colorScheme.onPrimary),
-                          onPressed: _isSending ? null : _sendMessage,
+                              : Icon(
+                                  Icons.arrow_upward_rounded,
+                                  color: colorScheme.onPrimary,
+                                  size: 20,
+                                ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -890,39 +1059,74 @@ class _MessageBubble extends StatelessWidget {
             );
           },
           child: Container(
-            padding: const EdgeInsets.fromLTRB(12, 10, 10, 6),
+            padding: const EdgeInsets.fromLTRB(13, 9, 11, 7),
             constraints: BoxConstraints(
-              maxWidth: MediaQuery.of(context).size.width * 0.78,
+              maxWidth: MediaQuery.of(context).size.width * 0.76,
             ),
             decoration: BoxDecoration(
               color: isMe
                   ? colorScheme.primary
                   : isDark
-                      ? const Color(0xFF1E1E1E)
-                      : colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(16),
+                      ? const Color(0xFF1C2133)
+                      : Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(18),
+                topRight: const Radius.circular(18),
+                bottomLeft: Radius.circular(isMe ? 18 : 4),
+                bottomRight: Radius.circular(isMe ? 4 : 18),
+              ),
+              border: isMe
+                  ? null
+                  : Border.all(
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.08)
+                          : colorScheme.primary.withValues(alpha: 0.08),
+                    ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: isDark ? 0.22 : 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: Column(
-              crossAxisAlignment:
-                  isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+            child: Wrap(
+              alignment: WrapAlignment.end,
+              crossAxisAlignment: WrapCrossAlignment.end,
+              spacing: 8,
+              runSpacing: 2,
               children: [
                 Text(
                   text,
                   style: TextStyle(
                     color:
                         isMe ? colorScheme.onPrimary : colorScheme.onSurface,
-                    fontSize: 15,
+                    fontSize: 14.5,
+                    height: 1.35,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  time,
-                  style: TextStyle(
-                    color: isMe
-                        ? colorScheme.onPrimary.withValues(alpha: 0.8)
-                        : colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-                    fontSize: 11,
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      time,
+                      style: TextStyle(
+                        color: isMe
+                            ? colorScheme.onPrimary.withValues(alpha: 0.72)
+                            : colorScheme.onSurfaceVariant
+                                .withValues(alpha: 0.7),
+                        fontSize: 10.5,
+                      ),
+                    ),
+                    if (isMe) ...[
+                      const SizedBox(width: 3),
+                      Icon(
+                        Icons.done_all_rounded,
+                        size: 13.5,
+                        color: colorScheme.onPrimary.withValues(alpha: 0.75),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),

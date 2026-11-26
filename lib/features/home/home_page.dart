@@ -21,6 +21,7 @@ import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/nfc_service.dart';
 import 'package:gridcard/widgets/app_network_image.dart';
 import 'package:gridcard/models/user_model.dart';
+import 'package:gridcard/features/home/widgets/fluid_bottom_nav_bar.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -436,10 +437,10 @@ class _HomePageState extends State<HomePage> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // ── Main Pill Navigation (4 items with labels) ───────────────
+          // ── Main Pill Navigation (4 items with fluid indicator) ─────
           Expanded(
             child: GlassBox(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+              padding: EdgeInsets.zero,
               borderRadius: 32,
               blur: 16,
               opacity: isDark ? 0.22 : 0.12,
@@ -450,15 +451,29 @@ class _HomePageState extends State<HomePage> {
                     .withValues(alpha: isDark ? 0.68 : 0.82),
               ],
               child: SizedBox(
-                height: 58,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _buildDockItem(0, FontAwesomeIcons.house),
-                    _buildDockItem(1, FontAwesomeIcons.addressCard),
-                    _buildDockItem(2, FontAwesomeIcons.compass),
-                    _buildDockItem(3, FontAwesomeIcons.gear,
-                        imageUrl: profilePicUrl),
+                height: 52,
+                child: FluidBottomNavBar(
+                  pageController: _pageController,
+                  selectedIndex: _selectedIndex,
+                  onItemSelected: _onItemTapped,
+                  items: [
+                    const FluidNavBarItem(
+                      icon: FontAwesomeIcons.house,
+                      label: 'Home',
+                    ),
+                    const FluidNavBarItem(
+                      icon: FontAwesomeIcons.addressCard,
+                      label: 'Leads',
+                    ),
+                    const FluidNavBarItem(
+                      icon: FontAwesomeIcons.compass,
+                      label: 'Discover',
+                    ),
+                    FluidNavBarItem(
+                      icon: FontAwesomeIcons.gear,
+                      label: 'Settings',
+                      imageUrl: profilePicUrl,
+                    ),
                   ],
                 ),
               ),
@@ -488,27 +503,39 @@ class _HomePageState extends State<HomePage> {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 240),
         curve: Curves.easeOut,
-        width: 58,
-        height: 58,
+        width: 52,
+        height: 52,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [
+                    Color(0xFF8B5CF6),
+                    Color(0xFFA855F7),
+                    Color(0xFF6366F1),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
           color: isSelected
-              ? (isDark ? const Color(0xFF1E2028) : const Color(0xFF111216))
+              ? null
               : (isDark ? const Color(0xFF181A20) : const Color(0xFF18191E)),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFFA855F7).withValues(alpha: 0.8)
+                ? Colors.white.withValues(alpha: 0.9)
                 : (isDark
                     ? Colors.white.withValues(alpha: 0.15)
                     : Colors.white.withValues(alpha: 0.25)),
-            width: isSelected ? 2.0 : 1.0,
+            width: isSelected ? 2.5 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
               color: isSelected
-                  ? const Color(0xFFA855F7).withValues(alpha: 0.45)
+                  ? const Color(0xFFA855F7).withValues(alpha: 0.65)
                   : Colors.black.withValues(alpha: isDark ? 0.45 : 0.25),
-              blurRadius: isSelected ? 16 : 10,
+              blurRadius: isSelected ? 20 : 10,
+              spreadRadius: isSelected ? 2 : 0,
               offset: const Offset(0, 4),
             ),
           ],
@@ -566,75 +593,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildDockItem(
-    int index,
-    FaIconData icon, {
-    String? imageUrl,
-  }) {
-    final theme = Theme.of(context);
-    final palette = theme.extension<AppThemeColors>();
-    final isSelected = _selectedIndex == index;
-    final isDark = theme.brightness == Brightness.dark;
-
-    final iconColor = isSelected
-        ? (isDark ? Colors.white : theme.colorScheme.primary)
-        : (palette?.dockInactive ??
-            theme.colorScheme.onSurface.withValues(alpha: 0.55));
-
-    return Expanded(
-      child: GestureDetector(
-        onTap: () => _onItemTapped(index),
-        behavior: HitTestBehavior.opaque,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOut,
-          height: 44,
-          margin: const EdgeInsets.symmetric(horizontal: 2),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (palette?.dockActive ?? theme.colorScheme.primary).withValues(
-                    alpha: isDark ? 0.22 : 0.12,
-                  )
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
-            border: isSelected
-                ? (isDark
-                    ? Border.all(color: Colors.transparent, width: 0)
-                    : Border.all(
-                        color: (palette?.neonAccent ?? theme.colorScheme.secondary)
-                            .withValues(alpha: 0.35),
-                        width: 0.8,
-                      ))
-                : null,
-          ),
-          child: Center(
-            child: (imageUrl != null)
-                ? CircleAvatar(
-                    radius: 13,
-                    backgroundColor: Colors.transparent,
-                    child: ClipOval(
-                      child: AppNetworkImage(
-                        imageUrl: imageUrl,
-                        width: 26,
-                        height: 26,
-                        fit: BoxFit.cover,
-                        cacheKey: context
-                            .read<AuthProvider>()
-                            .profileUpdateCounter
-                            .toString(),
-                      ),
-                    ),
-                  )
-                : FaIcon(
-                    icon,
-                    color: iconColor,
-                    size: 20,
-                  ),
-          ),
-        ),
-      ),
-    );
-  }
 
   String? _resolveProfileImageUrl(UserModel? user) {
     // 1. Try masterUser.profilePic

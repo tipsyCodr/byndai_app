@@ -247,22 +247,7 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
               ),
               const SizedBox(height: 16),
               _buildSettingsHeader(context, "Account"),
-              if (!isProUser)
-                _buildSettingsTile(
-                  context: context,
-                  icon: CupertinoIcons.star_fill,
-                  title: "Get Premium Membership",
-                  subtitle: "Unlock advanced features and limits",
-                  titleColor: colorScheme.secondary,
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SubscriptionPlans(),
-                      ),
-                    );
-                  },
-                ),
+              if (!isProUser) _buildGoldPremiumTile(context),
               // REMOVED "Plan Details" tile here as it's now in the Header
               _buildSettingsTile(
                 context: context,
@@ -466,6 +451,91 @@ class _SettingsPageState extends State<SettingsPage> with AutomaticKeepAliveClie
               fontWeight: FontWeight.bold,
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoldPremiumTile(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SubscriptionPlans(),
+              ),
+            );
+          },
+          child: Ink(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                stops: [0.0, 0.28, 0.52, 0.78, 1.0],
+                colors: [
+                  Color(0xFFBF953F),
+                  Color(0xFFFCF6BA),
+                  Color(0xFFB38728),
+                  Color(0xFFFBF5B7),
+                  Color(0xFFAA771C),
+                ],
+              ),
+              border: Border.all(
+                color: const Color(0xFFFFF3B0).withValues(alpha: 0.75),
+                width: 1.0,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFD4AF37).withValues(alpha: 0.35),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF3D2B00).withValues(alpha: 0.16),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  CupertinoIcons.star_fill,
+                  color: Color(0xFF3D2B00),
+                  size: 20,
+                ),
+              ),
+              title: const Text(
+                "Get Premium Membership",
+                style: TextStyle(
+                  color: Color(0xFF2A1D00),
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              subtitle: Text(
+                "Unlock advanced features and limits",
+                style: TextStyle(
+                  color: const Color(0xFF3D2B00).withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
+              trailing: Icon(
+                CupertinoIcons.chevron_forward,
+                color: const Color(0xFF3D2B00).withValues(alpha: 0.7),
+                size: 18,
+              ),
+            ),
+          ),
         ),
       ),
     );

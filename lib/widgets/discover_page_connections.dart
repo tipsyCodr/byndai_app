@@ -378,15 +378,13 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
         }
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        height: 400,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.15),
-              blurRadius: 15,
-              offset: const Offset(0, 8),
+              color: Colors.black.withValues(alpha: 0.14),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             )
           ],
           image: profilePic != null
@@ -411,29 +409,34 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
             // Placeholder Icon / Patterns (agar image nahi hai)
             if (profilePic == null) ...[
               Positioned(
-                top: -20,
-                right: -20,
+                top: -12,
+                right: -12,
                 child: Icon(
                   Icons.person,
-                  size: 200,
+                  size: 110,
                   color: Colors.white.withValues(alpha: 0.1),
                 ),
               ),
-              Center(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.15),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.2),
-                      width: 2,
+              Positioned(
+                top: 32,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.15),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.2),
+                        width: 1.5,
+                      ),
                     ),
-                  ),
-                  child: const Icon(
-                    Icons.person_outline,
-                    size: 80,
-                    color: Colors.white,
+                    child: const Icon(
+                      Icons.person_outline,
+                      size: 40,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
               ),
@@ -443,7 +446,7 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
             Positioned.fill(
               child: Container(
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius: BorderRadius.circular(20),
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
@@ -462,9 +465,9 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
 
             // Content
             Positioned(
-              left: 20,
-              right: 20,
-              bottom: 24,
+              left: 12,
+              right: 12,
+              bottom: 14,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -472,52 +475,56 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                   Text(
                     _capitalize(fname),
                     textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
-                      fontSize: 26,
-                      letterSpacing: 0.5,
+                      fontSize: 16,
+                      letterSpacing: 0.3,
                     ),
                   ),
 
                   // Business/Legal Name
                   if (legalName.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 4),
+                      padding: const EdgeInsets.only(top: 2),
                       child: Text(
                         legalName,
                         textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 14,
+                          color: Colors.white.withValues(alpha: 0.8),
+                          fontSize: 11.5,
                         ),
                       ),
                     ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 6),
 
                   // Connection Count Text
                   Text(
                     "($friendCount Connections)",
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.5),
-                      fontSize: 12,
+                      color: Colors.white.withValues(alpha: 0.55),
+                      fontSize: 11,
                     ),
                   ),
 
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 10),
 
-                  // Connect Button (Matches the pill shape in image)
+                  // Connect Button
                   SizedBox(
-                    width: 160,
-                    height: 48,
+                    width: double.infinity,
+                    height: 36,
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
                         side:
-                            const BorderSide(color: Colors.white60, width: 1.5),
+                            const BorderSide(color: Colors.white60, width: 1.2),
                         shape: const StadiumBorder(),
-                        backgroundColor: Colors.white.withOpacity(0.1),
-                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        backgroundColor: Colors.white.withValues(alpha: 0.1),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       onPressed: () async {
@@ -561,7 +568,7 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                         user["is_connected"] == true ? "Requested" : "Connect",
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
+                          fontSize: 13,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -627,12 +634,21 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
       );
     }
 
-    return SliverList(
-      delegate: SliverChildBuilderDelegate(
-        (context, index) {
-          return _userCard(_users[index]);
-        },
-        childCount: _users.length,
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 12,
+          crossAxisSpacing: 12,
+          childAspectRatio: 0.72,
+        ),
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            return _userCard(_users[index]);
+          },
+          childCount: _users.length,
+        ),
       ),
     );
   }

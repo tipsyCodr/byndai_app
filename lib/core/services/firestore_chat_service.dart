@@ -6,14 +6,66 @@ class FirestoreChatService {
 
   // ─── Collection references ───────────────────────────────────────────────
 
+  static DocumentReference<Map<String, dynamic>> _chatRef(int chatId) =>
+      _db.collection('chats').doc(chatId.toString());
+
   static CollectionReference<Map<String, dynamic>> _messagesRef(int chatId) =>
-      _db
-          .collection('chats')
-          .doc(chatId.toString())
-          .collection('messages');
+      _chatRef(chatId).collection('messages');
 
   static DocumentReference<Map<String, dynamic>> _userRef(int userId) =>
       _db.collection('users').doc(userId.toString());
+
+  // ─── Stream: realtime chat list for a user ───────────────────────────────
+
+  static Stream<QuerySnapshot<Map<String, dynamic>>> getUserChatsStream(
+      int userId) {
+    return _db
+        .collection('chats')
+        .where('participants', arrayContains: userId)
+        .snapshots();
+  }
+
+  static Stream<DocumentSnapshot<Map<String, dynamic>>> getChatDocStream(
+      int chatId) {
+    return _chatRef(chatId).snapshots();
+  }
+
+  /// Blocks or unblocks a chat for [userId] via `blocked_by` array on `chats/{chatId}`.
+  static Future<bool> setChatBlocked({
+    required int chatId,
+    required int userId,
+    required bool isBlocked,
+  }) async {
+    try {
+      await _chatRef(chatId).set(
+        {
+          'blocked_by': isBlocked
+              ? FieldValue.arrayUnion([userId])
+              : FieldValue.arrayRemove([userId]),
+        },
+        SetOptions(merge: true),
+      );
+      return true;
+    } catch (e) {
+      debugPrint('🔥 FirestoreChatService.setChatBlocked error: $e');
+      return false;
+    }
+  }
+
+  /// Resets unread count for [userId] on [chatId].
+  static Future<void> markChatRead({
+    required int chatId,
+    required int userId,
+  }) async {
+    try {
+      await _chatRef(chatId).set(
+        {'unread_$userId': 0},
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      debugPrint('🔥 FirestoreChatService.markChatRead error: $e');
+    }
+  }
 
   // ─── Stream: realtime message feed ───────────────────────────────────────
 
@@ -37,13 +89,26 @@ class FirestoreChatService {
     String? createdAt, // ISO string from backend response
   }) async {
     try {
+      final isoNow = createdAt ?? DateTime.now().toIso8601String();
       await _messagesRef(chatId).add({
         'sender_id': senderId,
         'receiver_id': receiverId,
         'message': message,
         'timestamp': FieldValue.serverTimestamp(),
-        'created_at': createdAt ?? DateTime.now().toIso8601String(),
+        'created_at': isoNow,
       });
+      await _chatRef(chatId).set(
+        {
+          'chat_id': chatId,
+          'participants': [senderId, receiverId],
+          'last_message': message,
+          'last_message_sender_id': senderId,
+          'last_message_at': FieldValue.serverTimestamp(),
+          'last_message_iso': isoNow,
+          'unread_$receiverId': FieldValue.increment(1),
+        },
+        SetOptions(merge: true),
+      );
     } catch (e) {
       debugPrint('🔥 FirestoreChatService.syncMessageToFirestore error: $e');
     }

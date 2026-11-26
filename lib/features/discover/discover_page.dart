@@ -14,6 +14,7 @@ import 'package:gridcard/widgets/discover_page_connections.dart';
 import 'package:gridcard/widgets/glass_box.dart';
 import '../home/widgets/feed_item_tile.dart';
 import 'package:gridcard/widgets/app_network_image.dart';
+import 'package:gridcard/core/theme/app_theme.dart';
 
 class DiscoverPage extends StatefulWidget {
   const DiscoverPage({super.key});
@@ -246,11 +247,26 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
                     const SizedBox(height: 12),
                   ] else ...[
                     const SizedBox(height: 24),
-                    _buildSectionHeader("Events", () {}),
+                    _buildSectionHeader("Events", () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BusinessEventPage(),
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 12),
                     _buildEventsCarousel(),
                     const SizedBox(height: 32),
-                    _buildSectionHeader("Suggested Connections", () {}),
+                    _buildSectionHeader("Suggested Connections", () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const _SuggestedConnectionsPage(),
+                        ),
+                      );
+                    }),
                     const SizedBox(height: 12),
                   ],
                 ],
@@ -397,9 +413,10 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
     }
 
     return SizedBox(
-      height: 130,
+      height: 148,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
         itemCount: allEvents.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
@@ -410,17 +427,60 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
     );
   }
 
+  String? _resolveEventImage(dynamic event) {
+    final images = event['images'] as List?;
+    if (images == null || images.isEmpty) return null;
+    final first = images.first;
+    if (first is! Map) return null;
+    final fullUrl = first['full_url']?.toString();
+    if (fullUrl != null && fullUrl.trim().isNotEmpty) {
+      return fullUrl.trim().replaceAll(' ', '%20');
+    }
+    final path = first['event_img_path']?.toString();
+    if (path != null && path.trim().isNotEmpty) {
+      final resolved = AppConfig.getFullUrl(path);
+      if (resolved != null && resolved.trim().isNotEmpty) {
+        return resolved.trim().replaceAll(' ', '%20');
+      }
+    }
+    return null;
+  }
+
+  String _formatEventDate(String raw) {
+    final dt = DateTime.tryParse(raw.trim());
+    if (dt == null) return raw.trim();
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    final datePart = '${dt.day} ${months[dt.month - 1]} ${dt.year}';
+    if (dt.hour == 0 && dt.minute == 0 && dt.second == 0) {
+      return datePart;
+    }
+    final hour12 = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
+    final min = dt.minute.toString().padLeft(2, '0');
+    final period = dt.hour >= 12 ? 'PM' : 'AM';
+    return '$datePart • $hour12:$min $period';
+  }
+
   Widget _buildEventCard(dynamic event) {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final palette = Theme.of(context).extension<AppThemeColors>();
 
-    final String title = (event['title'] ?? '').toString();
+    final String title =
+        (event['title'] ?? event['event_name'] ?? 'Untitled Event').toString();
     final String desc = (event['description'] ?? '').toString();
-
-    String shortText(String text) {
-      if (text.length <= 20) return text;
-      return "${text.substring(0, 20)}...";
-    }
+    final String? imageUrl = _resolveEventImage(event);
+    final String? dateStr =
+        (event['start_date'] ?? event['event_date'] ?? event['date'])
+            ?.toString();
+    final String? industryName = event['industry']?['name']?.toString();
+    final String badgeText = (dateStr != null && dateStr.trim().isNotEmpty)
+        ? _formatEventDate(dateStr)
+        : (industryName != null && industryName.trim().isNotEmpty
+            ? industryName.trim()
+            : 'Event');
 
     final int? eventId = event['id'];
 
@@ -433,68 +493,160 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
           ),
         );
       },
-      child: GlassBox(
-        width: 280,
-        padding: const EdgeInsets.all(16),
-        borderRadius: 16,
-        gradientColors: isDark
-            ? [
-                colorScheme.primary.withValues(alpha: 0.2),
-                colorScheme.primary.withValues(alpha: 0.1),
-              ]
-            : [
-                colorScheme.primary.withValues(alpha: 0.8),
-                colorScheme.primary.withValues(alpha: 0.6),
-              ],
-        child: Row(
-          children: [
-            Icon(
-              CupertinoIcons.calendar_badge_plus,
-              color: isDark ? colorScheme.primary : Colors.white,
-              size: 38,
+      child: Container(
+        width: 270,
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: isDark
+                ? [
+                    const Color(0xFF1F2642),
+                    const Color(0xFF13182B),
+                  ]
+                : [
+                    palette?.heroStart ?? colorScheme.primary,
+                    palette?.heroEnd ?? colorScheme.secondary,
+                  ],
+          ),
+          border: Border.all(
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.10)
+                : Colors.white.withValues(alpha: 0.25),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: (isDark ? Colors.black : colorScheme.primary)
+                  .withValues(alpha: isDark ? 0.35 : 0.18),
+              blurRadius: 14,
+              offset: const Offset(0, 6),
             ),
-            const SizedBox(width: 14),
+          ],
+        ),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            if (imageUrl != null)
+              AppNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.cover,
+              ),
 
-            // Title + desc
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    shortText(title),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: isDark ? colorScheme.onSurface : Colors.white,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 15,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    shortText(desc),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: isDark
-                          ? colorScheme.onSurface.withValues(alpha: 0.6)
-                          : Colors.white.withValues(alpha: 0.8),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
+            // Dark scrim for readability
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: imageUrl != null
+                      ? [
+                          Colors.black.withValues(alpha: 0.20),
+                          Colors.black.withValues(alpha: 0.82),
+                        ]
+                      : [
+                          Colors.transparent,
+                          Colors.black.withValues(alpha: 0.32),
+                        ],
+                ),
               ),
             ),
 
-            const SizedBox(width: 10),
+            if (imageUrl == null)
+              Positioned(
+                right: -12,
+                top: -12,
+                child: Icon(
+                  CupertinoIcons.calendar,
+                  size: 96,
+                  color: Colors.white.withValues(alpha: 0.08),
+                ),
+              ),
 
-            Icon(
-              CupertinoIcons.chevron_right,
-              color: isDark
-                  ? colorScheme.onSurface.withValues(alpha: 0.4)
-                  : Colors.white.withValues(alpha: 0.6),
+            Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 9, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              CupertinoIcons.calendar,
+                              size: 11.5,
+                              color: Colors.white,
+                            ),
+                            const SizedBox(width: 5),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 160),
+                              child: Text(
+                                badgeText,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.18),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          CupertinoIcons.arrow_up_right,
+                          size: 13,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15.5,
+                      letterSpacing: 0.1,
+                    ),
+                  ),
+                  if (desc.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Text(
+                      desc,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.82),
+                        fontSize: 12,
+                        height: 1.3,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
         ),
@@ -704,6 +856,54 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _SuggestedConnectionsPage extends StatefulWidget {
+  const _SuggestedConnectionsPage();
+
+  @override
+  State<_SuggestedConnectionsPage> createState() =>
+      _SuggestedConnectionsPageState();
+}
+
+class _SuggestedConnectionsPageState extends State<_SuggestedConnectionsPage> {
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey<DiscoverConnectionSuggestState> _connectionKey = GlobalKey();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >=
+          _scrollController.position.maxScrollExtent - 250) {
+        _connectionKey.currentState?.loadMore();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Suggested Connections'),
+        centerTitle: true,
+      ),
+      body: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          const SliverPadding(padding: EdgeInsets.only(top: 12)),
+          DiscoverConnectionSuggest(key: _connectionKey),
+          const SliverPadding(padding: EdgeInsets.only(bottom: 24)),
+        ],
       ),
     );
   }
