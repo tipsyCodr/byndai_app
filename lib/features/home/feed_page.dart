@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:gridcard/widgets/action_dock.dart';
+import 'package:gridcard/widgets/shimmer_box.dart';
 import 'package:gridcard/widgets/connection_suggest.dart';
 import 'package:provider/provider.dart';
 import 'package:gridcard/features/qr_generator/qr_generator_page.dart';
@@ -568,9 +569,20 @@ class FeedPageState extends State<FeedPage> with TickerProviderStateMixin, Autom
   Widget _buildLatestBusinessCarousel() {
     final colorScheme = Theme.of(context).colorScheme;
     if (_isLatestLoading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 25),
-        child: Center(child: CircularProgressIndicator()),
+      return SizedBox(
+        height: 220,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: 3,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (_, __) => const ShimmerBox(
+            width: 260,
+            height: 220,
+            borderRadius: 20,
+          ),
+        ),
       );
     }
 

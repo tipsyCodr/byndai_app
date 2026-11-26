@@ -8,6 +8,7 @@ import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:gridcard/core/services/profile_provider.dart';
 import 'package:gridcard/widgets/app_network_image.dart';
+import 'package:gridcard/widgets/shimmer_box.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -213,7 +214,17 @@ class _ProfilePageState extends State<ProfilePage> {
         SizedBox(
           height: 305, // 🔥 Increased height for portrait cards
           child: provider.isLoadingVideos
-              ? const Center(child: CircularProgressIndicator())
+              ? ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: 3,
+                  separatorBuilder: (_, __) => const SizedBox(width: 12),
+                  itemBuilder: (_, __) => const ShimmerBox(
+                    width: 170,
+                    height: 305,
+                    borderRadius: 18,
+                  ),
+                )
               : videos.isEmpty
                   ? Center(
                       // child: Text(
@@ -481,7 +492,53 @@ class _ProfilePageState extends State<ProfilePage> {
 
           if (profile == null || !isCorrectUser) {
             if (provider.isLoading) {
-              return const Center(child: CircularProgressIndicator());
+              return SafeArea(
+                child: SingleChildScrollView(
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const ShimmerBox(height: 150, borderRadius: 20),
+                      const SizedBox(height: 16),
+                      const Row(
+                        children: [
+                          ShimmerBox(width: 76, height: 76, borderRadius: 38),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ShimmerBox(
+                                    width: 160, height: 18, borderRadius: 8),
+                                SizedBox(height: 8),
+                                ShimmerBox(
+                                    width: 120, height: 13, borderRadius: 6),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: List.generate(
+                          3,
+                          (_) => const Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(horizontal: 4),
+                              child: ShimmerBox(height: 56, borderRadius: 14),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const ShimmerBox(height: 44, borderRadius: 14),
+                      const SizedBox(height: 20),
+                      const ShimmerBox(height: 180, borderRadius: 18),
+                    ],
+                  ),
+                ),
+              );
             }
             if (profile == null) {
               return const Center(child: Text("Profile not found"));

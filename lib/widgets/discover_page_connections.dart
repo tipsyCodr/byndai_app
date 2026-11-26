@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
+import 'package:gridcard/widgets/shimmer_box.dart';
 import 'package:gridcard/widgets/top_alert.dart';
 import 'package:http/http.dart' as http;
 
@@ -17,7 +19,14 @@ import 'package:gridcard/core/services/auth_provider.dart';
 import 'package:provider/provider.dart';
 
 class DiscoverConnectionSuggest extends StatefulWidget {
-  const DiscoverConnectionSuggest({super.key});
+  final String selectedFilter;
+  final ValueChanged<List<String>>? onFiltersDiscovered;
+
+  const DiscoverConnectionSuggest({
+    super.key,
+    this.selectedFilter = 'All',
+    this.onFiltersDiscovered,
+  });
 
  @override
 State<DiscoverConnectionSuggest> createState() =>
@@ -301,10 +310,12 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
         setState(() {
           _isFirstLoad = false;
         });
+        _notifyDiscoveredFilters();
       } else {
         setState(() {
           _isFirstLoad = false;
         });
+        _notifyDiscoveredFilters();
       }
     } catch (e) {
       debugPrint("❌ FETCH USERS ERROR: $e");
@@ -528,6 +539,7 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       onPressed: () async {
+                        HapticFeedback.lightImpact();
                         final authProvider =
                             Provider.of<AuthProvider>(context, listen: false);
                         await authProvider.refreshSubscription();
@@ -614,22 +626,68 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
   //   );
   // }
 
+  void _notifyDiscoveredFilters() {
+    if (widget.onFiltersDiscovered == null) return;
+    final tags = <String>{};
+    for (final u in _users) {
+      final biz = u['business'] is Map ? u['business'] as Map : null;
+      for (final candidate in [
+        u['industry'] is Map ? u['industry']['name'] : u['industry'],
+        biz?['industry'] is Map ? biz!['industry']['name'] : biz?['industry'],
+        u['city'],
+        biz?['city'],
+        u['state'],
+      ]) {
+        final s = candidate?.toString().trim() ?? '';
+        if (s.isNotEmpty && s.length <= 24) tags.add(s);
+      }
+    }
+    widget.onFiltersDiscovered!(tags.toList());
+  }
+
+  bool _matchesFilter(Map<String, dynamic> u, String filter) {
+    if (filter == 'All') return true;
+    final q = filter.toLowerCase();
+    final biz = u['business'] is Map ? u['business'] as Map : null;
+    final haystack = [
+      u['industry'] is Map ? u['industry']['name'] : u['industry'],
+      biz?['industry'] is Map ? biz!['industry']['name'] : biz?['industry'],
+      u['city'],
+      biz?['city'],
+      u['state'],
+      biz?['legal_name'],
+    ].map((e) => (e ?? '').toString().toLowerCase()).join(' ');
+    return haystack.contains(q);
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isFirstLoad) {
-      return const SliverToBoxAdapter(
-        child: SizedBox(
-          height: 200,
-          child: Center(child: CircularProgressIndicator()),
+      return SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 0.72,
+          ),
+          delegate: SliverChildBuilderDelegate(
+            (_, __) => const ShimmerBox(height: 240, borderRadius: 20),
+            childCount: 4,
+          ),
         ),
       );
     }
 
-    if (_users.isEmpty) {
+    final visibleUsers =
+        _users.where((u) => _matchesFilter(u, widget.selectedFilter)).toList();
+
+    if (visibleUsers.isEmpty) {
       return const SliverToBoxAdapter(
         child: SizedBox(
-          height: 200,
-          child: Center(child: Text("No suggestions found")),
+          height: 160,
+          child: Center(child: Text("No matching connections")),
         ),
       );
     }
@@ -645,9 +703,9 @@ class DiscoverConnectionSuggestState extends State<DiscoverConnectionSuggest> {
         ),
         delegate: SliverChildBuilderDelegate(
           (context, index) {
-            return _userCard(_users[index]);
+            return _userCard(visibleUsers[index]);
           },
-          childCount: _users.length,
+          childCount: visibleUsers.length,
         ),
       ),
     );

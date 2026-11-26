@@ -19,6 +19,7 @@ import 'package:gridcard/core/theme/app_theme.dart';
 import '../qr_scan/profile_qr_code.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/nfc_service.dart';
+import 'package:gridcard/core/services/firestore_chat_service.dart';
 import 'package:gridcard/widgets/app_network_image.dart';
 import 'package:gridcard/models/user_model.dart';
 import 'package:gridcard/features/home/widgets/fluid_bottom_nav_bar.dart';
@@ -30,12 +31,13 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   DateTime? _lastBackPressed;
 
   final GlobalKey<FeedPageState> _feedKey = GlobalKey<FeedPageState>();
   late final PageController _pageController;
   NfcService? _nfcService;
+  int? _presenceUserId;
 
   List<Widget> get _screens => [
     FeedPage(key: _feedKey),
@@ -48,18 +50,48 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _pageController = PageController(initialPage: _selectedIndex);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _nfcService = Provider.of<NfcService>(context, listen: false);
       _initializeNfc();
       final auth = Provider.of<AuthProvider>(context, listen: false);
+      _presenceUserId = auth.user?.id;
+      if (_presenceUserId != null) {
+        FirestoreChatService.setUserOnlineStatus(
+          userId: _presenceUserId!,
+          isOnline: true,
+        );
+      }
 
       debugPrint("📦 Subscription in HomePage: ${auth.subscriptionDetails}");
     });
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final uid = _presenceUserId ??
+        Provider.of<AuthProvider>(context, listen: false).user?.id;
+    if (uid == null) return;
+    _presenceUserId = uid;
+    if (state == AppLifecycleState.resumed) {
+      FirestoreChatService.setUserOnlineStatus(userId: uid, isOnline: true);
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached ||
+        state == AppLifecycleState.hidden) {
+      FirestoreChatService.setUserOnlineStatus(userId: uid, isOnline: false);
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    if (_presenceUserId != null) {
+      FirestoreChatService.setUserOnlineStatus(
+        userId: _presenceUserId!,
+        isOnline: false,
+      );
+    }
     _pageController.dispose();
     _nfcService?.stopListening();
     super.dispose();
@@ -109,6 +141,7 @@ class _HomePageState extends State<HomePage> {
   ];
 
   void _onItemTapped(int index) {
+    HapticFeedback.lightImpact();
     if (_selectedIndex == index) {
       if (index == 0) {
         // If already on Home, just scroll to top

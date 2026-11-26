@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/firestore_chat_service.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
@@ -202,6 +203,7 @@ class _ChatScreenState extends State<ChatScreen> {
     final text = _msgController.text.trim();
     if (text.isEmpty) return;
     if (_isSending) return;
+    HapticFeedback.lightImpact();
 
     // Optimistically clear input immediately
     _msgController.clear();

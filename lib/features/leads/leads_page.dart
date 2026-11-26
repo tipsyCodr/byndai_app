@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:gridcard/widgets/shimmer_box.dart';
 
 import 'package:gridcard/core/services/leads-service.dart';
 import 'package:gridcard/core/services/leads_provider.dart';
@@ -765,7 +766,13 @@ class _LeadsPageState extends State<LeadsPage>
 
   Widget _buildMobileCards(LeadProviders provider) {
     if (provider.isLoading && provider.leads.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return ListView.separated(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: 5,
+        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        itemBuilder: (_, __) => const ShimmerBox(height: 112, borderRadius: 18),
+      );
     }
 
     if (!provider.isLoading && provider.leads.isEmpty) {

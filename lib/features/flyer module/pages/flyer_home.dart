@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:gridcard/config/app_config.dart';
+import 'package:gridcard/widgets/shimmer_box.dart';
 import 'package:gridcard/core/services/flyer_service.dart';
 import 'flyer_editor_page.dart';
 import 'ai_flyer_studio_page.dart';
@@ -123,7 +124,31 @@ class _FlyerHomePageState extends State<FlyerHomePage> {
             _buildHeader(),
             Expanded(
               child: isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const ShimmerBox(width: 180, height: 24, borderRadius: 10),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: List.generate(
+                              4,
+                              (_) => const Padding(
+                                padding: EdgeInsets.only(right: 10),
+                                child: ShimmerBox(width: 65, height: 82, borderRadius: 16),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          const ShimmerBox(height: 84, borderRadius: 16),
+                          const SizedBox(height: 20),
+                          const Expanded(
+                            child: ShimmerBox(height: 220, borderRadius: 20),
+                          ),
+                        ],
+                      ),
+                    )
                   : SingleChildScrollView(
                       physics: const BouncingScrollPhysics(),
                       child: Column(

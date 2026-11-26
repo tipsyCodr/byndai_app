@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/firestore_chat_service.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
+import 'package:gridcard/widgets/shimmer_box.dart';
 import 'package:gridcard/features/profile/profile_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:gridcard/widgets/top_alert.dart';
@@ -1031,12 +1032,109 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     TopAlert.show(context, 'Chat deleted');
   }
 
+  Widget _buildPresenceAvatar({
+    required int userId,
+    required String? profilePic,
+    required String name,
+    bool hasUnread = false,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final initial = name.trim().isNotEmpty ? name.trim()[0].toUpperCase() : 'U';
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirestoreChatService.getUserPresenceStream(userId),
+      builder: (context, snapshot) {
+        final data = snapshot.data?.data();
+        final isOnline = data?['is_online'] == true;
+
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Container(
+              padding: EdgeInsets.all(hasUnread ? 2 : 0),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: hasUnread
+                    ? Border.all(
+                        color: const Color(0xFF25D366),
+                        width: 2,
+                      )
+                    : null,
+              ),
+              child: CircleAvatar(
+                radius: 26,
+                backgroundColor: colorScheme.primary.withValues(alpha: 0.12),
+                backgroundImage: profilePic != null
+                    ? NetworkImage('${AppConfig.apiProfileImg}/$profilePic')
+                    : null,
+                child: profilePic == null
+                    ? Text(
+                        initial,
+                        style: TextStyle(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w700,
+                          color: colorScheme.primary,
+                        ),
+                      )
+                    : null,
+              ),
+            ),
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Container(
+                width: 14,
+                height: 14,
+                decoration: BoxDecoration(
+                  color: isOnline
+                      ? const Color(0xFF22C55E)
+                      : Colors.grey.shade400,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: colorScheme.surface,
+                    width: 2,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildListShimmer() {
+    return ListView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      itemCount: 6,
+      itemBuilder: (_, __) => const Padding(
+        padding: EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            ShimmerBox(width: 52, height: 52, borderRadius: 26),
+            SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ShimmerBox(width: 140, height: 14, borderRadius: 7),
+                  SizedBox(height: 8),
+                  ShimmerBox(width: 210, height: 12, borderRadius: 6),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildChatsList(List<dynamic> chats) {
     final colorScheme = Theme.of(context).colorScheme;
 
     if (acceptedLoading) {
-      return Center(
-          child: CircularProgressIndicator(color: colorScheme.primary));
+      return _buildListShimmer();
     }
 
     if (chats.isEmpty) {
@@ -1149,45 +1247,11 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                   ),
                   child: Row(
                     children: [
-                      Container(
-                        padding: EdgeInsets.all(hasUnread ? 2 : 0),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: hasUnread
-                              ? Border.all(
-                                  color: const Color(0xFF25D366),
-                                  width: 2,
-                                )
-                              : null,
-                        ),
-                        child: CircleAvatar(
-                          radius: 26,
-                          backgroundColor:
-                              colorScheme.primary.withValues(alpha: 0.12),
-                          backgroundImage: item['profile_pic'] != null
-                              ? NetworkImage(
-                                  '${AppConfig.apiProfileImg}/${item['profile_pic']}',
-                                )
-                              : null,
-                          child: item['profile_pic'] == null
-                              ? Text(
-                                  (item['fname'] ?? 'U')
-                                          .toString()
-                                          .trim()
-                                          .isNotEmpty
-                                      ? (item['fname'] ?? 'U')
-                                          .toString()
-                                          .trim()[0]
-                                          .toUpperCase()
-                                      : 'U',
-                                  style: TextStyle(
-                                    fontSize: 19,
-                                    fontWeight: FontWeight.w700,
-                                    color: colorScheme.primary,
-                                  ),
-                                )
-                              : null,
-                        ),
+                      _buildPresenceAvatar(
+                        userId: friendId,
+                        profilePic: item['profile_pic']?.toString(),
+                        name: (item['fname'] ?? 'U').toString(),
+                        hasUnread: hasUnread,
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -1312,8 +1376,7 @@ class _ConnectionsPageState extends State<ConnectionsPage>
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     if (acceptedLoading) {
-      return Center(
-          child: CircularProgressIndicator(color: colorScheme.primary));
+      return _buildListShimmer();
     }
 
     return Column(
@@ -1518,34 +1581,11 @@ class _ConnectionsPageState extends State<ConnectionsPage>
                               child: Row(
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
-                                  /// 👤 Avatar
-                                  CircleAvatar(
-                                    radius: 26,
-                                    backgroundColor: colorScheme.primary
-                                        .withValues(alpha: 0.12),
-                                    backgroundImage: item['profile_pic'] != null
-                                        ? NetworkImage(
-                                            "${AppConfig.apiProfileImg}/${item['profile_pic']}",
-                                          )
-                                        : null,
-                                    child: item['profile_pic'] == null
-                                        ? Text(
-                                            (item['fname'] ?? 'U')
-                                                    .toString()
-                                                    .trim()
-                                                    .isNotEmpty
-                                                ? (item['fname'] ?? 'U')
-                                                    .toString()
-                                                    .trim()[0]
-                                                    .toUpperCase()
-                                                : 'U',
-                                            style: TextStyle(
-                                              fontSize: 19,
-                                              fontWeight: FontWeight.w700,
-                                              color: colorScheme.primary,
-                                            ),
-                                          )
-                                        : null,
+                                  /// 👤 Avatar with live presence dot
+                                  _buildPresenceAvatar(
+                                    userId: friendId,
+                                    profilePic: item['profile_pic']?.toString(),
+                                    name: (item['fname'] ?? 'U').toString(),
                                   ),
 
                                   const SizedBox(width: 14),
@@ -1585,81 +1625,74 @@ class _ConnectionsPageState extends State<ConnectionsPage>
 
                                   const SizedBox(width: 10),
 
-                                  /// Instagram-style Remove Connection button
-                                  OutlinedButton(
-                                    style: OutlinedButton.styleFrom(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 14, vertical: 6),
-                                      minimumSize: Size.zero,
-                                      tapTargetSize:
-                                          MaterialTapTargetSize.shrinkWrap,
-                                      side: BorderSide(
-                                        color: colorScheme.outline
-                                            .withValues(alpha: 0.35),
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
+                                  /// Red Unfollow / Remove Connection icon button
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: Colors.redAccent
+                                          .withValues(alpha: 0.10),
+                                      shape: BoxShape.circle,
                                     ),
-                                    onPressed: () async {
-                                      final confirm = await showDialog<bool>(
-                                        context: context,
-                                        builder: (ctx) => AlertDialog(
-                                          title: const Text('Remove Connection'),
-                                          content: Text(
-                                              'Remove ${item['fname'] ?? 'this user'} from your connections?'),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(ctx, false),
-                                              child: const Text('Cancel'),
-                                            ),
-                                            TextButton(
-                                              onPressed: () =>
-                                                  Navigator.pop(ctx, true),
-                                              child: const Text(
-                                                'Remove',
-                                                style: TextStyle(
-                                                    color: Colors.redAccent),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                      if (confirm != true || !mounted) return;
-
-                                      final session =
-                                          await UserStorageService()
-                                              .loadSession();
-                                      final viewerId = session.user?.id ?? 0;
-                                      final sId = int.tryParse(
-                                              (item['sender_id'] ?? viewerId)
-                                                  .toString()) ??
-                                          viewerId;
-                                      final rId = int.tryParse(
-                                              (item['receiver_id'] ?? friendId)
-                                                  .toString()) ??
-                                          friendId;
-                                      final st = int.tryParse(
-                                              (item['status'] ?? 1)
-                                                  .toString()) ??
-                                          1;
-
-                                      await deleteConnectionRequest(
-                                        senderId: sId,
-                                        receiverId: rId,
-                                        status: st,
-                                        fromTab: 'accepted',
-                                        index: index,
-                                      );
-                                    },
-                                    child: Text(
-                                      'Remove',
-                                      style: TextStyle(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: colorScheme.onSurface,
+                                    child: IconButton(
+                                      tooltip: 'Remove Connection',
+                                      icon: const Icon(
+                                        Icons.person_remove_outlined,
+                                        color: Colors.redAccent,
+                                        size: 20,
                                       ),
+                                      onPressed: () async {
+                                        final confirm = await showDialog<bool>(
+                                          context: context,
+                                          builder: (ctx) => AlertDialog(
+                                            title:
+                                                const Text('Remove Connection'),
+                                            content: Text(
+                                                'Remove ${item['fname'] ?? 'this user'} from your connections?'),
+                                            actions: [
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(ctx, false),
+                                                child: const Text('Cancel'),
+                                              ),
+                                              TextButton(
+                                                onPressed: () =>
+                                                    Navigator.pop(ctx, true),
+                                                child: const Text(
+                                                  'Remove',
+                                                  style: TextStyle(
+                                                      color: Colors.redAccent),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                        if (confirm != true || !mounted) return;
+
+                                        final session =
+                                            await UserStorageService()
+                                                .loadSession();
+                                        final viewerId = session.user?.id ?? 0;
+                                        final sId = int.tryParse(
+                                                (item['sender_id'] ?? viewerId)
+                                                    .toString()) ??
+                                            viewerId;
+                                        final rId = int.tryParse(
+                                                (item['receiver_id'] ??
+                                                        friendId)
+                                                    .toString()) ??
+                                            friendId;
+                                        final st = int.tryParse(
+                                                (item['status'] ?? 1)
+                                                    .toString()) ??
+                                            1;
+
+                                        await deleteConnectionRequest(
+                                          senderId: sId,
+                                          receiverId: rId,
+                                          status: st,
+                                          fromTab: 'accepted',
+                                          index: index,
+                                        );
+                                      },
                                     ),
                                   ),
                                 ],

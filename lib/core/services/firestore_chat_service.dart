@@ -182,6 +182,30 @@ class FirestoreChatService {
     }
   }
 
+  /// Updates online status + last_seen on `users/{userId}`.
+  static Future<void> setUserOnlineStatus({
+    required int userId,
+    required bool isOnline,
+  }) async {
+    try {
+      await _userRef(userId).set(
+        {
+          'is_online': isOnline,
+          'last_seen': FieldValue.serverTimestamp(),
+        },
+        SetOptions(merge: true),
+      );
+    } catch (e) {
+      debugPrint('🔥 FirestoreChatService.setUserOnlineStatus error: $e');
+    }
+  }
+
+  /// Realtime stream of `users/{userId}` for online/offline presence.
+  static Stream<DocumentSnapshot<Map<String, dynamic>>> getUserPresenceStream(
+      int userId) {
+    return _userRef(userId).snapshots();
+  }
+
   /// Fetches the FCM token for [userId] from Firestore.
   static Future<String?> getUserFcmToken(int userId) async {
     try {

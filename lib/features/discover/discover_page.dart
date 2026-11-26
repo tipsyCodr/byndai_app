@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:gridcard/config/app_config.dart';
 import 'package:gridcard/core/services/user_storage_service.dart';
 import 'package:gridcard/core/services/social_provider.dart';
@@ -14,6 +15,7 @@ import 'package:gridcard/widgets/discover_page_connections.dart';
 import 'package:gridcard/widgets/glass_box.dart';
 import '../home/widgets/feed_item_tile.dart';
 import 'package:gridcard/widgets/app_network_image.dart';
+import 'package:gridcard/widgets/shimmer_box.dart';
 import 'package:gridcard/core/theme/app_theme.dart';
 
 class DiscoverPage extends StatefulWidget {
@@ -36,10 +38,12 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
 
   DateTime? _lastEventsFetched;
 
-  // Search Variables
+  // Search & Filter Variables
   bool _isSearching = false;
   List<dynamic> _searchResults = [];
   String _searchQuery = '';
+  String _selectedFilter = 'All';
+  List<String> _connectionFilters = [];
 
   bool get _shouldRefreshEvents {
     if (allEvents.isEmpty || _lastEventsFetched == null) return true;
@@ -246,7 +250,8 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
                     ),
                     const SizedBox(height: 12),
                   ] else ...[
-                    const SizedBox(height: 24),
+                    _buildFilterChips(),
+                    const SizedBox(height: 18),
                     _buildSectionHeader("Events", () {
                       Navigator.push(
                         context,
@@ -277,7 +282,15 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
           if (_searchQuery.isNotEmpty)
             _buildSearchResultsSliver()
           else ...[
-            DiscoverConnectionSuggest(key: connectionKey),
+            DiscoverConnectionSuggest(
+              key: connectionKey,
+              selectedFilter: _selectedFilter,
+              onFiltersDiscovered: (tags) {
+                if (mounted) {
+                  setState(() => _connectionFilters = tags);
+                }
+              },
+            ),
 
             /// Optimized Post Section
             Selector<SocialProvider, bool>(
@@ -391,11 +404,101 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
     );
   }
 
+  List<String> get _availableFilters {
+    final tags = <String>{'All'};
+    for (final e in allEvents) {
+      if (e is! Map) continue;
+      for (final candidate in [
+        e['industry'] is Map ? e['industry']['name'] : e['industry'],
+        e['city'],
+        e['location'],
+        e['state'],
+      ]) {
+        final s = candidate?.toString().trim() ?? '';
+        if (s.isNotEmpty && s.length <= 24) tags.add(s);
+      }
+    }
+    tags.addAll(_connectionFilters);
+    return tags.toList();
+  }
+
+  Widget _buildFilterChips() {
+    final filters = _availableFilters;
+    if (filters.length <= 1) return const SizedBox(height: 8);
+
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: SizedBox(
+        height: 36,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const BouncingScrollPhysics(),
+          itemCount: filters.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 8),
+          itemBuilder: (context, index) {
+            final label = filters[index];
+            final selected = _selectedFilter == label;
+            return GestureDetector(
+              onTap: () {
+                HapticFeedback.selectionClick();
+                setState(() => _selectedFilter = label);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? colorScheme.primary
+                      : (isDark
+                          ? Colors.white.withValues(alpha: 0.07)
+                          : Colors.white.withValues(alpha: 0.85)),
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(
+                    color: selected
+                        ? colorScheme.primary
+                        : colorScheme.outline.withValues(alpha: 0.16),
+                  ),
+                ),
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? colorScheme.onPrimary
+                        : colorScheme.onSurface,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Widget _buildEventsCarousel() {
     final colorScheme = Theme.of(context).colorScheme;
 
     if (isEventLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return SizedBox(
+        height: 148,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: 2,
+          separatorBuilder: (_, __) => const SizedBox(width: 12),
+          itemBuilder: (_, __) => const ShimmerBox(
+            width: 270,
+            height: 148,
+            borderRadius: 20,
+          ),
+        ),
+      );
     }
 
     if (eventErrorMessage.isNotEmpty) {
@@ -405,9 +508,25 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
       );
     }
 
-    if (allEvents.isEmpty) {
+    final filteredEvents = _selectedFilter == 'All'
+        ? allEvents
+        : allEvents.where((e) {
+            if (e is! Map) return false;
+            final q = _selectedFilter.toLowerCase();
+            final haystack = [
+              e['industry'] is Map ? e['industry']['name'] : e['industry'],
+              e['city'],
+              e['location'],
+              e['state'],
+              e['title'],
+              e['event_name'],
+            ].map((v) => (v ?? '').toString().toLowerCase()).join(' ');
+            return haystack.contains(q);
+          }).toList();
+
+    if (filteredEvents.isEmpty) {
       return const Text(
-        "No upcoming events found",
+        "No matching events found",
         style: TextStyle(color: Colors.grey),
       );
     }
@@ -417,10 +536,10 @@ class _DiscoverPageState extends State<DiscoverPage> with AutomaticKeepAliveClie
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
-        itemCount: allEvents.length,
+        itemCount: filteredEvents.length,
         separatorBuilder: (_, __) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final event = allEvents[index];
+          final event = filteredEvents[index];
           return _buildEventCard(event);
         },
       ),
